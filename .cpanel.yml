@@ -1,5 +1,5 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/theartis/public_html/
+    - export DEPLOYPATH=/home/theartis/lavprishjemmeside.dk/
     - /bin/cp -R * $DEPLOYPATH
