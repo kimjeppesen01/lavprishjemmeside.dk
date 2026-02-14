@@ -18,7 +18,15 @@ const { title, description = "Få en professionel hjemmeside til lav pris. Vi by
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
+    <meta name="google-site-verification" content="d7dWCSM6V-nAjgcm2GJtBf13c_xq44QPs4AMMmHIaB8" />
     <title>{title}</title>
+    <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-GWCL1R11WP"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-GWCL1R11WP');
+    </script>
   </head>
   <body class="min-h-screen flex flex-col bg-white text-gray-900 antialiased">
     <slot />
