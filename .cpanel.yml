@@ -2,5 +2,6 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/theartis/lavprishjemmeside.dk/
-    - /bin/rm -rf $DEPLOYPATH*
+    - /bin/rm -rf ${DEPLOYPATH}*
+    - /bin/mkdir -p $DEPLOYPATH
     - /bin/cp -R * $DEPLOYPATH
