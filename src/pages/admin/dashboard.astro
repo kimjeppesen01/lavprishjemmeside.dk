@@ -1,0 +1,178 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Oversigt">
+  <!-- Loading state -->
+  <div id="loading" class="text-center py-12 text-gray-500">Henter data...</div>
+
+  <!-- Error state -->
+  <div id="error" class="hidden text-center py-12">
+    <p class="text-red-600 mb-4" id="error-text"></p>
+    <button onclick="window.location.reload()" class="text-blue-600 underline">Prøv igen</button>
+  </div>
+
+  <!-- Dashboard content (hidden until data loads) -->
+  <div id="dashboard" class="hidden">
+    <h1 class="text-2xl font-bold mb-6">Oversigt</h1>
+
+    <!-- Metric cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <p class="text-sm text-gray-500 mb-1">Hændelser i alt</p>
+        <p class="text-3xl font-bold" id="stat-events-total">&mdash;</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <p class="text-sm text-gray-500 mb-1">Hændelser i dag</p>
+        <p class="text-3xl font-bold" id="stat-events-today">&mdash;</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <p class="text-sm text-gray-500 mb-1">Sessioner i alt</p>
+        <p class="text-3xl font-bold" id="stat-sessions-total">&mdash;</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <p class="text-sm text-gray-500 mb-1">Gns. sider pr. session</p>
+        <p class="text-3xl font-bold" id="stat-avg-pages">&mdash;</p>
+      </div>
+    </div>
+
+    <!-- Two-column: Top Events + Top Landing Pages -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <h2 class="text-lg font-semibold mb-4">Top hændelser</h2>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-500 border-b">
+              <th class="pb-2">Hændelse</th>
+              <th class="pb-2">Type</th>
+              <th class="pb-2 text-right">Antal</th>
+            </tr>
+          </thead>
+          <tbody id="table-top-events"></tbody>
+        </table>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <h2 class="text-lg font-semibold mb-4">Top landingssider</h2>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-500 border-b">
+              <th class="pb-2">Side</th>
+              <th class="pb-2 text-right">Sessioner</th>
+            </tr>
+          </thead>
+          <tbody id="table-top-pages"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recent events -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+      <h2 class="text-lg font-semibold mb-4">Seneste hændelser</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-500 border-b">
+              <th class="pb-2">Type</th>
+              <th class="pb-2">Navn</th>
+              <th class="pb-2">Side</th>
+              <th class="pb-2">Tidspunkt</th>
+            </tr>
+          </thead>
+          <tbody id="table-recent-events"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+  (function() {
+    var API = 'https://api.lavprishjemmeside.dk';
+    var token = localStorage.getItem('admin_token');
+    if (!token) return;
+
+    function authFetch(url) {
+      return fetch(url, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(function(res) {
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem('admin_token');
+          window.location.href = '/admin/';
+          throw new Error('Unauthorized');
+        }
+        return res.json();
+      });
+    }
+
+    function esc(str) {
+      var div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+
+    function fmt(dateStr) {
+      if (!dateStr) return '\u2014';
+      var d = new Date(dateStr);
+      return d.toLocaleDateString('da-DK') + ' ' + d.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    Promise.all([
+      authFetch(API + '/events/summary'),
+      authFetch(API + '/sessions/summary')
+    ])
+    .then(function(results) {
+      var events = results[0];
+      var sessions = results[1];
+
+      // Metric cards
+      document.getElementById('stat-events-total').textContent = events.total.toLocaleString('da-DK');
+      document.getElementById('stat-events-today').textContent = events.today.toLocaleString('da-DK');
+      document.getElementById('stat-sessions-total').textContent = sessions.total.toLocaleString('da-DK');
+      document.getElementById('stat-avg-pages').textContent = sessions.avg_pages;
+
+      // Top events
+      var html = '';
+      events.top_events.forEach(function(ev) {
+        html += '<tr class="border-b border-gray-100">'
+          + '<td class="py-2">' + esc(ev.event_name) + '</td>'
+          + '<td class="py-2"><span class="inline-block px-2 py-0.5 rounded text-xs bg-gray-100">' + esc(ev.event_type) + '</span></td>'
+          + '<td class="py-2 text-right font-medium">' + ev.count + '</td>'
+          + '</tr>';
+      });
+      document.getElementById('table-top-events').innerHTML = html;
+
+      // Top landing pages
+      html = '';
+      sessions.top_pages.forEach(function(p) {
+        html += '<tr class="border-b border-gray-100">'
+          + '<td class="py-2 font-mono text-xs">' + esc(p.first_page) + '</td>'
+          + '<td class="py-2 text-right font-medium">' + p.count + '</td>'
+          + '</tr>';
+      });
+      document.getElementById('table-top-pages').innerHTML = html;
+
+      // Recent events
+      html = '';
+      events.recent.forEach(function(ev) {
+        html += '<tr class="border-b border-gray-100">'
+          + '<td class="py-2"><span class="inline-block px-2 py-0.5 rounded text-xs bg-gray-100">' + esc(ev.event_type) + '</span></td>'
+          + '<td class="py-2">' + esc(ev.event_name) + '</td>'
+          + '<td class="py-2 font-mono text-xs">' + esc(ev.page_url) + '</td>'
+          + '<td class="py-2 text-gray-500 text-xs whitespace-nowrap">' + fmt(ev.created_at) + '</td>'
+          + '</tr>';
+      });
+      document.getElementById('table-recent-events').innerHTML = html;
+
+      // Show dashboard
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+    })
+    .catch(function(err) {
+      if (err.message === 'Unauthorized') return;
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('error-text').textContent = 'Kunne ikke hente data: ' + err.message;
+      document.getElementById('error').classList.remove('hidden');
+    });
+  })();
+  </script>
+</AdminLayout>

@@ -7,6 +7,7 @@ const helmet = require('helmet');
 const healthRoutes = require('./src/routes/health');
 const eventRoutes = require('./src/routes/events');
 const authRoutes = require('./src/routes/auth');
+const sessionRoutes = require('./src/routes/sessions');
 const { requestLogger } = require('./src/middleware/logger');
 
 const app = express();
@@ -24,6 +25,7 @@ app.use(requestLogger);
 app.use('/health', healthRoutes);
 app.use('/events', eventRoutes);
 app.use('/auth', authRoutes);
+app.use('/sessions', sessionRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

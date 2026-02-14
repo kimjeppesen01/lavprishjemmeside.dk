@@ -1,0 +1,120 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} — Admin</title>
+  </head>
+  <body class="min-h-screen bg-gray-50 text-gray-900 antialiased">
+    <!-- Auth guard: redirect if no token (runs before anything renders) -->
+    <script is:inline>
+    (function() {
+      var token = localStorage.getItem('admin_token');
+      var path = window.location.pathname.replace(/\/$/, '') || '/admin';
+      var isLoginPage = path === '/admin';
+      if (!token && !isLoginPage) {
+        window.location.href = '/admin/';
+        return;
+      }
+      if (token && isLoginPage) {
+        window.location.href = '/admin/dashboard/';
+        return;
+      }
+    })();
+    </script>
+
+    <div class="flex min-h-screen">
+      <!-- Sidebar -->
+      <aside id="admin-sidebar" class="hidden w-64 bg-gray-900 text-gray-100 min-h-screen flex-col">
+        <div class="p-4 border-b border-gray-700">
+          <a href="/admin/dashboard/" class="text-lg font-bold text-white">LPH Admin</a>
+        </div>
+        <nav class="flex-1 p-4 space-y-1">
+          <a href="/admin/dashboard/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm">
+            Oversigt
+          </a>
+        </nav>
+        <div class="p-4 border-t border-gray-700">
+          <button id="logout-btn" class="w-full text-left text-sm text-gray-400 hover:text-white">
+            Log ud
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <div class="flex-1 flex flex-col">
+        <!-- Top bar -->
+        <header id="admin-header" class="hidden bg-white border-b border-gray-200 px-6 py-3 items-center justify-between">
+          <button id="mobile-menu-btn" class="lg:hidden text-gray-600 text-sm">
+            &#9776; Menu
+          </button>
+          <div class="flex-1"></div>
+          <span id="admin-email" class="text-sm text-gray-500"></span>
+        </header>
+
+        <!-- Page content -->
+        <main class="flex-1 p-6">
+          <slot />
+        </main>
+      </div>
+    </div>
+
+    <!-- Sidebar/header visibility + logout -->
+    <script is:inline>
+    (function() {
+      var path = window.location.pathname.replace(/\/$/, '') || '/admin';
+      if (path === '/admin') return;
+
+      // Show sidebar and header on dashboard pages
+      var sidebar = document.getElementById('admin-sidebar');
+      var header = document.getElementById('admin-header');
+      if (sidebar) { sidebar.classList.remove('hidden'); sidebar.classList.add('lg:flex'); }
+      if (header) { header.classList.remove('hidden'); header.classList.add('flex'); }
+
+      // Show admin email from JWT
+      try {
+        var token = localStorage.getItem('admin_token');
+        if (token) {
+          var payload = JSON.parse(atob(token.split('.')[1]));
+          var emailEl = document.getElementById('admin-email');
+          if (emailEl) emailEl.textContent = payload.email || '';
+        }
+      } catch(e) {}
+
+      // Logout
+      var logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+          localStorage.removeItem('admin_token');
+          window.location.href = '/admin/';
+        });
+      }
+
+      // Mobile menu toggle
+      var menuBtn = document.getElementById('mobile-menu-btn');
+      if (menuBtn && sidebar) {
+        menuBtn.addEventListener('click', function() {
+          sidebar.classList.toggle('hidden');
+          sidebar.classList.toggle('fixed');
+          sidebar.classList.toggle('z-50');
+          sidebar.classList.toggle('inset-0');
+          sidebar.classList.toggle('flex');
+        });
+      }
+    })();
+    </script>
+  </body>
+</html>
