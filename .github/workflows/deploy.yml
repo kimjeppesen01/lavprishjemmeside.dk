@@ -27,12 +27,10 @@ jobs:
       - name: Build Astro site
         run: npm run build
 
-      - name: Copy .cpanel.yml to dist
-        run: cp .cpanel.yml dist/.cpanel.yml
-
-      - name: Deploy to deploy branch
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          publish_branch: deploy
+      - name: Commit built files
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add dist/ --force
+          git diff --staged --quiet && echo "No changes" || git commit -m "Build: update dist output"
+          git push
