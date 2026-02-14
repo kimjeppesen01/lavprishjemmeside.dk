@@ -7,7 +7,7 @@ router.get('/', async (req, res) => {
     await pool.execute('SELECT 1');
     res.json({ status: 'ok', database: 'connected', timestamp: new Date().toISOString() });
   } catch (err) {
-    res.status(500).json({ status: 'error', database: 'disconnected', reason: err.message });
+    res.status(500).json({ status: 'error', database: 'disconnected', reason: String(err), env_check: !!process.env.DB_USER });
   }
 });
 
