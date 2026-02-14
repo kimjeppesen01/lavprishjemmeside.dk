@@ -165,25 +165,33 @@ lavprishjemmeside.dk/
 │   │   ├── db.js                    # MySQL2 connection pool
 │   │   ├── middleware/
 │   │   │   ├── auth.js              # JWT verification (admin role required)
-│   │   │   └── logger.js            # Request logging to security_logs table
+│   │   │   ├── logger.js            # Request logging to security_logs table
+│   │   │   ├── rateLimit.js         # Rate limiting (login: 5/15min, events: 100/15min)
+│   │   │   └── cache.js             # Query caching (60s TTL) + invalidation
 │   │   ├── routes/
 │   │   │   ├── health.js            # GET /health (DB connectivity check)
 │   │   │   ├── events.js            # POST /events (public), GET /events/summary (admin)
+│   │   │   ├── sessions.js          # GET /sessions/summary (admin)
 │   │   │   └── auth.js              # POST /auth/login, POST /auth/register, GET /auth/me
-│   │   └── schema.sql               # Database schema (5 tables + admin user seed)
+│   │   ├── schema.sql               # Database schema (5 tables + admin user seed)
+│   │   └── schema_indexes.sql       # Production indexes (idx_last_activity, idx_created_at_action)
 │   └── tmp/
 │       └── restart.txt              # Touched to signal app restart
 └── src/
     ├── styles/
     │   └── global.css               # Tailwind v4: `@import "tailwindcss";`
     ├── layouts/
-    │   └── Layout.astro             # Base layout (Danish, SEO, GA4, Search Console, Tracker)
+    │   ├── Layout.astro             # Public layout (Danish, SEO, GA4, Search Console, Tracker)
+    │   └── AdminLayout.astro        # Admin layout (auth guard, sidebar, noindex, no GA4)
     ├── components/
     │   ├── Header.astro             # Nav bar
     │   ├── Footer.astro             # 3-column footer
     │   └── Tracker.astro            # Event tracker (sendBeacon to API)
     └── pages/
-        └── index.astro              # Homepage (hero, features, CTA)
+        ├── index.astro              # Homepage (hero, features, CTA)
+        └── admin/
+            ├── index.astro          # Admin login page (/admin/)
+            └── dashboard.astro      # Dashboard overview (/admin/dashboard/)
 ```
 
 ---
@@ -194,8 +202,8 @@ lavprishjemmeside.dk/
 |--------|----------|------|---------|
 | `GET` | `/health` | None | Status check + DB connectivity |
 | `POST` | `/events` | None | Track pageviews/clicks from frontend |
-| `GET` | `/events/summary` | JWT (admin) | Dashboard: event statistics |
-| `GET` | `/sessions/summary` | JWT (admin) | Dashboard: session statistics |
+| `GET` | `/events/summary` | JWT (admin) | Dashboard: total, today, top 10 events, last 20 events |
+| `GET` | `/sessions/summary` | JWT (admin) | Dashboard: total, today, avg pages, top landing pages, last 20 sessions |
 | `POST` | `/auth/login` | None | Returns JWT token |
 | `POST` | `/auth/register` | JWT (admin) | Create new user |
 | `GET` | `/auth/me` | JWT | Get current user info |
@@ -228,6 +236,169 @@ Usage in Astro templates:
 ```
 
 The tracker uses `navigator.sendBeacon()` for reliable delivery (falls back to `fetch` with `keepalive`).
+
+---
+
+## Admin Dashboard
+
+**URL**: `https://lavprishjemmeside.dk/admin/`
+
+The admin dashboard lives within the main Astro site (NOT a separate subdomain), avoiding extra cPanel setup. All `/admin/*` pages are excluded from the sitemap and have `noindex, nofollow` meta tags.
+
+### Architecture
+- **AdminLayout.astro**: Separate layout — no public Header/Footer/Tracker/GA4. Has dark sidebar, top bar with admin email, and logout button.
+- **Auth guard**: Inline `<script>` runs before page renders. Checks `localStorage` for `admin_token` (JWT). Redirects to `/admin/` if missing. If token exists and user is on login page, redirects to `/admin/dashboard/`.
+- **Client-side rendering**: Dashboard HTML is static (empty templates). All data is fetched client-side with `Authorization: Bearer <token>`. If API returns 401/403, token is cleared and user is redirected to login.
+- **CORS**: Works without changes because `/admin/` is on the same origin (`lavprishjemmeside.dk`) as the main site.
+
+### Pages
+| Page | Path | Purpose |
+|------|------|---------|
+| Login | `/admin/` | Email + password form, stores JWT in localStorage |
+| Dashboard | `/admin/dashboard/` | 4 metric cards + 3 data tables |
+
+### Dashboard Overview Shows
+- **4 metric cards**: Hændelser i alt, Hændelser i dag, Sessioner i alt, Gns. sider pr. session
+- **Top hændelser table**: Event name, type, count (top 10)
+- **Top landingssider table**: First page URL, session count (top 10)
+- **Seneste hændelser table**: Type, name, page URL, timestamp (last 20)
+
+### What's Built (Infrastructure)
+- Login/logout with JWT (24h expiry)
+- Overview dashboard with live data from API
+- Sessions summary API endpoint
+- Sitemap exclusion + noindex meta
+- Auth guard with auto-redirect
+- Auto-logout on expired/invalid token
+- **Rate limiting**: 5 login attempts/15min, 100 events/15min (express-rate-limit)
+- **Query caching**: 60s TTL with auto-invalidation on writes (node-cache)
+- **Database indexes**: idx_last_activity (sessions), idx_created_at_action (security_logs composite)
+
+### What Needs to Be Implemented
+
+Implementation items are organized by priority: **Critical** (security/performance), **High** (core features), **Medium** (UX enhancements), and **Nice-to-Have** (polish).
+
+---
+
+#### 🔴 CRITICAL: Security & Performance
+
+**Automated Log Rotation**
+- `security_logs` table will grow rapidly
+- Create cron job or scheduled API endpoint to archive/delete logs older than 60 days
+- Prevent database bloat
+
+**Change Default Admin Password**
+- Current password is `change_me_immediately` — MUST be changed immediately
+- Force password change on first login or add to deployment checklist
+
+---
+
+#### 🟠 HIGH PRIORITY: Core Dashboard Features
+
+**Date Range Filtering**
+- Add date picker UI component to dashboard
+- Update `/events/summary` and `/sessions/summary` to accept `?from=&to=` query params
+- Default to "last 30 days" instead of all-time
+
+**Security Logs Page** (`/admin/sikkerhed/`)
+- Create `GET /security-logs` endpoint with filters (action, date range, user)
+- Build page to view login attempts, API access, and suspicious activity
+- Show IP addresses, user agents, timestamps
+
+**User Management** (`/admin/brugere/`)
+- Build UI to list all users with roles
+- Add ability to create new admin users (use existing `POST /auth/register`)
+- Add `GET /users` and `DELETE /users/:id` endpoints
+- Implement **soft deletes**: Add `deleted_at` column to `users` table for audit trails
+
+**Content Pages Management** (`/admin/sider/`)
+- CRUD API for `content_pages` table: `GET`, `POST`, `DELETE /content-pages/:id`
+- UI to manage page status (draft/published/archived)
+- Track SEO title, description, and last deployment timestamp
+
+**Change Password Feature**
+- Create `PUT /auth/password` endpoint (requires current password + new password)
+- Add settings page or modal in dashboard
+- Hash with bcrypt, update `users.password_hash`
+
+---
+
+#### 🟡 MEDIUM PRIORITY: UX & Analytics
+
+**Charts/Trends Visualization**
+- Add visual graphs for events per day, sessions over time
+- Use lightweight library (Chart.js or similar)
+- Show traffic trends, bounce rates, conversion funnels
+
+**Session Detail View**
+- Drill into individual sessions to see full page flow
+- Show: first page → navigation path → exit page
+- Display session duration, page count, device/browser
+
+**Global Toast Notifications**
+- Replace silent redirects with visual feedback toasts
+- Show success/error messages for CRUD operations
+- Use a lightweight toast library or custom component
+
+**Auto-Refresh Dashboard**
+- Add periodic refresh (every 60 seconds) or manual refresh button
+- Update metric cards without full page reload
+- Show "Last updated: X seconds ago" timestamp
+
+**Mobile-Responsive Admin**
+- Improve sidebar collapse/hamburger menu on mobile
+- Ensure metric cards stack cleanly on small screens
+- Test horizontal scrolling for data tables
+
+**Data Export (CSV)**
+- Add "Export CSV" buttons to events and sessions tables
+- Generate CSV client-side or via API endpoint
+- Include filters/date range in export
+
+---
+
+#### 🟢 NICE-TO-HAVE: Advanced Features
+
+**UTM Parameter Tracking**
+- Automatically capture `?utm_source=`, `?utm_campaign=`, `?utm_medium=` from URLs
+- Store in `sessions` table (add columns: `utm_source`, `utm_campaign`, `utm_medium`)
+- Dashboard shows which marketing channels drive traffic
+
+**Core Web Vitals Tracking**
+- Expand `Tracker.astro` to capture First Contentful Paint (FCP), Cumulative Layout Shift (CLS)
+- Send as metadata in `POST /events` payload
+- Show performance metrics in dashboard (useful for a web dev business to dogfood)
+
+**Client-Side Error Tracking**
+- Catch JavaScript errors and send to API as `error` event type
+- Store stack traces in `events.metadata` JSON
+- Debug frontend issues directly from admin panel
+
+**Keyboard Navigation & ARIA**
+- Ensure all interactive elements (date picker, charts, pagination) are keyboard-accessible
+- Add proper ARIA labels for screen readers
+- Test with keyboard-only navigation
+
+**System-Aware Dark Mode**
+- Full application-wide dark mode toggle
+- Respect OS-level `prefers-color-scheme` media query
+- Store user preference in localStorage
+
+---
+
+#### API Endpoints Summary (New/Updated)
+
+| Method | Endpoint | Auth | Purpose | Priority | Status |
+|--------|----------|------|---------|----------|--------|
+| `GET` | `/events/summary` | JWT (admin) | Add `?from=&to=` date params | 🟠 High | Needs update |
+| `GET` | `/sessions/summary` | JWT (admin) | Add `?from=&to=` date params | 🟠 High | Needs update |
+| `GET` | `/security-logs` | JWT (admin) | List security logs with filters | 🟠 High | Not built |
+| `GET` | `/users` | JWT (admin) | List all users | 🟠 High | Not built |
+| `POST` | `/content-pages` | JWT (admin) | Create/update page entry | 🟠 High | Not built |
+| `GET` | `/content-pages` | JWT (admin) | List content pages | 🟠 High | Not built |
+| `DELETE` | `/content-pages/:id` | JWT (admin) | Delete page entry | 🟠 High | Not built |
+| `DELETE` | `/users/:id` | JWT (admin) | Soft delete user | 🟠 High | Not built |
+| `PUT` | `/auth/password` | JWT | Change own password | 🟠 High | Not built |
 
 ---
 
@@ -322,8 +493,13 @@ The `pkill` line is **ESSENTIAL** — without it, LiteSpeed will keep running st
 ## Completed Phases
 - **Phase 1**: Project setup, CI/CD, Layout/Header/Footer, Homepage, SSL/HTTPS, GA4, Search Console, Sitemap
 - **Phase 2**: Express API, MySQL database (5 tables), JWT auth, event tracking, deploy pipeline with lsnode restart
+- **Phase 3**: Admin dashboard infrastructure — login page, overview dashboard, sessions API, AdminLayout with auth guard
+- **Phase 4**: Production infrastructure — rate limiting (5 login/15min, 100 events/15min), query caching (60s TTL), database indexes (sessions.last_activity, security_logs composite)
 
 ## Pending
-- Remaining pages (Priser, Om os, Kontakt)
-- Admin dashboard frontend (`admin.lavprishjemmeside.dk`)
-- SEO content optimization
+- **Dashboard enhancements**: Date filtering, charts, auto-refresh, CSV export (see Admin Dashboard section above)
+- **Dashboard pages**: Security logs, content management, user management, session detail view
+- **Account features**: Change password endpoint + UI
+- **Public pages**: Priser, Om os, Kontakt
+- **SEO content optimization**
+- **Change default admin password** (currently `change_me_immediately`)
