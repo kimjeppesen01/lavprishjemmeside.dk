@@ -1,17 +1,81 @@
 ---
-
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>lavprishjemmeside.dk</title>
-	</head>
-	<body>
-		<h1>lavprishjemmeside.dk - Deploy test OK</h1>
-	</body>
-</html>
+<Layout title="Lavpris Hjemmeside | Professionelle hjemmesider til lav pris">
+  <Header />
+
+  <main>
+    <!-- Hero -->
+    <section class="bg-gradient-to-br from-blue-50 to-white py-20 md:py-28">
+      <div class="mx-auto max-w-6xl px-4 text-center">
+        <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+          Professionel hjemmeside<br />
+          <span class="text-blue-600">til en lav pris</span>
+        </h1>
+        <p class="mt-6 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
+          Vi bygger moderne, hurtige og SEO-optimerede hjemmesider for danske virksomheder — uden at det koster en formue.
+        </p>
+        <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="/kontakt" class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors text-lg font-medium">
+            Få et gratis tilbud
+          </a>
+          <a href="/priser" class="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:border-blue-600 hover:text-blue-600 transition-colors text-lg font-medium">
+            Se priser
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="py-16 md:py-24">
+      <div class="mx-auto max-w-6xl px-4">
+        <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
+          Hvorfor vælge os?
+        </h2>
+        <div class="grid md:grid-cols-3 gap-8">
+          <div class="text-center p-6">
+            <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+              &darr;
+            </div>
+            <h3 class="text-xl font-semibold mb-2">Lave priser</h3>
+            <p class="text-gray-600">Ingen skjulte omkostninger. Du betaler kun for det du har brug for.</p>
+          </div>
+          <div class="text-center p-6">
+            <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+              &uarr;
+            </div>
+            <h3 class="text-xl font-semibold mb-2">SEO-optimeret</h3>
+            <p class="text-gray-600">Din side bliver bygget til at rangere højt på Google fra dag ét.</p>
+          </div>
+          <div class="text-center p-6">
+            <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+              &#9889;
+            </div>
+            <h3 class="text-xl font-semibold mb-2">Lynhurtig</h3>
+            <p class="text-gray-600">Statiske sider der loader på under ét sekund — ingen tunge CMS-systemer.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="bg-blue-600 py-16">
+      <div class="mx-auto max-w-4xl px-4 text-center">
+        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
+          Klar til at komme i gang?
+        </h2>
+        <p class="text-blue-100 text-lg mb-8">
+          Kontakt os i dag og få et uforpligtende tilbud på din nye hjemmeside.
+        </p>
+        <a href="/kontakt" class="inline-block bg-white text-blue-600 px-8 py-3 rounded-lg hover:bg-blue-50 transition-colors text-lg font-semibold">
+          Kontakt os nu
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</Layout>

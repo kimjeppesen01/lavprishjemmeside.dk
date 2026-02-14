@@ -1,0 +1,28 @@
+---
+const navLinks = [
+  { href: "/", label: "Forside" },
+  { href: "/priser", label: "Priser" },
+  { href: "/om-os", label: "Om os" },
+  { href: "/kontakt", label: "Kontakt" },
+];
+---
+
+<header class="bg-white border-b border-gray-200">
+  <nav class="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
+    <a href="/" class="text-xl font-bold text-blue-600">
+      lavprishjemmeside.dk
+    </a>
+    <ul class="hidden md:flex gap-8">
+      {navLinks.map((link) => (
+        <li>
+          <a href={link.href} class="text-gray-700 hover:text-blue-600 transition-colors">
+            {link.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+    <a href="/kontakt" class="hidden md:inline-block bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+      Få et tilbud
+    </a>
+  </nav>
+</header>
