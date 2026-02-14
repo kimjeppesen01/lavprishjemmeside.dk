@@ -48,4 +48,5 @@ jobs:
             git reset --hard origin/main
             cp -Rf dist/* ~/lavprishjemmeside.dk/
             cd api && npm install --production
+            pkill -f 'lsnode:.*lavprishjemmeside' || true
             mkdir -p tmp && touch tmp/restart.txt
