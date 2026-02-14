@@ -47,3 +47,5 @@ jobs:
             git fetch origin
             git reset --hard origin/main
             cp -Rf dist/* ~/lavprishjemmeside.dk/
+            cd api && npm install --production
+            mkdir -p tmp && touch tmp/restart.txt

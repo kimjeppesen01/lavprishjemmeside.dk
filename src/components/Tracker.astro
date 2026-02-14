@@ -1,0 +1,50 @@
+<script is:inline>
+(function() {
+  const API = 'https://api.lavprishjemmeside.dk';
+
+  // Generate or retrieve session ID
+  function getSessionId() {
+    let sid = sessionStorage.getItem('_sid');
+    if (!sid) {
+      sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      sessionStorage.setItem('_sid', sid);
+    }
+    return sid;
+  }
+
+  function track(eventType, eventName, metadata) {
+    const payload = {
+      event_type: eventType,
+      event_name: eventName,
+      page_url: window.location.pathname,
+      referrer: document.referrer || null,
+      session_id: getSessionId(),
+      metadata: metadata || null
+    };
+
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(API + '/events', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+    } else {
+      fetch(API + '/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true
+      }).catch(function() {});
+    }
+  }
+
+  // Track page view
+  track('pageview', 'page_view');
+
+  // Track clicks on elements with data-track attribute
+  document.addEventListener('click', function(e) {
+    var el = e.target.closest('[data-track]');
+    if (el) {
+      track('click', el.getAttribute('data-track'), {
+        text: (el.textContent || '').trim().slice(0, 100)
+      });
+    }
+  });
+})();
+</script>

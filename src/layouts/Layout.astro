@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import Tracker from '../components/Tracker.astro';
 
 interface Props {
   title: string;
@@ -30,5 +31,6 @@ const { title, description = "Få en professionel hjemmeside til lav pris. Vi by
   </head>
   <body class="min-h-screen flex flex-col bg-white text-gray-900 antialiased">
     <slot />
+    <Tracker />
   </body>
 </html>
