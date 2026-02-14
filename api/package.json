@@ -2,10 +2,10 @@
   "name": "lavprishjemmeside-api",
   "version": "1.0.0",
   "description": "REST API for lavprishjemmeside.dk dashboard",
-  "main": "server.js",
+  "main": "server.cjs",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node server.cjs",
+    "dev": "node --watch server.cjs"
   },
   "keywords": [],
   "author": "",
