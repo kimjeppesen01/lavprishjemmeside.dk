@@ -27,6 +27,9 @@ jobs:
       - name: Build Astro site
         run: npm run build
 
+      - name: Copy .cpanel.yml to dist
+        run: cp .cpanel.yml dist/.cpanel.yml
+
       - name: Deploy to deploy branch
         uses: peaceiris/actions-gh-pages@v4
         with:
