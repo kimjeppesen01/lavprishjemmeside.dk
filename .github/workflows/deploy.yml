@@ -34,3 +34,16 @@ jobs:
           git add dist/ --force
           git diff --staged --quiet && echo "No changes" || git commit -m "Build: update dist output"
           git push
+
+      - name: Deploy to cPanel via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ~/repositories/lavprishjemmeside.dk
+            git fetch origin
+            git reset --hard origin/main
+            cp -Rf dist/* ~/lavprishjemmeside.dk/
