@@ -1,10 +1,11 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { cacheMiddleware } = require('../middleware/cache');
 const router = express.Router();
 
 // GET /sessions/summary — session statistics (admin only)
-router.get('/summary', requireAuth, async (req, res) => {
+router.get('/summary', requireAuth, cacheMiddleware('sessions:summary'), async (req, res) => {
   try {
     const [totalSessions] = await pool.execute('SELECT COUNT(*) as count FROM sessions');
     const [todaySessions] = await pool.execute(

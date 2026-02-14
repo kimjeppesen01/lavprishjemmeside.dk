@@ -1,10 +1,12 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { eventRateLimiter } = require('../middleware/rateLimit');
+const { cacheMiddleware, invalidateCache } = require('../middleware/cache');
 const router = express.Router();
 
 // POST /events — track an event (public, called from frontend)
-router.post('/', async (req, res) => {
+router.post('/', eventRateLimiter, async (req, res) => {
   try {
     const { event_type, event_name, page_url, referrer, session_id, metadata } = req.body;
 
@@ -43,6 +45,9 @@ router.post('/', async (req, res) => {
       );
     }
 
+    // Invalidate cache after successful write
+    invalidateCache(['events:summary', 'sessions:summary']);
+
     res.status(201).json({ ok: true });
   } catch (err) {
     console.error('Event tracking error:', err.message);
@@ -51,7 +56,7 @@ router.post('/', async (req, res) => {
 });
 
 // GET /events/summary — dashboard stats (admin only)
-router.get('/summary', requireAuth, async (req, res) => {
+router.get('/summary', requireAuth, cacheMiddleware('events:summary'), async (req, res) => {
   try {
     const [totalEvents] = await pool.execute('SELECT COUNT(*) as count FROM events');
     const [todayEvents] = await pool.execute('SELECT COUNT(*) as count FROM events WHERE DATE(created_at) = CURDATE()');
