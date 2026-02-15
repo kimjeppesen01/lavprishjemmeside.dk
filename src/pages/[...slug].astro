@@ -225,7 +225,7 @@ const pageTitle = pageComponents[0]?.content?.headline ||
 >
   <Breadcrumbs items={breadcrumbItems} />
 
-  {pageComponents.map((pc: any) => {
+  {pageComponents.map((pc: any, index: number) => {
     const Component = componentMap[pc.slug];
 
     if (!Component) {
@@ -238,8 +238,15 @@ const pageTitle = pageComponents[0]?.content?.headline ||
     // Unique instance id to avoid duplicate HTML ids when same component appears multiple times
     normalizedProps.instanceId = pc.id;
 
+    // Alternating section backgrounds (page → alt → page → …)
+    const sectionBgClass = index % 2 === 0 ? 'section-bg-page' : 'section-bg-alt';
+
     try {
-      return <Component {...normalizedProps} />;
+      return (
+        <div class={sectionBgClass}>
+          <Component {...normalizedProps} />
+        </div>
+      );
     } catch (error) {
       console.error(`Error rendering component ${pc.slug}:`, error);
       return null;

@@ -177,6 +177,7 @@ Returnér et JSON **objekt** (IKKE et array). Strukturen er:
 6. **Returnér KUN JSON** — ingen forklaring, kun JSON-objektet
 7. **Brug uploadede billeder** — vælg fra listen ovenfor baseret på alt-tekst relevans. Brug placeholder kun som sidste udvej
 8. **SEO er påkrævet** — inkluder altid "seo" objektet med meta_title, meta_description og schema_type
+9. **Sektionsbaggrunde** — alternerer automatisk (hvid/grå). Brug kun \`backgroundColor: "primary"\` på CTA eller stats-bannere. Lad andre komponenter arve baggrunden (undlad backgroundColor eller brug default).
 
 Vær kreativ men professionel. Lav indhold der passer til brugerens beskrivelse.`;
 }
@@ -396,7 +397,8 @@ Returnér KUN dette JSON-objekt (ingen forklaring):
 3. **Tekst fra indhold** — ingen nye formuleringer
 4. **Billeder fra mediebibliotek** — vælg bedste match, ingen placeholders
 5. **Logisk rækkefølge** — hero først, CTA til sidst
-6. **Dansk** — indholdet er på dansk, behold det`;
+6. **Dansk** — indholdet er på dansk, behold det
+7. **Sektionsbaggrunde** — alternerer automatisk (hvid/grå). Brug kun \`backgroundColor: "primary"\` på cta-section eller stats-banner. Lad andre arve`;
 }
 
 module.exports = { generatePageContent, generatePageContentAdvanced };

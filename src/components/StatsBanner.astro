@@ -16,7 +16,7 @@ const bgClass =
     ? 'bg-[var(--color-primary)]'
     : backgroundColor === 'alt'
       ? 'bg-[var(--color-bg-section-alt)]'
-      : 'bg-[var(--color-bg-page)]';
+      : ''; /* default: inherit from section wrapper (alternating) */
 
 const valueClass =
   backgroundColor === 'primary'

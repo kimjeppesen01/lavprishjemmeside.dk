@@ -21,7 +21,7 @@ const headingId = `split-heading-${instanceId}`;
 const bgClass =
   backgroundColor === 'alt'
     ? 'bg-[var(--color-bg-section-alt)]'
-    : 'bg-[var(--color-bg-page)]';
+    : ''; /* default: inherit from section wrapper (alternating) */
 ---
 
 <section

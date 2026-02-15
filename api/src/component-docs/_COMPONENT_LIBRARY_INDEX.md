@@ -52,6 +52,9 @@ All components MUST use CSS custom properties from `theme.css`:
 
 **CRITICAL:** Never use hardcoded Tailwind classes like `bg-blue-600` or `text-gray-800`.
 
+### Section Background Alternation
+Section backgrounds alternate automatically (page → alt → page → …) via the page wrapper in `[...slug].astro`. Do NOT add section-level `bg-[var(--color-bg-page)]` or `bg-[var(--color-bg-section-alt)]` to content components — they inherit from the wrapper. Only CtaSection, StatsBanner, and ContentImageSplit have `backgroundColor` prop; use `'primary'` for accent blocks. Component order in page_components drives the alternation.
+
 ### Danish Language
 - All user-facing text must be in Danish
 - Use formal "De/Deres" for B2B, informal "du/dit" for B2C (default: informal)

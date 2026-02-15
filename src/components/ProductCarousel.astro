@@ -24,6 +24,7 @@ const defaultSlides = slides.length > 0 ? slides : [
   { img: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800', alt: 'Produkt 2' },
   { img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800', alt: 'Produkt 3' },
   { img: 'https://images.unsplash.com/photo-1556742044-3c52e6e84cbd?w=800', alt: 'Produkt 4' },
+  { img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800', alt: 'Produkt 5' },
 ];
 ---
 
@@ -38,12 +39,12 @@ const defaultSlides = slides.length > 0 ? slides : [
   <div class="overflow-hidden h-full">
     <ul id="product-carousel-wrapper" class="flex h-full gap-8 md:gap-12 pl-4 md:pl-8">
       {defaultSlides.map((slide) => (
-        <li class="product-carousel-slide flex-none w-[52vw] md:w-[38vw] h-full shrink-0 transition-transform duration-500">
+        <li class="product-carousel-slide flex-none w-[52vw] md:w-[38vw] h-full shrink-0 transition-transform duration-500 origin-center">
           <figure class="w-full h-full overflow-hidden rounded-[var(--radius-card)] shadow-[var(--shadow-card)]">
             <img
               src={slide.img}
               alt={slide.alt ?? slide.caption ?? 'Produkt'}
-              class="product-carousel-img w-full h-full object-cover transition-transform duration-500"
+              class="w-full h-full object-cover"
               loading="lazy"
               decoding="async"
             />
@@ -88,16 +89,15 @@ const defaultSlides = slides.length > 0 ? slides : [
     });
 
     slides.forEach((slide) => {
-      const img = slide.querySelector('.product-carousel-img');
       ScrollTrigger.create({
         trigger: slide,
         containerAnimation: scrollTween,
         start: 'center center',
         end: '+=200',
-        onEnter: () => { if (img) img.style.transform = 'scale(1.18)'; },
-        onLeaveBack: () => { if (img) img.style.transform = ''; },
-        onLeave: () => { if (img) img.style.transform = ''; },
-        onEnterBack: () => { if (img) img.style.transform = 'scale(1.18)'; },
+        onEnter: () => slide.style.transform = 'scale(1.12)',
+        onLeaveBack: () => { slide.style.transform = ''; },
+        onLeave: () => { slide.style.transform = ''; },
+        onEnterBack: () => { slide.style.transform = 'scale(1.12)'; },
       });
     });
   }

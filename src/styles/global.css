@@ -43,3 +43,14 @@ html.smooth-scroll {
   flex-direction: column;
   align-items: center;
 }
+
+/* --- Section background alternation (standardized) --- */
+/* Modern practice: alternate between page and alt for visual rhythm and reduced "wall of white" */
+.section-bg-page {
+  background-color: var(--color-bg-page);
+  transition: background-color 0.25s ease;
+}
+.section-bg-alt {
+  background-color: var(--color-bg-section-alt);
+  transition: background-color 0.25s ease;
+}

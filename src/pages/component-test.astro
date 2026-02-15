@@ -232,6 +232,7 @@ const productCarouselData = {
     { img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800', alt: 'Hjemmeside design' },
     { img: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800', alt: 'SEO & marketing' },
     { img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800', alt: 'E-handel' },
+    { img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800', alt: 'Analyse & data' },
   ],
 };
 
@@ -249,26 +250,26 @@ const stickyColumnData = {
 ---
 
 <Layout title="Component Test | lavprishjemmeside.dk">
-  <main class="min-h-screen" style="background-color: var(--color-bg-page); color: var(--color-text-primary);">
-    <section id="preview-breadcrumbs" class="scroll-mt-24"><Breadcrumbs {...breadcrumbData} /></section>
-    <section id="preview-hero-section" class="scroll-mt-24"><HeroSection {...heroData} /></section>
-    <section id="preview-features-grid" class="scroll-mt-24"><FeaturesGrid {...featuresData} /></section>
-    <section id="preview-icon-cards" class="scroll-mt-24"><IconCards {...iconCardsData} /></section>
-    <section id="preview-content-image-split" class="scroll-mt-24"><ContentImageSplit {...contentImageData} /></section>
-    <section id="preview-product-carousel" class="scroll-mt-24"><ProductCarousel {...productCarouselData} /></section>
-    <section id="preview-sticky-column" class="scroll-mt-24"><StickyColumnSection {...stickyColumnData} /></section>
-    <section id="preview-stats-banner" class="scroll-mt-24"><StatsBanner {...statsData} /></section>
-    <section id="preview-video-embed" class="scroll-mt-24"><VideoEmbed {...videoData} /></section>
-    <section id="preview-timeline" class="scroll-mt-24"><Timeline {...timelineData} /></section>
-    <section id="preview-testimonials-carousel" class="scroll-mt-24"><TestimonialsCarousel {...testimonialsData} /></section>
-    <section id="preview-team-grid" class="scroll-mt-24"><TeamGrid {...teamData} /></section>
-    <section id="preview-logo-cloud" class="scroll-mt-24"><LogoCloud {...logoData} /></section>
-    <section id="preview-pricing-table" class="scroll-mt-24"><PricingTable {...pricingData} /></section>
-    <section id="preview-comparison-table" class="scroll-mt-24"><ComparisonTable {...comparisonData} /></section>
-    <section id="preview-faq-accordion" class="scroll-mt-24"><FaqAccordion {...faqData} /></section>
-    <section id="preview-newsletter-signup" class="scroll-mt-24"><NewsletterSignup {...newsletterData} /></section>
-    <section id="preview-gallery-grid" class="scroll-mt-24"><GalleryGrid {...galleryData} /></section>
-    <section id="preview-contact-form" class="scroll-mt-24"><ContactForm {...contactData} /></section>
-    <section id="preview-cta-section" class="scroll-mt-24"><CtaSection {...ctaData} /></section>
+  <main class="min-h-screen text-[var(--color-text-primary)]">
+    <div class="section-bg-page"><section id="preview-breadcrumbs" class="scroll-mt-24"><Breadcrumbs {...breadcrumbData} /></section></div>
+    <div class="section-bg-page"><section id="preview-hero-section" class="scroll-mt-24"><HeroSection {...heroData} /></section></div>
+    <div class="section-bg-alt"><section id="preview-features-grid" class="scroll-mt-24"><FeaturesGrid {...featuresData} /></section></div>
+    <div class="section-bg-page"><section id="preview-icon-cards" class="scroll-mt-24"><IconCards {...iconCardsData} /></section></div>
+    <div class="section-bg-alt"><section id="preview-content-image-split" class="scroll-mt-24"><ContentImageSplit {...contentImageData} /></section></div>
+    <div class="section-bg-page"><section id="preview-product-carousel" class="scroll-mt-24"><ProductCarousel {...productCarouselData} /></section></div>
+    <div class="section-bg-alt"><section id="preview-sticky-column" class="scroll-mt-24"><StickyColumnSection {...stickyColumnData} /></section></div>
+    <div class="section-bg-page"><section id="preview-stats-banner" class="scroll-mt-24"><StatsBanner {...statsData} /></section></div>
+    <div class="section-bg-alt"><section id="preview-video-embed" class="scroll-mt-24"><VideoEmbed {...videoData} /></section></div>
+    <div class="section-bg-page"><section id="preview-timeline" class="scroll-mt-24"><Timeline {...timelineData} /></section></div>
+    <div class="section-bg-alt"><section id="preview-testimonials-carousel" class="scroll-mt-24"><TestimonialsCarousel {...testimonialsData} /></section></div>
+    <div class="section-bg-page"><section id="preview-team-grid" class="scroll-mt-24"><TeamGrid {...teamData} /></section></div>
+    <div class="section-bg-alt"><section id="preview-logo-cloud" class="scroll-mt-24"><LogoCloud {...logoData} /></section></div>
+    <div class="section-bg-page"><section id="preview-pricing-table" class="scroll-mt-24"><PricingTable {...pricingData} /></section></div>
+    <div class="section-bg-alt"><section id="preview-comparison-table" class="scroll-mt-24"><ComparisonTable {...comparisonData} /></section></div>
+    <div class="section-bg-page"><section id="preview-faq-accordion" class="scroll-mt-24"><FaqAccordion {...faqData} /></section></div>
+    <div class="section-bg-alt"><section id="preview-newsletter-signup" class="scroll-mt-24"><NewsletterSignup {...newsletterData} /></section></div>
+    <div class="section-bg-page"><section id="preview-gallery-grid" class="scroll-mt-24"><GalleryGrid {...galleryData} /></section></div>
+    <div class="section-bg-alt"><section id="preview-contact-form" class="scroll-mt-24"><ContactForm {...contactData} /></section></div>
+    <div class="section-bg-page"><section id="preview-cta-section" class="scroll-mt-24"><CtaSection {...ctaData} /></section></div>
   </main>
 </Layout>

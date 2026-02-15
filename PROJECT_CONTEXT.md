@@ -252,6 +252,28 @@ The tracker uses `navigator.sendBeacon()` for reliable delivery (falls back to `
 
 ---
 
+## Section Background Alternation (standardized)
+
+**Purpose**: Reduce "wall of white" and add visual rhythm across the site. Modern web practice: alternate between two background colors (page + alt) for content sections.
+
+**Implementation**:
+- **CSS classes**: `section-bg-page` (white) and `section-bg-alt` (light gray, `--color-bg-section-alt`)
+- **Alternating order**: First section = page, second = alt, third = page, etc.
+- **Where applied**:
+  - `[...slug].astro`: Each page component is wrapped in a `<div class="section-bg-page|section-bg-alt">` based on index
+  - `index.astro`, `component-test.astro`: Sections use the same classes explicitly
+- **Components that override**: CtaSection (`backgroundColor: 'primary'`), StatsBanner (`backgroundColor: 'primary'`), HeroSection with `backgroundImage` — these set their own full background and sit atop the wrapper
+- **Components that inherit**: Most content sections (FeaturesGrid, IconCards, TestimonialsCarousel, NewsletterSignup, etc.) have no section-level background; they inherit from the wrapper
+- **Theme tokens**: `--color-bg-page` (default `#FFFFFF`), `--color-bg-section-alt` (default `var(--color-neutral-50)`)
+
+**When building new content** (AI-assemble or manual):
+- Component order in `page_components` determines alternation (first = page, second = alt, …)
+- Use `backgroundColor: 'primary'` only for accent blocks (CTA, stats callout)
+- Do NOT add section-level backgrounds to new components; let the wrapper control alternation
+- See `api/src/component-docs/_COMPONENT_LIBRARY_INDEX.md` for component-specific `backgroundColor` options
+
+---
+
 ## Admin Dashboard
 
 **URL**: `https://lavprishjemmeside.dk/admin/`

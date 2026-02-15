@@ -93,7 +93,7 @@ const allSchemas = [...baseSchemas, ...schemaMarkup];
     </script>
   </head>
   <body
-  class:list={['min-h-screen flex flex-col bg-white text-gray-900 antialiased', designFeatures.borderRadius === 'full' && 'radius-full']}
+  class:list={['min-h-screen flex flex-col bg-[var(--color-bg-page)] text-[var(--color-text-primary)] antialiased', designFeatures.borderRadius === 'full' && 'radius-full']}
 >
     {designFeatures.pageLoader && (
     <div id="page-loader" class="page-loader" aria-hidden="true">
