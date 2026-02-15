@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Oversigt — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.D5BCpXea.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Oversigt — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.9bwreuk1.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -26,7 +26,7 @@ AI-assembler
 Log ud
 </button> </div> </aside> <!-- Main content --> <div class="flex-1 flex flex-col"> <!-- Top bar --> <header id="admin-header" class="hidden bg-white border-b border-gray-200 px-6 py-3 items-center justify-between"> <button id="mobile-menu-btn" class="lg:hidden text-gray-600 text-sm">
 &#9776; Menu
-</button> <div class="flex-1"></div> <span id="admin-email" class="text-sm text-gray-500"></span> </header> <!-- Page content --> <main class="flex-1 p-6">   <div id="loading" class="text-center py-12 text-gray-500">Henter data...</div>  <div id="error" class="hidden text-center py-12"> <p class="text-red-600 mb-4" id="error-text"></p> <button onclick="window.location.reload()" class="text-blue-600 underline">Prøv igen</button> </div>  <div id="dashboard" class="hidden"> <h1 class="text-2xl font-bold mb-6">Oversigt</h1> <!-- Metric cards --> <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <p class="text-sm text-gray-500 mb-1">Hændelser i alt</p> <p class="text-3xl font-bold" id="stat-events-total">&mdash;</p> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <p class="text-sm text-gray-500 mb-1">Hændelser i dag</p> <p class="text-3xl font-bold" id="stat-events-today">&mdash;</p> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <p class="text-sm text-gray-500 mb-1">Sessioner i alt</p> <p class="text-3xl font-bold" id="stat-sessions-total">&mdash;</p> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <p class="text-sm text-gray-500 mb-1">Gns. sider pr. session</p> <p class="text-3xl font-bold" id="stat-avg-pages">&mdash;</p> </div> </div> <!-- Two-column: Top Events + Top Landing Pages --> <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <h2 class="text-lg font-semibold mb-4">Top hændelser</h2> <table class="w-full text-sm"> <thead> <tr class="text-left text-gray-500 border-b"> <th class="pb-2">Hændelse</th> <th class="pb-2">Type</th> <th class="pb-2 text-right">Antal</th> </tr> </thead> <tbody id="table-top-events"></tbody> </table> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <h2 class="text-lg font-semibold mb-4">Top landingssider</h2> <table class="w-full text-sm"> <thead> <tr class="text-left text-gray-500 border-b"> <th class="pb-2">Side</th> <th class="pb-2 text-right">Sessioner</th> </tr> </thead> <tbody id="table-top-pages"></tbody> </table> </div> </div> <!-- Recent events --> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <h2 class="text-lg font-semibold mb-4">Seneste hændelser</h2> <div class="overflow-x-auto"> <table class="w-full text-sm"> <thead> <tr class="text-left text-gray-500 border-b"> <th class="pb-2">Type</th> <th class="pb-2">Navn</th> <th class="pb-2">Side</th> <th class="pb-2">Tidspunkt</th> </tr> </thead> <tbody id="table-recent-events"></tbody> </table> </div> </div> </div> <script>
+</button> <div class="flex-1"></div> <span id="admin-email" class="text-sm text-gray-500"></span> </header> <!-- Page content --> <main class="flex-1 p-6">   <div id="loading" class="text-center py-12 text-gray-500">Henter data...</div>  <div id="error" class="hidden text-center py-12"> <p class="text-red-600 mb-4" id="error-text"></p> <button onclick="window.location.reload()" class="text-blue-600 underline">Prøv igen</button> </div>  <div id="dashboard" class="hidden"> <h1 class="text-2xl font-bold mb-6">Oversigt</h1> <!-- Settings overview: Pages + Global --> <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <div class="flex items-center justify-between mb-4"> <h2 class="text-lg font-semibold text-gray-900">Sider</h2> <a href="/admin/pages/" class="text-sm text-blue-600 hover:underline">Rediger →</a> </div> <div id="settings-pages" class="space-y-2 text-sm"> <p class="text-gray-500">Henter...</p> </div> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <div class="flex items-center justify-between mb-4"> <h2 class="text-lg font-semibold text-gray-900">Globale indstillinger</h2> <a href="/admin/styling/" class="text-sm text-blue-600 hover:underline">Rediger →</a> </div> <div id="settings-global" class="space-y-2 text-sm"> <p class="text-gray-500">Henter...</p> </div> </div> </div> <!-- Metric cards --> <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <p class="text-sm text-gray-500 mb-1">Hændelser i alt</p> <p class="text-3xl font-bold" id="stat-events-total">&mdash;</p> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <p class="text-sm text-gray-500 mb-1">Hændelser i dag</p> <p class="text-3xl font-bold" id="stat-events-today">&mdash;</p> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <p class="text-sm text-gray-500 mb-1">Sessioner i alt</p> <p class="text-3xl font-bold" id="stat-sessions-total">&mdash;</p> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <p class="text-sm text-gray-500 mb-1">Gns. sider pr. session</p> <p class="text-3xl font-bold" id="stat-avg-pages">&mdash;</p> </div> </div> <!-- Two-column: Top Events + Top Landing Pages --> <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <h2 class="text-lg font-semibold mb-4">Top hændelser</h2> <table class="w-full text-sm"> <thead> <tr class="text-left text-gray-500 border-b"> <th class="pb-2">Hændelse</th> <th class="pb-2">Type</th> <th class="pb-2 text-right">Antal</th> </tr> </thead> <tbody id="table-top-events"></tbody> </table> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <h2 class="text-lg font-semibold mb-4">Top landingssider</h2> <table class="w-full text-sm"> <thead> <tr class="text-left text-gray-500 border-b"> <th class="pb-2">Side</th> <th class="pb-2 text-right">Sessioner</th> </tr> </thead> <tbody id="table-top-pages"></tbody> </table> </div> </div> <!-- Recent events --> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <h2 class="text-lg font-semibold mb-4">Seneste hændelser</h2> <div class="overflow-x-auto"> <table class="w-full text-sm"> <thead> <tr class="text-left text-gray-500 border-b"> <th class="pb-2">Type</th> <th class="pb-2">Navn</th> <th class="pb-2">Side</th> <th class="pb-2">Tidspunkt</th> </tr> </thead> <tbody id="table-recent-events"></tbody> </table> </div> </div> </div> <script>
   (function() {
     var API = 'https://api.lavprishjemmeside.dk';
     var token = localStorage.getItem('admin_token');
@@ -59,11 +59,50 @@ Log ud
 
     Promise.all([
       authFetch(API + '/events/summary'),
-      authFetch(API + '/sessions/summary')
+      authFetch(API + '/sessions/summary'),
+      authFetch(API + '/design-settings/').catch(function() { return null; }),
+      authFetch(API + '/page-components?page=all').catch(function() { return []; })
     ])
     .then(function(results) {
       var events = results[0];
       var sessions = results[1];
+      var designSettings = results[2];
+      var pageComponents = results[3] || [];
+
+      // Settings: Pages (group by page_path)
+      var pageGroups = {};
+      pageComponents.forEach(function(pc) {
+        var path = (pc.page_path || '/').trim();
+        if (!pageGroups[path]) pageGroups[path] = { total: 0, published: 0 };
+        pageGroups[path].total++;
+        if (pc.is_published) pageGroups[path].published++;
+      });
+      var pagesHtml = '';
+      var paths = Object.keys(pageGroups).sort();
+      if (paths.length === 0) {
+        pagesHtml = '<p class="text-gray-500">Ingen sider endnu. <a href="/admin/ai-assemble/" class="text-blue-600 hover:underline">Opret side</a></p>';
+      } else {
+        paths.forEach(function(path) {
+          var g = pageGroups[path];
+          var pub = g.published === g.total ? '<span class="text-green-600">●</span>' : '<span class="text-amber-500">○</span>';
+          pagesHtml += '<div class="flex justify-between py-1 border-b border-gray-100 last:border-0">'
+            + '<span class="font-mono text-xs">' + esc(path) + '</span>'
+            + '<span>' + pub + ' ' + g.published + '/' + g.total + ' komp.</span></div>';
+        });
+      }
+      document.getElementById('settings-pages').innerHTML = pagesHtml;
+
+      // Settings: Global (design)
+      var globalHtml = '';
+      if (designSettings) {
+        globalHtml = '<div class="flex items-center gap-2 py-1"><span class="w-4 h-4 rounded border border-gray-300" style="background:' + esc(designSettings.color_primary || '#2563EB') + '"></span><span>Primær: ' + esc(designSettings.color_primary || '—') + '</span></div>'
+          + '<div class="py-1">Font: ' + esc(designSettings.font_heading || designSettings.font_body || '—') + '</div>'
+          + '<div class="py-1">Kantradius: ' + esc(designSettings.border_radius || '—') + '</div>'
+          + '<div class="py-1">Skygge: ' + esc(designSettings.shadow_style || '—') + '</div>';
+      } else {
+        globalHtml = '<p class="text-gray-500">Kunne ikke hente. <a href="/admin/styling/" class="text-blue-600 hover:underline">Åbn styling</a></p>';
+      }
+      document.getElementById('settings-global').innerHTML = globalHtml;
 
       // Metric cards
       document.getElementById('stat-events-total').textContent = events.total.toLocaleString('da-DK');
