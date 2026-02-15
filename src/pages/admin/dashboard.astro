@@ -146,6 +146,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           window.location.href = '/admin/';
           throw new Error('Unauthorized');
         }
+        if (res.status === 503) {
+          throw new Error('503 Service Unavailable — API-serveren er utilgængelig. Genstart Node.js på serveren (touch api/tmp/restart.txt).');
+        }
+        if (!res.ok) {
+          throw new Error('HTTP ' + res.status + ' — ' + res.statusText);
+        }
         return res.json();
       });
     }
@@ -264,7 +270,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     .catch(function(err) {
       if (err.message === 'Unauthorized') return;
       document.getElementById('loading').classList.add('hidden');
-      document.getElementById('error-text').textContent = 'Kunne ikke hente data: ' + err.message;
+      var msg = err.message === 'Failed to fetch'
+        ? 'Kunne ikke forbinde til API (api.lavprishjemmeside.dk). Tjek om serveren kører.'
+        : (err.message.indexOf('503') >= 0 ? err.message : 'Kunne ikke hente data: ' + err.message);
+      document.getElementById('error-text').textContent = msg;
       document.getElementById('error').classList.remove('hidden');
     });
 
