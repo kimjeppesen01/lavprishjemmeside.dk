@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Page Builder — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.CWEj0ZM5.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Page Builder — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.BP3CogwP.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -82,14 +82,29 @@ Tilføj
       const pages = [...new Set(allPageComponents.map(pc => pc.page_path))];
 
       pages.forEach(page => {
+        const container = document.createElement('div');
+        container.className = 'flex items-stretch gap-2';
+
         const btn = document.createElement('button');
-        btn.className = 'w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors';
+        btn.className = 'flex-1 text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors';
         btn.innerHTML = `
           <div class="font-medium text-gray-900">${escapeHtml(page || '/ (Startside)')}</div>
           <div class="text-xs text-gray-500 mt-1">${allPageComponents.filter(pc => pc.page_path === page).length} komponent(er)</div>
         `;
         btn.addEventListener('click', () => selectPage(page));
-        pagesList.appendChild(btn);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'px-3 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-lg text-sm transition-colors';
+        deleteBtn.innerHTML = '🗑';
+        deleteBtn.title = 'Slet side';
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deletePage(page);
+        });
+
+        container.appendChild(btn);
+        container.appendChild(deleteBtn);
+        pagesList.appendChild(container);
       });
 
       // Auto-select first page
@@ -306,6 +321,44 @@ Tilføj
         const btn = document.getElementById('publish-btn');
         btn.disabled = false;
         btn.textContent = 'Publicer side';
+      }
+    };
+
+    // Delete entire page
+    window.deletePage = async function(page) {
+      const componentCount = allPageComponents.filter(pc => pc.page_path === page).length;
+      const pageName = page || '/ (Startside)';
+
+      if (!confirm(`Slet hele siden "${pageName}"?\n\nDette vil slette ${componentCount} komponent(er) permanent.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(API + '/page-components/delete-page', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ page_path: page })
+        });
+
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Fejl ved sletning');
+        }
+
+        const result = await res.json();
+
+        // Remove deleted components from local state
+        allPageComponents = allPageComponents.filter(pc => pc.page_path !== page);
+
+        // Re-render pages list
+        renderPages();
+
+        alert(`✓ Side slettet: ${result.deleted_count} komponent(er) fjernet`);
+      } catch (err) {
+        alert('Fejl: ' + err.message);
       }
     };
 
