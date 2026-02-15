@@ -38,7 +38,7 @@ const embedUrl = videoId
   <div class="mx-auto max-w-[var(--container-max-width)]">
     {title && (
       <h2
-        id="video-heading"
+        id={`video-heading-${Astro.props.instanceId ?? 'default'}`}
         class="mb-4 text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)]"
         style="font-family: var(--font-heading)"
       >

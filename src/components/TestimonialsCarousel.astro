@@ -20,7 +20,7 @@ const { headline, testimonials } = Astro.props;
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
     <h2
-      id="testimonials-heading"
+      id={`testimonials-heading-${Astro.props.instanceId ?? 'default'}`}
       class="text-center text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
       style="font-family: var(--font-heading)"
     >

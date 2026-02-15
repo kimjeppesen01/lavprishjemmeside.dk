@@ -13,16 +13,18 @@ const {
   placeholder = 'Din e-mail',
   buttonText = 'Tilmeld',
   privacyText = 'Vi deler aldrig din e-mail med tredjeparter. Du kan afmelde dig når som helst.',
+  instanceId = 'default',
 } = Astro.props;
+const headingId = `newsletter-heading-${instanceId}`;
 ---
 
 <section
   class="py-[var(--section-padding-y)] px-[var(--container-padding-x)] bg-[var(--color-bg-section-alt)]"
-  aria-labelledby="newsletter-heading"
+  aria-labelledby={headingId}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
     <h2
-      id="newsletter-heading"
+      id={headingId}
       class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
       style="font-family: var(--font-heading)"
     >
@@ -37,17 +39,17 @@ const {
       </p>
     )}
     <form
-      id="newsletter-form"
+      id={`newsletter-form-${instanceId}`}
       class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center"
       method="post"
       action="/api/newsletter"
     >
-      <label for="newsletter-email" class="sr-only">
+      <label for={`newsletter-email-${instanceId}`} class="sr-only">
         {placeholder}
       </label>
       <input
         type="email"
-        id="newsletter-email"
+        id={`newsletter-email-${instanceId}`}
         name="email"
         required
         placeholder={placeholder}

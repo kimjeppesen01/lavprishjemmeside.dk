@@ -242,6 +242,8 @@ const pageTitle = pageComponents[0]?.content?.headline ||
 
     // Normalize props to handle AI-generated mismatches
     const normalizedProps = normalizeProps(pc.slug, pc.content || {});
+    // Unique instance id to avoid duplicate HTML ids when same component appears multiple times
+    normalizedProps.instanceId = pc.id;
 
     try {
       return <Component {...normalizedProps} />;

@@ -31,11 +31,20 @@ router.get('/', requireAuth, async (req, res) => {
 
     const [rows] = await pool.execute(query, params);
 
-    // Parse JSON content field
-    const components = rows.map(row => ({
-      ...row,
-      content: JSON.parse(row.content)
-    }));
+    // Parse JSON content field (resilient to invalid JSON)
+    const components = rows.map(row => {
+      let content = {};
+      try {
+        content = row.content ? JSON.parse(row.content) : {};
+      } catch (e) {
+        console.warn(`Invalid content JSON for page_component id=${row.id}:`, e.message);
+      }
+      return {
+        ...row,
+        page_path: (row.page_path || '').trim(),
+        content,
+      };
+    });
 
     res.json(components);
   } catch (error) {
@@ -76,11 +85,20 @@ router.get('/public', async (req, res) => {
 
     const [rows] = await pool.execute(query, params);
 
-    // Parse JSON content field
-    const components = rows.map(row => ({
-      ...row,
-      content: JSON.parse(row.content)
-    }));
+    // Parse JSON content field (resilient to invalid JSON)
+    const components = rows.map(row => {
+      let content = {};
+      try {
+        content = row.content ? JSON.parse(row.content) : {};
+      } catch (e) {
+        console.warn(`Invalid content JSON for page_component id=${row.id}:`, e.message);
+      }
+      return {
+        ...row,
+        page_path: (row.page_path || '').trim(),
+        content,
+      };
+    });
 
     res.json(components);
   } catch (error) {

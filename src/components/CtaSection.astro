@@ -52,7 +52,7 @@ const buttonClass =
     >
       <div class={layout === 'split' ? 'flex-1' : ''}>
         <h2
-          id="cta-heading"
+          id={`cta-heading-${Astro.props.instanceId ?? 'default'}`}
           class={`text-[var(--font-size-2xl)] font-bold md:text-[var(--font-size-3xl)] ${textClass}`}
           style="font-family: var(--font-heading)"
         >

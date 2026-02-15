@@ -3,18 +3,20 @@ interface Props {
   headline: string;
   faqs: Array<{ question: string; answer: string }>;
   defaultOpen?: number;
+  instanceId?: string | number;
 }
 
-const { headline, faqs, defaultOpen = 0 } = Astro.props;
+const { headline, faqs, defaultOpen = 0, instanceId = 'default' } = Astro.props;
+const headingId = `faq-heading-${instanceId}`;
 ---
 
 <section
   class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
-  aria-labelledby="faq-heading"
+  aria-labelledby={headingId}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
     <h2
-      id="faq-heading"
+      id={headingId}
       class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
       style="font-family: var(--font-heading)"
     >

@@ -5,6 +5,7 @@ interface Props {
   imageUrl: string;
   imagePosition?: 'left' | 'right';
   backgroundColor?: 'default' | 'alt';
+  instanceId?: string | number;
 }
 
 const {
@@ -13,8 +14,10 @@ const {
   imageUrl,
   imagePosition = 'right',
   backgroundColor = 'default',
+  instanceId = 'default',
 } = Astro.props;
 
+const headingId = `split-heading-${instanceId}`;
 const bgClass =
   backgroundColor === 'alt'
     ? 'bg-[var(--color-bg-section-alt)]'
@@ -23,7 +26,7 @@ const bgClass =
 
 <section
   class={`py-[var(--section-padding-y)] px-[var(--container-padding-x)] ${bgClass}`}
-  aria-labelledby="split-heading"
+  aria-labelledby={headingId}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
@@ -37,7 +40,7 @@ const bgClass =
               loading="lazy"
             />
           </div>
-          <div id="split-heading" class="order-1 flex flex-col justify-center lg:order-2">
+          <div id={headingId} class="order-1 flex flex-col justify-center lg:order-2">
             <h2
               class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
               style="font-family: var(--font-heading)"
@@ -53,7 +56,7 @@ const bgClass =
         </>
       ) : (
         <>
-          <div id="split-heading" class="flex flex-col justify-center">
+          <div id={headingId} class="flex flex-col justify-center">
             <h2
               class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
               style="font-family: var(--font-heading)"

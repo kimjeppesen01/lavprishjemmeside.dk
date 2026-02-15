@@ -22,7 +22,7 @@ function renderCell(value: string | boolean | null): string {
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
     <h2
-      id="comparison-heading"
+      id={`comparison-heading-${Astro.props.instanceId ?? 'default'}`}
       class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
       style="font-family: var(--font-heading)"
     >
