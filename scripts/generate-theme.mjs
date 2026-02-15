@@ -91,13 +91,25 @@ async function generateTheme() {
     fs.writeFileSync(FEATURES_FILE, JSON.stringify(features, null, 2), 'utf-8');
     console.log(`✓ Generated ${FEATURES_FILE}`);
 
-    const hfRes = await fetch(`${API_URL}/header-footer/public`);
+    let hfRes;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      hfRes = await fetch(`${API_URL}/header-footer/public`);
+      if (hfRes.ok) break;
+      if (attempt < 3) {
+        console.warn(`⚠ header-footer/public returned ${hfRes.status}, retrying (${attempt}/3)...`);
+        await new Promise((r) => setTimeout(r, 2000 * attempt));
+      }
+    }
+    const hfDir = path.dirname(HEADER_FOOTER_FILE);
+    if (!fs.existsSync(hfDir)) fs.mkdirSync(hfDir, { recursive: true });
     if (hfRes.ok) {
       const hf = await hfRes.json();
-      const hfDir = path.dirname(HEADER_FOOTER_FILE);
-      if (!fs.existsSync(hfDir)) fs.mkdirSync(hfDir, { recursive: true });
       fs.writeFileSync(HEADER_FOOTER_FILE, JSON.stringify(hf, null, 2), 'utf-8');
-      console.log(`✓ Generated ${HEADER_FOOTER_FILE}`);
+      console.log(`✓ Generated ${HEADER_FOOTER_FILE} (layout: ${hf.header_layout ?? 'regular'})`);
+    } else {
+      console.warn(`⚠ header-footer/public returned ${hfRes.status}, using defaults`);
+      fs.writeFileSync(HEADER_FOOTER_FILE, JSON.stringify(DEFAULT_HEADER_FOOTER, null, 2), 'utf-8');
+      console.log(`✓ Generated ${HEADER_FOOTER_FILE} (with defaults)`);
     }
   } catch (error) {
     console.warn('⚠ API fetch failed, using defaults:', error.message);
