@@ -163,14 +163,18 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     }
 
     Promise.all([
-      authFetch(API + '/events/summary'),
-      authFetch(API + '/sessions/summary'),
+      authFetch(API + '/events/summary').catch(function() {
+        return { total: 0, today: 0, top_events: [], recent: [] };
+      }),
+      authFetch(API + '/sessions/summary').catch(function() {
+        return { total: 0, today: 0, avg_pages: 0, top_pages: [], recent: [] };
+      }),
       authFetch(API + '/design-settings/').catch(function() { return null; }),
       authFetch(API + '/page-components?page=all').catch(function() { return []; })
     ])
     .then(function(results) {
-      var events = results[0];
-      var sessions = results[1];
+      var events = results[0] || { total: 0, today: 0, top_events: [], recent: [] };
+      var sessions = results[1] || { total: 0, today: 0, avg_pages: 0, top_pages: [], recent: [] };
       var designSettings = results[2];
       var pageComponents = results[3] || [];
 
@@ -215,14 +219,14 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       document.getElementById('settings-global').innerHTML = globalHtml;
 
       // Metric cards
-      document.getElementById('stat-events-total').textContent = events.total.toLocaleString('da-DK');
-      document.getElementById('stat-events-today').textContent = events.today.toLocaleString('da-DK');
-      document.getElementById('stat-sessions-total').textContent = sessions.total.toLocaleString('da-DK');
-      document.getElementById('stat-avg-pages').textContent = sessions.avg_pages;
+      document.getElementById('stat-events-total').textContent = (events.total || 0).toLocaleString('da-DK');
+      document.getElementById('stat-events-today').textContent = (events.today || 0).toLocaleString('da-DK');
+      document.getElementById('stat-sessions-total').textContent = (sessions.total || 0).toLocaleString('da-DK');
+      document.getElementById('stat-avg-pages').textContent = sessions.avg_pages != null ? sessions.avg_pages : '—';
 
       // Top events
       var html = '';
-      events.top_events.forEach(function(ev) {
+      (events.top_events || []).forEach(function(ev) {
         html += '<tr class="border-b border-gray-100">'
           + '<td class="py-2">' + esc(ev.event_name) + '</td>'
           + '<td class="py-2"><span class="inline-block px-2 py-0.5 rounded text-xs bg-gray-100">' + esc(ev.event_type) + '</span></td>'
@@ -233,7 +237,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
       // Top landing pages
       html = '';
-      sessions.top_pages.forEach(function(p) {
+      (sessions.top_pages || []).forEach(function(p) {
         html += '<tr class="border-b border-gray-100">'
           + '<td class="py-2 font-mono text-xs">' + esc(p.first_page) + '</td>'
           + '<td class="py-2 text-right font-medium">' + p.count + '</td>'
@@ -243,7 +247,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
       // Recent events
       html = '';
-      events.recent.forEach(function(ev) {
+      (events.recent || []).forEach(function(ev) {
         html += '<tr class="border-b border-gray-100">'
           + '<td class="py-2"><span class="inline-block px-2 py-0.5 rounded text-xs bg-gray-100">' + esc(ev.event_type) + '</span></td>'
           + '<td class="py-2">' + esc(ev.event_name) + '</td>'
