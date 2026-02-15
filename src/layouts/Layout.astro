@@ -1,6 +1,8 @@
 ---
 import '../styles/global.css';
 import Tracker from '../components/Tracker.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
 import designFeatures from '../data/design-features.json';
 
 interface Props {
@@ -107,7 +109,9 @@ const allSchemas = [...baseSchemas, ...schemaMarkup];
     )}
     {designFeatures.grainOverlay && <div class="grain-overlay" aria-hidden="true"></div>}
 
+    <Header />
     <slot />
+    <Footer />
     <Tracker />
 
     {designFeatures.pageLoader && (
