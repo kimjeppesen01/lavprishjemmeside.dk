@@ -4,8 +4,7 @@ const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { aiRateLimiter } = require('../middleware/rateLimit');
 const { generatePageContent } = require('../services/anthropic');
-
-const API_BASE_URL = process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+const { buildAiContext } = require('../services/ai-context');
 
 // POST /page — Generate page content with AI
 router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
@@ -18,18 +17,9 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
       });
     }
 
-    // 1. Fetch dynamic context
-    console.log(`Fetching context from: ${API_BASE_URL}/ai/context`);
-    const contextResponse = await fetch(`${API_BASE_URL}/ai/context`, {
-      headers: { 'Authorization': req.headers.authorization }
-    });
-
-    console.log(`Context fetch status: ${contextResponse.status}`);
-    if (!contextResponse.ok) {
-      throw new Error(`Could not fetch AI context - HTTP ${contextResponse.status}`);
-    }
-
-    const context = await contextResponse.json();
+    // 1. Build AI context directly (no HTTP call needed)
+    console.log('Building AI context...');
+    const context = await buildAiContext();
 
     // 2. Call Anthropic API
     console.log('Generating page content with AI...');
