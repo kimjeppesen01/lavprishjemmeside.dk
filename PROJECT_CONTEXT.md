@@ -575,94 +575,43 @@ script: |
 
 ### Phase 7: AI Building Block Generator (Premium Feature)
 
-**Feature**: AI-powered component generator using OpenAI Vision API to convert design mockups into production-ready Tailwind HTML.
+> **Full Technical Specification**: See [PHASE_7_AI_GENERATOR_SPEC.md](PHASE_7_AI_GENERATOR_SPEC.md)
+
+**Feature**: AI-powered component generator using OpenAI Vision API (`gpt-4o`) to convert design mockups into production-ready, brand-aligned Tailwind HTML.
 
 **Location**: `/admin/byggeklodser` (Danish for "building blocks") - protected admin area
 
-**How it works**:
-1. Upload reference image (design mockup, screenshot, wireframe)
-2. Optionally provide unstyled HTML structure
-3. AI analyzes image + site's existing styling context
-4. Generates brand-aligned HTML using site's Tailwind utilities
-5. Copy code or save as new component template
+**Key Innovation**: Context Library (RAG for UI) - feeds the AI your actual design system to prevent generic output.
 
-**Technical Architecture**:
+**Core Value**:
+- Converts design mockups to code in seconds (vs hours manual coding)
+- Ensures brand consistency (uses site's actual colors/fonts, not generic Tailwind)
+- Reduces client onboarding time (quickly prototype from their designs)
+- Premium upsell opportunity (free tier → paid upgrade funnel)
 
-**Backend** (`api/src/routes/ai-generator.cjs`):
-```javascript
-// Dependencies: openai, multer (file uploads)
-POST /ai/generate-component
-- Accept image upload + optional HTML
-- Load Context Library (site's colors, components, patterns)
-- Call OpenAI Vision API (gpt-4o)
-- Return generated HTML
-```
+**Workflow**:
+1. Upload design mockup image + optional HTML structure
+2. Backend loads Context Library (colors, typography, component examples)
+3. OpenAI Vision API generates HTML using brand's design system
+4. HTML is sanitized and returned to frontend
+5. User previews in iframe, copies code, or saves as component template
 
-**Context Library** (`api/src/ai-context/`):
-```
-ai-context/
-├── colors-typography.md  # Tailwind v4 custom colors/fonts
-├── buttons.html          # Standard button examples
-├── cards.html            # Standard card examples
-└── ...                   # Other component examples
-```
-
-**Frontend** (`src/pages/admin/byggeklodser.astro`):
-- Image upload dropzone
-- Optional HTML input field
-- "Generate" button → calls API
-- Preview generated HTML
-- "Save as Component" → stores in components table
-- "Copy Code" → clipboard
-
-**AI Prompt Structure**:
-```
-You are a Tailwind CSS expert. Generate HTML for this design mockup.
-
-CONSTRAINTS:
-- Use ONLY these colors: {site colors from context}
-- Use ONLY these fonts: {site fonts from context}
-- Match this button style: {button examples from context}
-- Follow these patterns: {card examples from context}
-- Use Tailwind v4 utilities (NOT @apply directives)
-- Mobile-first responsive design
-- Semantic HTML
-
-REFERENCE IMAGE: [uploaded image]
-OPTIONAL HTML STRUCTURE: [user-provided HTML]
-
-OUTPUT: Production-ready HTML
-```
+**Architecture Highlights**:
+- **Backend**: Express route (`api/src/routes/ai-generator.cjs`) with Multer file upload
+- **Context Library**: `api/src/ai-context/` directory (colors-typography.md, buttons.html, cards.html, etc.)
+- **Frontend**: Astro page with drag-and-drop upload, preview/code tabs
+- **Security**: JWT auth, rate limiting (10/hour), HTML sanitization (DOMPurify), usage tracking
+- **Database**: New `ai_generations` table for quota enforcement and cost tracking
 
 **Monetization**:
-- **Free tier**: 5 generations/month
-- **Premium**: Unlimited generations ($X/month)
-- API usage billed separately (OpenAI costs pass-through)
+- Free tier: 5 generations/month
+- Premium: Unlimited generations
+- Cost per generation: ~$0.03 USD (OpenAI gpt-4o pricing)
 
-**File Additions**:
-```
-api/
-├── package.json                 # Add: openai, multer
-├── src/
-│   ├── ai-context/              # NEW: Context library
-│   │   ├── colors-typography.md
-│   │   ├── buttons.html
-│   │   └── cards.html
-│   └── routes/
-│       └── ai-generator.cjs     # NEW: OpenAI integration
-src/pages/admin/
-└── byggeklodser.astro           # NEW: Generator UI
-```
-
-**Security Considerations**:
-- Rate limit: 10 requests/hour per user
-- File upload limits: 5MB max, images only (jpg, png, webp)
-- Sanitize generated HTML before saving
-- Store OpenAI API key in environment variables
-- Log all generations to security_logs table
+**Implementation Checklist**: See full spec for detailed 3-week implementation plan with testing strategy
 
 **Future Enhancements**:
-- Multi-image upload (generate full page from multiple mockups)
-- Style transfer (apply one component's style to another)
-- A/B testing variants (generate 3 variations of same design)
-- Export to Figma/Sketch (reverse direction)
+- Multi-image upload (generate full pages)
+- Style transfer between components
+- A/B testing variants
+- Export to Figma/Sketch
