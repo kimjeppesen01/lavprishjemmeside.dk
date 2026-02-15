@@ -92,7 +92,9 @@ const allSchemas = [...baseSchemas, ...schemaMarkup];
       gtag('config', 'G-GWCL1R11WP');
     </script>
   </head>
-  <body class="min-h-screen flex flex-col bg-white text-gray-900 antialiased">
+  <body
+  class:list={['min-h-screen flex flex-col bg-white text-gray-900 antialiased', designFeatures.borderRadius === 'full' && 'radius-full']}
+>
     {designFeatures.pageLoader && (
     <div id="page-loader" class="page-loader" aria-hidden="true">
       <div class="flex flex-col items-center gap-4">

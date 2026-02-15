@@ -36,7 +36,7 @@ const colClass =
     <div class={`mt-12 grid grid-cols-1 gap-6 ${colClass}`}>
       {cards.map((card) => (
         <article
-          class="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-6 shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--color-primary)]/30"
+          class="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-[var(--card-padding-lg)] shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--color-primary)]/30"
         >
           <div class="text-2xl text-[var(--color-primary)]" aria-hidden="true">
             {card.icon}

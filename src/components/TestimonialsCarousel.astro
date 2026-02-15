@@ -35,7 +35,7 @@ const { headline = 'Anmeldelser', testimonials = [], instanceId = 'default' } = 
     >
       {testimonials.map((t, i) => (
         <article
-          class="min-w-[85vw] shrink-0 snap-center rounded-[var(--radius-card)] bg-[var(--color-bg-page)] p-6 shadow-[var(--shadow-card)] md:min-w-[45vw] lg:min-w-[calc(var(--container-max-width)/3-1rem)]"
+          class="min-w-[85vw] shrink-0 snap-center rounded-[var(--radius-card)] bg-[var(--color-bg-page)] p-[var(--card-padding-lg)] shadow-[var(--shadow-card)] md:min-w-[45vw] lg:min-w-[calc(var(--container-max-width)/3-1rem)]"
           aria-roledescription="slide"
           aria-label={`Tilfredshed ${i + 1} af ${testimonials.length}`}
         >

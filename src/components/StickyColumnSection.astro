@@ -55,10 +55,10 @@ const defaultItems = items.length > 0 ? items : [
       )}
     </aside>
 
-    <div class="md:col-span-8 grid sm:grid-cols-2 gap-6">
+    <div class="md:col-span-8 grid grid-cols-1 gap-6">
       {defaultItems.map((item) => (
         <article
-          class="flex items-start gap-4 border border-[var(--color-border)] rounded-[var(--radius-card)] shadow-[var(--shadow-sm)] p-5 bg-[var(--color-bg-page)] hover:shadow-[var(--shadow-md)] transition-shadow duration-300"
+          class="flex items-start gap-4 border border-[var(--color-border)] rounded-[var(--radius-card)] shadow-[var(--shadow-sm)] p-[var(--card-padding)] bg-[var(--color-bg-page)] hover:shadow-[var(--shadow-md)] transition-shadow duration-300"
         >
           <figure class="w-14 h-14 shrink-0">
             <img

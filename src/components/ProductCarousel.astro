@@ -38,12 +38,12 @@ const defaultSlides = slides.length > 0 ? slides : [
   <div class="overflow-hidden h-full">
     <ul id="product-carousel-wrapper" class="flex h-full gap-8 md:gap-12 pl-4 md:pl-8">
       {defaultSlides.map((slide) => (
-        <li class="product-carousel-slide flex-none w-[75vw] md:w-[60vw] h-full shrink-0 transition-transform duration-300">
+        <li class="product-carousel-slide flex-none w-[52vw] md:w-[38vw] h-full shrink-0 transition-transform duration-500">
           <figure class="w-full h-full overflow-hidden rounded-[var(--radius-card)] shadow-[var(--shadow-card)]">
             <img
               src={slide.img}
               alt={slide.alt ?? slide.caption ?? 'Produkt'}
-              class="w-full h-full object-cover transition-transform duration-300"
+              class="product-carousel-img w-full h-full object-cover transition-transform duration-500"
               loading="lazy"
               decoding="async"
             />
@@ -88,15 +88,16 @@ const defaultSlides = slides.length > 0 ? slides : [
     });
 
     slides.forEach((slide) => {
+      const img = slide.querySelector('.product-carousel-img');
       ScrollTrigger.create({
         trigger: slide,
         containerAnimation: scrollTween,
         start: 'center center',
         end: '+=200',
-        onEnter: () => slide.classList.add('scale-[1.03]'),
-        onLeaveBack: () => slide.classList.remove('scale-[1.03]'),
-        onLeave: () => slide.classList.remove('scale-[1.03]'),
-        onEnterBack: () => slide.classList.add('scale-[1.03]'),
+        onEnter: () => { if (img) img.style.transform = 'scale(1.18)'; },
+        onLeaveBack: () => { if (img) img.style.transform = ''; },
+        onLeave: () => { if (img) img.style.transform = ''; },
+        onEnterBack: () => { if (img) img.style.transform = 'scale(1.18)'; },
       });
     });
   }

@@ -86,6 +86,7 @@ async function generateTheme() {
       pageLoaderText: String(tokens.page_loader_text ?? 'Indlæser...').slice(0, 100),
       pageLoaderShowLogo: (tokens.page_loader_show_logo ?? 1) !== 0,
       pageLoaderDuration: Math.min(3, Math.max(0.5, parseFloat(tokens.page_loader_duration) || 2.5)),
+      borderRadius: String(tokens.border_radius ?? 'medium'),
     };
     const featuresDir = path.dirname(FEATURES_FILE);
     if (!fs.existsSync(featuresDir)) fs.mkdirSync(featuresDir, { recursive: true });
@@ -125,6 +126,7 @@ async function generateTheme() {
       pageLoaderText: 'Indlæser...',
       pageLoaderShowLogo: true,
       pageLoaderDuration: 2.5,
+      borderRadius: 'medium',
     };
     const featuresDir = path.dirname(FEATURES_FILE);
     if (!fs.existsSync(featuresDir)) fs.mkdirSync(featuresDir, { recursive: true });
@@ -181,14 +183,14 @@ function buildCSS(tokens) {
       input: '0.75rem',
     },
     full: {
-      sm: '9999px',
-      md: '9999px',
-      lg: '9999px',
-      xl: '9999px',
+      sm: '1.5rem',
+      md: '3rem',
+      lg: '3rem',
+      xl: '3rem',
       full: '9999px',
-      button: '9999px',
-      card: '9999px',
-      input: '9999px',
+      button: '3rem',
+      card: '3rem',
+      input: '3rem',
     },
   };
 
@@ -291,7 +293,9 @@ function buildCSS(tokens) {
   --section-padding-y: 4rem;
   --section-padding-y-lg: 6rem;
   --container-max-width: 80rem;
-  --container-padding-x: 1.5rem;
+  --container-padding-x: ${tokens.border_radius === 'full' ? '2rem' : '1.5rem'};
+  --card-padding: ${tokens.border_radius === 'full' ? '1.5rem' : '1.25rem'};
+  --card-padding-lg: ${tokens.border_radius === 'full' ? '1.75rem' : '1.5rem'};
 }
 `;
 }

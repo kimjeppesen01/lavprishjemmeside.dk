@@ -34,3 +34,12 @@ html.smooth-scroll {
   opacity: 0;
   visibility: hidden;
 }
+
+/* When radius is full: center card content, avoid text slipping into corners */
+.radius-full article[class*="rounded-[var(--radius-card)]"] {
+  text-align: center;
+}
+.radius-full article.flex[class*="rounded-[var(--radius-card)]"] {
+  flex-direction: column;
+  align-items: center;
+}

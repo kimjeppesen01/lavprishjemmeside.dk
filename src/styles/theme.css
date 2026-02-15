@@ -1,11 +1,11 @@
 /* ===== DESIGN TOKENS ===== */
 /* Generated at build time from database */
 /* Source: https://api.lavprishjemmeside.dk/design-settings/public */
-/* Last updated: 2026-02-15T14:01:37.314Z */
+/* Last updated: 2026-02-15T20:43:49.726Z */
 
 :root {
   /* --- Brand Colors --- */
-  --color-primary: #2563eb;
+  --color-primary: #007ab8;
   --color-primary-hover: #1d4ed8;
   --color-primary-light: #dbeafe;
   --color-secondary: #7c3aed;
@@ -45,25 +45,27 @@
   --line-height-tight: 1.15;
   --line-height-normal: 1.6;
 
-  /* --- Shapes (border radius: medium) --- */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  /* --- Shapes (border radius: full) --- */
+  --radius-sm: 1.5rem;
+  --radius-md: 3rem;
+  --radius-lg: 3rem;
+  --radius-xl: 3rem;
   --radius-full: 9999px;
-  --radius-button: 0.5rem;
-  --radius-card: 0.75rem;
-  --radius-input: 0.5rem;
+  --radius-button: 3rem;
+  --radius-card: 3rem;
+  --radius-input: 3rem;
 
-  /* --- Shadows (style: subtle) --- */
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
-  --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.1);
+  /* --- Shadows (style: medium) --- */
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow-md: 0 8px 12px -2px rgba(0,0,0,0.15);
+  --shadow-lg: 0 16px 24px -4px rgba(0,0,0,0.15);
+  --shadow-card: 0 8px 12px -2px rgba(0,0,0,0.15);
 
   /* --- Spacing (consistent section padding) --- */
   --section-padding-y: 4rem;
   --section-padding-y-lg: 6rem;
   --container-max-width: 80rem;
-  --container-padding-x: 1.5rem;
+  --container-padding-x: 2rem;
+  --card-padding: 1.5rem;
+  --card-padding-lg: 1.75rem;
 }

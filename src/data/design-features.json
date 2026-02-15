@@ -4,6 +4,7 @@
   "pageLoader": true,
   "stickyHeader": true,
   "pageLoaderText": "Indlæser...",
-  "pageLoaderShowLogo": true,
-  "pageLoaderDuration": 2.5
+  "pageLoaderShowLogo": false,
+  "pageLoaderDuration": 2.5,
+  "borderRadius": "full"
 }
