@@ -89,13 +89,33 @@ function normalizeProps(slug: string, rawProps: any): any {
       break;
 
     case 'comparison-table':
-      // AI might use different structure - normalize to expected format
-      if (props.columns && props.rows) {
-        // Convert column-based structure to row-based
-        const products = props.columns.map((col: any) => col.name || col.title || '');
+      // AI uses features: [{category, items: [{name, col1, col2, col3}]}] — convert to products/features/data
+      if (Array.isArray(props.features) && props.features[0]?.items) {
+        const columnKeys = Object.keys(props.features[0].items[0] || {}).filter((k) => k !== 'name');
+        const products = columnKeys.map((k) => k.charAt(0).toUpperCase() + k.slice(1));
         const features: string[] = [];
         const data: (string | boolean | null)[][] = [];
 
+        props.features.forEach((group: any) => {
+          (group.items || []).forEach((item: any) => {
+            features.push(item.name || '');
+            const rowData = columnKeys.map((key) => {
+              const val = item[key];
+              if (val === true || val === 'yes' || val === 'true') return true;
+              if (val === false || val === 'no' || val === 'false') return false;
+              return val != null ? String(val) : null;
+            });
+            data.push(rowData);
+          });
+        });
+
+        props.products = products;
+        props.features = features;
+        props.data = data;
+      } else if (props.columns && props.rows) {
+        const products = props.columns.map((col: any) => col.name || col.title || '');
+        const features: string[] = [];
+        const data: (string | boolean | null)[][] = [];
         if (Array.isArray(props.rows)) {
           props.rows.forEach((row: any) => {
             if (row.feature || row.name) {
@@ -110,19 +130,39 @@ function normalizeProps(slug: string, rawProps: any): any {
             }
           });
         }
-
         props.products = products;
         props.features = features;
         props.data = data;
         delete props.columns;
         delete props.rows;
       }
-      // Ensure required props exist
       if (!Array.isArray(props.products)) props.products = [];
       if (!Array.isArray(props.features)) props.features = [];
       if (!Array.isArray(props.data)) props.data = [];
-      if (!props.headline) {
-        props.headline = 'Sammenlign';
+      if (!props.headline) props.headline = 'Sammenlign';
+      break;
+
+    case 'testimonials-carousel':
+      if (Array.isArray(props.testimonials)) {
+        props.testimonials = props.testimonials.map((t: any) => ({
+          quote: t.quote ?? t.content ?? '',
+          author: t.author ?? '',
+          role: t.role ?? '',
+          company: t.company ?? '',
+          photo: t.photo ?? t.avatar,
+          rating: t.rating,
+        }));
+      }
+      if (!props.headline) props.headline = 'Anmeldelser';
+      break;
+
+    case 'stats-banner':
+      if (Array.isArray(props.stats)) {
+        props.stats = props.stats.map((s: any) => ({
+          value: s.value ?? s.number ?? '',
+          label: s.label ?? '',
+          icon: s.icon,
+        }));
       }
       break;
 
