@@ -95,7 +95,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   <script is:inline>
   (function() {
     const API = 'https://api.lavprishjemmeside.dk';
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('admin_token');
 
     if (!token) {
       window.location.href = '/admin/';
@@ -120,7 +120,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
         if (!pagesRes.ok || !componentsRes.ok) {
           if (pagesRes.status === 401 || componentsRes.status === 401) {
-            localStorage.removeItem('token');
+            localStorage.removeItem('admin_token');
             window.location.href = '/admin/';
             return;
           }

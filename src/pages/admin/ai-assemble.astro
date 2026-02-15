@@ -125,7 +125,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   <script is:inline>
   (function() {
     const API = 'https://api.lavprishjemmeside.dk';
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('admin_token');
 
     if (!token) {
       window.location.href = '/admin/';
