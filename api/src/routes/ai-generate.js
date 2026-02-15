@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { aiRateLimiter } = require('../middleware/rateLimit');
-const { generatePageContent } = require('../services/anthropic');
+const { generatePageContent, generatePageContentAdvanced } = require('../services/anthropic');
 const { buildAiContext } = require('../services/ai-context');
 
 // POST /page — Generate page content with AI
@@ -135,6 +135,85 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
     res.status(500).json({
       error: 'Kunne ikke generere sideindhold'
     });
+  }
+});
+
+// POST /page-advanced — Advanced flow: transform human-written markdown into components (PRO)
+router.post('/page-advanced', requireAuth, aiRateLimiter, async (req, res) => {
+  try {
+    const { page_path, content_markdown } = req.body;
+
+    if (!page_path || !content_markdown) {
+      return res.status(400).json({
+        error: 'page_path og content_markdown er påkrævet'
+      });
+    }
+
+    console.log('Building AI context for advanced flow...');
+    const context = await buildAiContext();
+
+    console.log('Generating page with Advanced (transformation) model...');
+    const { components, seo, usage } = await generatePageContentAdvanced(
+      String(content_markdown).trim(),
+      context
+    );
+    console.log(`✓ Advanced: Generated ${components.length} components`);
+
+    const componentIds = [];
+    for (const comp of components) {
+      const [componentRows] = await pool.execute(
+        'SELECT id FROM components WHERE slug = ?',
+        [comp.component_slug]
+      );
+      if (componentRows.length === 0) {
+        console.warn(`Component not found: ${comp.component_slug}`);
+        continue;
+      }
+      const [result] = await pool.execute(
+        `INSERT INTO page_components (page_path, component_id, content, sort_order, is_published, created_by)
+         VALUES (?, ?, ?, ?, 1, ?)`,
+        [(page_path || '').trim(), componentRows[0].id, JSON.stringify(comp.props_data), comp.sort_order || 0, req.user.id]
+      );
+      componentIds.push(result.insertId);
+    }
+
+    if (seo) {
+      try {
+        const schemaMarkup = buildSchemaMarkup(page_path, seo, components);
+        await pool.execute(
+          `INSERT INTO page_meta (page_path, meta_title, meta_description, schema_markup, created_by)
+           VALUES (?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE meta_title = VALUES(meta_title), meta_description = VALUES(meta_description), schema_markup = VALUES(schema_markup)`,
+          [(page_path || '').trim(), seo.meta_title || null, seo.meta_description || null, JSON.stringify(schemaMarkup), req.user.id]
+        );
+      } catch (metaErr) {
+        console.warn('Could not save page meta:', metaErr.message);
+      }
+    }
+
+    const totalTokens = usage.input_tokens + usage.output_tokens;
+    const cost = (totalTokens * 0.000003).toFixed(4);
+    await pool.execute(
+      `INSERT INTO ai_usage (user_id, operation, model, prompt_tokens, completion_tokens, total_tokens, cost_usd, output_metadata)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [req.user.id, 'page_assembly_advanced', usage.model, usage.input_tokens, usage.output_tokens, totalTokens, cost, JSON.stringify({ page_path, component_count: components.length })]
+    );
+
+    await pool.execute(
+      'INSERT INTO security_logs (action, ip_address, user_agent, user_id, details) VALUES (?, ?, ?, ?, ?)',
+      ['ai.page.generate.advanced', req.ip, req.headers['user-agent'], req.user.id, JSON.stringify({ page_path, components: componentIds.length })]
+    );
+
+    res.json({
+      ok: true,
+      page_path,
+      components: componentIds,
+      count: componentIds.length,
+      usage: { tokens: totalTokens, cost_usd: parseFloat(cost) }
+    });
+  } catch (error) {
+    console.error('Error in advanced generation:', error.message);
+    res.status(500).json({ error: 'Kunne ikke generere sideindhold' });
   }
 });
 

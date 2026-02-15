@@ -252,4 +252,151 @@ function parseComponentsFromResponse(response) {
   return { components, seo };
 }
 
-module.exports = { generatePageContent };
+/**
+ * ADVANCED FLOW: Transform human-written markdown into page components.
+ * Content is PROVIDED — the model does NOT write content. It ONLY:
+ * - Maps content sections to the right components
+ * - Populates component props from the markdown
+ * - Selects images from the media library
+ * - Extracts/generates SEO metadata from content structure
+ *
+ * @param {string} contentMarkdown - Human-written markdown (tone, topics, intent already set)
+ * @param {object} context - designTokens, componentLibrary, availableMedia, etc.
+ * @returns {Promise<object>} - { components, seo, usage }
+ */
+async function generatePageContentAdvanced(contentMarkdown, context) {
+  const systemPrompt = buildAdvancedSystemPrompt(context);
+
+  const message = await client.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 8192,
+    temperature: 0.2,
+    system: systemPrompt,
+    messages: [
+      {
+        role: 'user',
+        content: `Her er det færdige indhold der skal transformeres til vores komponentbibliotek:\n\n---\n\n${contentMarkdown}\n\n---\n\nTransformér ovenstående indhold til JSON med komponenter. Brug KUN tekster fra indholdet — skriv ikke nyt. Vælg det bedste billede fra mediebiblioteket til hvert billedfelt.`,
+      },
+    ],
+  });
+
+  const response = message.content[0].text;
+  const parsed = parseComponentsFromResponse(response);
+
+  return {
+    components: parsed.components,
+    seo: parsed.seo,
+    usage: {
+      input_tokens: message.usage.input_tokens,
+      output_tokens: message.usage.output_tokens,
+      model: 'claude-sonnet-4-20250514',
+    },
+  };
+}
+
+/**
+ * Advanced system prompt — hyper-focused on transformation and component mastery.
+ * NO content writing. Content is provided. Emphasis on components + media.
+ */
+function buildAdvancedSystemPrompt(context) {
+  const { designTokens, componentLibrary, cssVariableSyntax, availableMedia = [] } = context;
+  const componentSchemas = buildComponentSchemaReference(componentLibrary.components);
+
+  const mediaSection = availableMedia.length > 0
+    ? `## Mediebibliotek — BRUG DISSE BILLEDER
+
+Du SKAL vælge billeder fra denne liste. Vælg det billede hvis alt-tekst bedst matcher konteksten. Brug KUN disse URL'er — ingen placeholders.
+
+${availableMedia.map(m => `- **${m.url}** — Alt: "${m.alt}"`).join('\n')}
+
+Hvis intet billede passer perfekt, vælg det nærmeste match. Brug ALDRIG https://placehold.co eller andre eksterne URLs.`
+    : `## Mediebibliotek
+
+Ingen billeder er uploadet endnu. Brug tom streng "" eller udelad billedfelter for komponenter der har valgfrie billeder.`;
+
+  return `Du er en ekspert i at transformere menneskeskrevet indhold til et specifikt komponentbibliotek. Din OPGAVE er IKKE at skrive indhold — det er allerede skrevet og leveret. Din opgave er udelukkende at:
+
+1. **Læse** det leverede markdown-indhold
+2. **Mappe** hver sektion til den rette komponent fra biblioteket
+3. **Kopiere** teksten fra indholdet direkte ind i komponent-props — ændr ikke formuleringer
+4. **Vælge** billeder fra mediebiblioteket baseret på alt-tekst og kontekst
+5. **Udtrække** SEO-metadata fra indholdets struktur (første overskrift = meta_title, første afsnit = meta_description)
+
+## KRITISK: Du skriver IKKE nyt indhold
+
+- Brug KUN tekster der står i det leverede indhold
+- Kopier overskrifter, beskrivelser, CTAs direkte — ingen omskrivning
+- Hvis indholdet har en sektion der ikke passer til nogen komponent, vælg den nærmeste komponent og brug indholdet
+- Prioriter at bevare den præcise tone og formulering fra kilden
+
+## Komponentbibliotek — Mester disse
+
+${componentLibrary.index}
+
+Du skal kende HVER komponent og vide når den bruges:
+- **hero-section**: Første store sektion, overskrift + beskrivelse + CTA
+- **cta-section**: Opfordring til handling, centreret eller split
+- **content-image-split**: Tekst + billede side om side
+- **features-grid**: Liste af fordele/features med ikoner
+- **faq-accordion**: Spørgsmål og svar
+- **pricing-table**: Prispakker med features
+- **testimonials-carousel**: Anmeldelser/citater
+- **team-grid**: Teammedlemmer med billeder
+- **timeline**: Tidslinje eller proces
+- **stats-banner**: Tal/statistikker
+- **gallery-grid**: Billedgalleri
+- Og alle andre — læs index og schemas nøje
+
+## EKSAKTE Komponent-Schemas (props SKAL matche præcist)
+
+${componentSchemas}
+
+## Design Tokens
+
+- Primary: ${designTokens.colors.primary} | Secondary: ${designTokens.colors.secondary} | Accent: ${designTokens.colors.accent}
+- Font heading: ${designTokens.typography.font_heading} | Font body: ${designTokens.typography.font_body}
+- Border radius: ${designTokens.shapes.border_radius} | Shadow: ${designTokens.shapes.shadow_style}
+
+## CSS: Brug ${cssVariableSyntax.critical}
+
+${mediaSection}
+
+## SEO
+
+Udtræk fra indholdet:
+- **meta_title**: Første H1 eller overskrift (maks 60 tegn) + " | Lavprishjemmeside.dk"
+- **meta_description**: Første meningsfulde afsnit eller indholdsoversigt (maks 160 tegn)
+- **schema_type**: FAQPage hvis faq, Product hvis priser, WebPage standard
+
+## Output
+
+Returnér KUN dette JSON-objekt (ingen forklaring):
+
+\`\`\`json
+{
+  "seo": {
+    "meta_title": "...",
+    "meta_description": "...",
+    "schema_type": "WebPage"
+  },
+  "components": [
+    {
+      "component_slug": "hero-section",
+      "props_data": { "headline": "...", "description": "...", "primaryCta": {...} },
+      "sort_order": 1
+    }
+  ]
+}
+\`\`\`
+
+## Regler
+
+1. **4-10 komponenter** — vælg det rigtige antal baseret på indholdets længde
+2. **Props MATCHER schema** — brug præcis prop-navne fra schemas
+3. **Tekst fra indhold** — ingen nye formuleringer
+4. **Billeder fra mediebibliotek** — vælg bedste match, ingen placeholders
+5. **Logisk rækkefølge** — hero først, CTA til sidst
+6. **Dansk** — indholdet er på dansk, behold det`;
+}
+
+module.exports = { generatePageContent, generatePageContentAdvanced };
