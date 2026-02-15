@@ -513,7 +513,5 @@ script: |
 ## Pending
 - **Dashboard enhancements**: Date filtering, charts, auto-refresh, CSV export (see Admin Dashboard section above)
 - **Dashboard pages**: Security logs, content management, user management, session detail view
-- **Account features**: Change password endpoint + UI
 - **Public pages**: Priser, Om os, Kontakt
 - **SEO content optimization**
-- **Change default admin password** (currently `change_me_immediately`)
