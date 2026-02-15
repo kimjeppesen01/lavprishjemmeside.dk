@@ -1,0 +1,199 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Component Library">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Komponentbibliotek</h1>
+      <p class="text-gray-600 mt-2">Se og administrer alle designkomponenter</p>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading" class="text-center py-12 text-gray-500">Henter komponenter...</div>
+
+    <!-- Error state -->
+    <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <p class="text-red-700 mb-2" id="error-text"></p>
+      <button onclick="window.location.reload()" class="text-red-600 underline text-sm">Prøv igen</button>
+    </div>
+
+    <!-- Main content -->
+    <div id="content" class="hidden">
+      <!-- Search bar -->
+      <div class="mb-8">
+        <input type="text" id="search-input" placeholder="Søg efter komponenter..." class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+      </div>
+
+      <!-- Components grid -->
+      <div id="components-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Component cards will be inserted here -->
+      </div>
+
+      <!-- No results state -->
+      <div id="no-results" class="hidden text-center py-12">
+        <p class="text-gray-500">Ingen komponenter fundet</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documentation Modal -->
+  <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
+        <h2 class="text-2xl font-bold text-gray-900" id="modal-title"></h2>
+        <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+      </div>
+      <div class="p-6">
+        <div id="modal-content" class="prose max-w-none text-gray-700"></div>
+      </div>
+      <div class="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-6">
+        <button onclick="closeModal()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-lg transition-colors">
+          Luk
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+  (function() {
+    const API = 'https://api.lavprishjemmeside.dk';
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      window.location.href = '/admin/';
+      return;
+    }
+
+    let allComponents = [];
+
+    // Fetch components
+    async function loadComponents() {
+      try {
+        const res = await fetch(API + '/components', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/admin/';
+            return;
+          }
+          throw new Error('Fejl ved indlæsning af komponenter');
+        }
+
+        allComponents = await res.json();
+        renderComponents(allComponents);
+      } catch (err) {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error-text').textContent = 'Fejl: ' + err.message;
+        document.getElementById('error').classList.remove('hidden');
+      }
+    }
+
+    // Render component cards
+    function renderComponents(components) {
+      const grid = document.getElementById('components-grid');
+      const noResults = document.getElementById('no-results');
+
+      grid.innerHTML = '';
+
+      if (components.length === 0) {
+        grid.classList.add('hidden');
+        noResults.classList.remove('hidden');
+        return;
+      }
+
+      grid.classList.remove('hidden');
+      noResults.classList.add('hidden');
+
+      components.forEach(comp => {
+        const propsCount = comp.default_props ? Object.keys(JSON.parse(typeof comp.default_props === 'string' ? comp.default_props : '{}')).length : 0;
+
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow';
+        card.innerHTML = `
+          <div class="mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 mb-1">${escapeHtml(comp.name)}</h3>
+            <p class="text-sm text-gray-500">${escapeHtml(comp.slug)}</p>
+          </div>
+          <div class="mb-4 flex flex-wrap gap-2">
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              ${escapeHtml(comp.category)}
+            </span>
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+              ${propsCount} egenskaber
+            </span>
+          </div>
+          <p class="text-sm text-gray-600 mb-4 line-clamp-2">${escapeHtml(comp.description || '(Ingen beskrivelse)')}</p>
+          <button onclick="openModal('${escapeAttr(comp.slug)}', '${escapeAttr(comp.name)}', '${escapeAttr(comp.documentation || 'Ingen dokumentation tilgængelig.')}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded transition-colors">
+            Se dokumentation
+          </button>
+        `;
+        grid.appendChild(card);
+      });
+
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('content').classList.remove('hidden');
+    }
+
+    // Search/filter
+    function filterComponents() {
+      const query = document.getElementById('search-input').value.toLowerCase();
+      const filtered = allComponents.filter(comp => {
+        return comp.name.toLowerCase().includes(query) ||
+               comp.slug.toLowerCase().includes(query) ||
+               comp.category.toLowerCase().includes(query) ||
+               (comp.description && comp.description.toLowerCase().includes(query));
+      });
+      renderComponents(filtered);
+    }
+
+    // Modal functions
+    window.openModal = function(slug, name, documentation) {
+      document.getElementById('modal-title').textContent = name;
+      document.getElementById('modal-content').innerHTML = escapeHtml(documentation).replace(/\n/g, '<br>');
+      document.getElementById('modal').classList.remove('hidden');
+    };
+
+    window.closeModal = function() {
+      document.getElementById('modal').classList.add('hidden');
+    };
+
+    // Close modal on outside click
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeModal();
+      }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+
+    // Escape HTML for security
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function escapeAttr(text) {
+      if (!text) return '';
+      return text.replace(/["']/g, '');
+    }
+
+    // Search event listener
+    document.getElementById('search-input').addEventListener('input', filterComponents);
+
+    // Load components on page load
+    loadComponents();
+  })();
+  </script>
+</AdminLayout>

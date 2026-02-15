@@ -1,0 +1,390 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Page Builder">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Sidestyring</h1>
+      <p class="text-gray-600 mt-2">Rediger komponenter på hver side</p>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading" class="text-center py-12 text-gray-500">Henter sider...</div>
+
+    <!-- Error state -->
+    <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <p class="text-red-700 mb-2" id="error-text"></p>
+      <button onclick="window.location.reload()" class="text-red-600 underline text-sm">Prøv igen</button>
+    </div>
+
+    <!-- Main content -->
+    <div id="content" class="hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Pages List (Left) -->
+        <div class="lg:col-span-1">
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900">Sider</h2>
+            <div id="pages-list" class="space-y-2">
+              <!-- Pages will be inserted here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Components Editor (Right) -->
+        <div class="lg:col-span-3">
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="mb-6">
+              <h2 class="text-lg font-semibold text-gray-900 mb-2">Valgt side:</h2>
+              <p id="selected-page" class="text-xl font-mono text-gray-700">&mdash;</p>
+            </div>
+
+            <!-- Components list -->
+            <div class="mb-6">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Komponenter</h3>
+              <div id="components-list" class="space-y-2">
+                <!-- Component items will be inserted here -->
+              </div>
+              <div id="no-components" class="hidden text-center py-8 text-gray-500">
+                <p>Denne side har ingen komponenter endnu</p>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="border-t border-gray-200 pt-6 flex gap-3">
+              <button id="add-component-btn" onclick="openAddComponentModal()" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-3 rounded-lg transition-colors">
+                + Tilføj komponent
+              </button>
+              <button id="publish-btn" onclick="publishPage()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-3 rounded-lg transition-colors">
+                Publicer side
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Component Modal -->
+  <div id="add-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+      <div class="border-b border-gray-200 p-6 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-gray-900">Tilføj komponent</h3>
+        <button onclick="closeAddComponentModal()" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+      </div>
+      <div class="p-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Vælg komponent:</label>
+        <select id="component-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4">
+          <option value="">-- Vælg en komponent --</option>
+        </select>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Sorteringsrækkefølge:</label>
+        <input type="number" id="sort-order-input" min="1" value="1" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4">
+      </div>
+      <div class="bg-gray-50 border-t border-gray-200 p-6 flex gap-3">
+        <button onclick="closeAddComponentModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-lg transition-colors">
+          Annuller
+        </button>
+        <button onclick="addComponentToPage()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
+          Tilføj
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+  (function() {
+    const API = 'https://api.lavprishjemmeside.dk';
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      window.location.href = '/admin/';
+      return;
+    }
+
+    let allPageComponents = [];
+    let allComponents = [];
+    let selectedPage = null;
+
+    // Fetch all data
+    async function loadData() {
+      try {
+        const [pagesRes, componentsRes] = await Promise.all([
+          fetch(API + '/page-components', {
+            headers: { 'Authorization': 'Bearer ' + token }
+          }),
+          fetch(API + '/components', {
+            headers: { 'Authorization': 'Bearer ' + token }
+          })
+        ]);
+
+        if (!pagesRes.ok || !componentsRes.ok) {
+          if (pagesRes.status === 401 || componentsRes.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/admin/';
+            return;
+          }
+          throw new Error('Fejl ved indlæsning af data');
+        }
+
+        allPageComponents = await pagesRes.json();
+        allComponents = await componentsRes.json();
+
+        renderPages();
+        populateComponentSelect();
+      } catch (err) {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error-text').textContent = 'Fejl: ' + err.message;
+        document.getElementById('error').classList.remove('hidden');
+      }
+    }
+
+    // Get unique pages and render them
+    function renderPages() {
+      const pagesList = document.getElementById('pages-list');
+      pagesList.innerHTML = '';
+
+      // Get unique page paths
+      const pages = [...new Set(allPageComponents.map(pc => pc.page_path))];
+
+      pages.forEach(page => {
+        const btn = document.createElement('button');
+        btn.className = 'w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors';
+        btn.innerHTML = `
+          <div class="font-medium text-gray-900">${escapeHtml(page || '/ (Startside)')}</div>
+          <div class="text-xs text-gray-500 mt-1">${allPageComponents.filter(pc => pc.page_path === page).length} komponent(er)</div>
+        `;
+        btn.addEventListener('click', () => selectPage(page));
+        pagesList.appendChild(btn);
+      });
+
+      // Auto-select first page
+      if (pages.length > 0) {
+        selectPage(pages[0]);
+      }
+
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('content').classList.remove('hidden');
+    }
+
+    // Select a page and show its components
+    function selectPage(page) {
+      selectedPage = page;
+      document.getElementById('selected-page').textContent = page || '/ (Startside)';
+
+      const pageComponents = allPageComponents.filter(pc => pc.page_path === page);
+      const componentsList = document.getElementById('components-list');
+      const noComponents = document.getElementById('no-components');
+
+      componentsList.innerHTML = '';
+
+      if (pageComponents.length === 0) {
+        componentsList.classList.add('hidden');
+        noComponents.classList.remove('hidden');
+        return;
+      }
+
+      componentsList.classList.remove('hidden');
+      noComponents.classList.add('hidden');
+
+      // Sort by sort_order
+      pageComponents.sort((a, b) => a.sort_order - b.sort_order);
+
+      pageComponents.forEach((pc, index) => {
+        const component = allComponents.find(c => c.id === pc.component_id);
+        const div = document.createElement('div');
+        div.className = 'bg-gray-50 rounded-lg p-4 flex items-center justify-between border border-gray-200';
+        div.innerHTML = `
+          <div class="flex-1">
+            <p class="font-medium text-gray-900">${index + 1}. ${escapeHtml(component ? component.name : 'Ukendt komponent')}</p>
+            <p class="text-xs text-gray-500 mt-1">${escapeHtml(component ? component.slug : '')}</p>
+          </div>
+          <div class="flex gap-2">
+            ${index > 0 ? `<button onclick="reorderComponent(${pc.id}, -1)" class="px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm">↑</button>` : '<span class="px-3 py-2 text-sm text-gray-300">↑</span>'}
+            ${index < pageComponents.length - 1 ? `<button onclick="reorderComponent(${pc.id}, 1)" class="px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm">↓</button>` : '<span class="px-3 py-2 text-sm text-gray-300">↓</span>'}
+            <button onclick="deleteComponent(${pc.id})" class="px-3 py-2 bg-red-100 hover:bg-red-200 border border-red-300 text-red-700 rounded text-sm">Slet</button>
+          </div>
+        `;
+        componentsList.appendChild(div);
+      });
+    }
+
+    // Populate component select dropdown
+    function populateComponentSelect() {
+      const select = document.getElementById('component-select');
+      allComponents.forEach(comp => {
+        const option = document.createElement('option');
+        option.value = comp.id;
+        option.textContent = comp.name;
+        select.appendChild(option);
+      });
+    }
+
+    // Modal functions
+    window.openAddComponentModal = function() {
+      document.getElementById('component-select').value = '';
+      document.getElementById('sort-order-input').value = '1';
+      document.getElementById('add-modal').classList.remove('hidden');
+    };
+
+    window.closeAddComponentModal = function() {
+      document.getElementById('add-modal').classList.add('hidden');
+    };
+
+    // Add component to page
+    window.addComponentToPage = async function() {
+      const componentId = document.getElementById('component-select').value;
+      const sortOrder = parseInt(document.getElementById('sort-order-input').value);
+
+      if (!componentId) {
+        alert('Vælg venligst en komponent');
+        return;
+      }
+
+      if (isNaN(sortOrder) || sortOrder < 1) {
+        alert('Sorteringsrækkefølge skal være et tal >= 1');
+        return;
+      }
+
+      try {
+        const res = await fetch(API + '/page-components', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            page_path: selectedPage,
+            component_id: componentId,
+            sort_order: sortOrder,
+            is_published: true
+          })
+        });
+
+        if (!res.ok) throw new Error('Fejl ved tilføjelse af komponent');
+
+        const newPageComponent = await res.json();
+        allPageComponents.push(newPageComponent);
+        selectPage(selectedPage);
+        closeAddComponentModal();
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+      }
+    };
+
+    // Reorder component
+    window.reorderComponent = async function(id, direction) {
+      const pc = allPageComponents.find(x => x.id === id);
+      if (!pc) return;
+
+      const pageComponents = allPageComponents.filter(x => x.page_path === selectedPage);
+      pageComponents.sort((a, b) => a.sort_order - b.sort_order);
+
+      const currentIndex = pageComponents.findIndex(x => x.id === id);
+      const newIndex = currentIndex + direction;
+
+      if (newIndex < 0 || newIndex >= pageComponents.length) return;
+
+      // Swap sort orders
+      const [from, to] = direction > 0
+        ? [pageComponents[currentIndex].sort_order, pageComponents[newIndex].sort_order]
+        : [pageComponents[newIndex].sort_order, pageComponents[currentIndex].sort_order];
+
+      try {
+        await Promise.all([
+          fetch(API + '/page-components/' + id, {
+            method: 'PUT',
+            headers: {
+              'Authorization': 'Bearer ' + token,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ sort_order: to })
+          }),
+          fetch(API + '/page-components/' + pageComponents[newIndex].id, {
+            method: 'PUT',
+            headers: {
+              'Authorization': 'Bearer ' + token,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ sort_order: from })
+          })
+        ]);
+
+        // Update local data
+        pc.sort_order = to;
+        pageComponents[newIndex].sort_order = from;
+        selectPage(selectedPage);
+      } catch (err) {
+        alert('Fejl ved sortering: ' + err.message);
+      }
+    };
+
+    // Delete component
+    window.deleteComponent = async function(id) {
+      if (!confirm('Slet denne komponent fra siden?')) return;
+
+      try {
+        const res = await fetch(API + '/page-components/' + id, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (!res.ok) throw new Error('Fejl ved sletning');
+
+        allPageComponents = allPageComponents.filter(pc => pc.id !== id);
+        selectPage(selectedPage);
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+      }
+    };
+
+    // Publish page
+    window.publishPage = async function() {
+      const pageComponents = allPageComponents.filter(pc => pc.page_path === selectedPage);
+
+      if (pageComponents.length === 0) {
+        alert('Siden har ingen komponenter at publicere');
+        return;
+      }
+
+      try {
+        const btn = document.getElementById('publish-btn');
+        btn.disabled = true;
+        btn.textContent = 'Publicerer...';
+
+        await Promise.all(
+          pageComponents.map(pc =>
+            fetch(API + '/page-components/' + pc.id, {
+              method: 'PUT',
+              headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ is_published: true })
+            })
+          )
+        );
+
+        alert('✓ Side publiceret');
+      } catch (err) {
+        alert('Fejl ved publicering: ' + err.message);
+      } finally {
+        const btn = document.getElementById('publish-btn');
+        btn.disabled = false;
+        btn.textContent = 'Publicer side';
+      }
+    };
+
+    // Escape HTML
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Load data on page load
+    loadData();
+  })();
+  </script>
+</AdminLayout>
