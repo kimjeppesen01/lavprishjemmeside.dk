@@ -35,6 +35,7 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // GET /page-components/public?page=/ — Published components only (for build-time)
+// GET /page-components/public?page=all — All published components from all pages
 router.get('/public', async (req, res) => {
   try {
     const { page } = req.query;
@@ -43,14 +44,27 @@ router.get('/public', async (req, res) => {
       return res.status(400).json({ error: 'page query parameter er påkrævet' });
     }
 
-    const [rows] = await pool.execute(
-      `SELECT pc.*, c.slug, c.name_da, c.category
-       FROM page_components pc
-       JOIN components c ON pc.component_id = c.id
-       WHERE pc.page_path = ? AND pc.is_published = 1
-       ORDER BY pc.sort_order ASC`,
-      [page]
-    );
+    let query, params;
+
+    if (page === 'all') {
+      // Return all published components from all pages
+      query = `SELECT pc.*, c.slug, c.name_da, c.category
+               FROM page_components pc
+               JOIN components c ON pc.component_id = c.id
+               WHERE pc.is_published = 1
+               ORDER BY pc.page_path ASC, pc.sort_order ASC`;
+      params = [];
+    } else {
+      // Return published components for specific page
+      query = `SELECT pc.*, c.slug, c.name_da, c.category
+               FROM page_components pc
+               JOIN components c ON pc.component_id = c.id
+               WHERE pc.page_path = ? AND pc.is_published = 1
+               ORDER BY pc.sort_order ASC`;
+      params = [page];
+    }
+
+    const [rows] = await pool.execute(query, params);
 
     // Parse JSON content field
     const components = rows.map(row => ({

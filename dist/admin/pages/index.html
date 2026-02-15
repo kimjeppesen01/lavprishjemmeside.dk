@@ -241,21 +241,21 @@ Tilføj
 
       try {
         await Promise.all([
-          fetch(API + '/page-components/' + id, {
-            method: 'PUT',
+          fetch(API + '/page-components/reorder', {
+            method: 'POST',
             headers: {
               'Authorization': 'Bearer ' + token,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ sort_order: to })
+            body: JSON.stringify({ id, sort_order: to })
           }),
-          fetch(API + '/page-components/' + pageComponents[newIndex].id, {
-            method: 'PUT',
+          fetch(API + '/page-components/reorder', {
+            method: 'POST',
             headers: {
               'Authorization': 'Bearer ' + token,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ sort_order: from })
+            body: JSON.stringify({ id: pageComponents[newIndex].id, sort_order: from })
           })
         ]);
 
@@ -273,9 +273,13 @@ Tilføj
       if (!confirm('Slet denne komponent fra siden?')) return;
 
       try {
-        const res = await fetch(API + '/page-components/' + id, {
-          method: 'DELETE',
-          headers: { 'Authorization': 'Bearer ' + token }
+        const res = await fetch(API + '/page-components/delete', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ id })
         });
 
         if (!res.ok) throw new Error('Fejl ved sletning');
@@ -303,13 +307,13 @@ Tilføj
 
         await Promise.all(
           pageComponents.map(pc =>
-            fetch(API + '/page-components/' + pc.id, {
-              method: 'PUT',
+            fetch(API + '/page-components/publish', {
+              method: 'POST',
               headers: {
                 'Authorization': 'Bearer ' + token,
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({ is_published: true })
+              body: JSON.stringify({ id: pc.id, is_published: true })
             })
           )
         );

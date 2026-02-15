@@ -1,0 +1,253 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import HeroSection from '../components/HeroSection.astro';
+import FeaturesGrid from '../components/FeaturesGrid.astro';
+import IconCards from '../components/IconCards.astro';
+import StatsBanner from '../components/StatsBanner.astro';
+import TestimonialsCarousel from '../components/TestimonialsCarousel.astro';
+import CtaSection from '../components/CtaSection.astro';
+import PricingTable from '../components/PricingTable.astro';
+import FaqAccordion from '../components/FaqAccordion.astro';
+import ComparisonTable from '../components/ComparisonTable.astro';
+import TeamGrid from '../components/TeamGrid.astro';
+import VideoEmbed from '../components/VideoEmbed.astro';
+import ContactForm from '../components/ContactForm.astro';
+import NewsletterSignup from '../components/NewsletterSignup.astro';
+import ContentImageSplit from '../components/ContentImageSplit.astro';
+import Timeline from '../components/Timeline.astro';
+import LogoCloud from '../components/LogoCloud.astro';
+import GalleryGrid from '../components/GalleryGrid.astro';
+
+// Map component slugs to Astro components
+const componentMap = {
+  'hero-section': HeroSection,
+  'features-grid': FeaturesGrid,
+  'icon-cards': IconCards,
+  'stats-banner': StatsBanner,
+  'testimonials-carousel': TestimonialsCarousel,
+  'cta-section': CtaSection,
+  'pricing-table': PricingTable,
+  'faq-accordion': FaqAccordion,
+  'comparison-table': ComparisonTable,
+  'team-grid': TeamGrid,
+  'video-embed': VideoEmbed,
+  'contact-form': ContactForm,
+  'newsletter-signup': NewsletterSignup,
+  'content-image-split': ContentImageSplit,
+  'timeline': Timeline,
+  'logo-cloud': LogoCloud,
+  'gallery-grid': GalleryGrid,
+};
+
+// Prop validation and normalization
+function normalizeProps(slug: string, rawProps: any): any {
+  // Deep clone to avoid mutations
+  const props = JSON.parse(JSON.stringify(rawProps));
+
+  // Fix common AI prop name mismatches
+  switch (slug) {
+    case 'faq-accordion':
+      // AI might use 'items' instead of 'faqs'
+      if (props.items && !props.faqs) {
+        props.faqs = props.items;
+        delete props.items;
+      }
+      // Ensure faqs is an array
+      if (!Array.isArray(props.faqs)) {
+        props.faqs = [];
+      }
+      // Ensure headline exists
+      if (!props.headline) {
+        props.headline = 'Ofte stillede spørgsmål';
+      }
+      break;
+
+    case 'pricing-table':
+      // AI might use 'plans' instead of 'tiers'
+      if (props.plans && !props.tiers) {
+        props.tiers = props.plans;
+        delete props.plans;
+      }
+      // Ensure tiers is an array
+      if (!Array.isArray(props.tiers)) {
+        props.tiers = [];
+      }
+      // Ensure headline exists
+      if (!props.headline) {
+        props.headline = 'Vælg den plan der passer dig';
+      }
+      // Normalize tier structure
+      props.tiers = props.tiers.map((tier: any) => ({
+        name: tier.name || '',
+        price: tier.price || '',
+        period: tier.period || '',
+        features: Array.isArray(tier.features) ? tier.features : [],
+        cta: tier.cta || { text: 'Læs mere', href: '#' },
+        featured: tier.featured || tier.popular || false,
+      }));
+      break;
+
+    case 'comparison-table':
+      // AI might use different structure - normalize to expected format
+      if (props.columns && props.rows) {
+        // Convert column-based structure to row-based
+        const products = props.columns.map((col: any) => col.name || col.title || '');
+        const features: string[] = [];
+        const data: (string | boolean | null)[][] = [];
+
+        if (Array.isArray(props.rows)) {
+          props.rows.forEach((row: any) => {
+            if (row.feature || row.name) {
+              features.push(row.feature || row.name);
+              const rowData = props.columns.map((col: any, i: number) => {
+                const val = row.values?.[i] ?? row[col.key] ?? null;
+                if (val === 'yes' || val === 'true') return true;
+                if (val === 'no' || val === 'false') return false;
+                return val;
+              });
+              data.push(rowData);
+            }
+          });
+        }
+
+        props.products = products;
+        props.features = features;
+        props.data = data;
+        delete props.columns;
+        delete props.rows;
+      }
+      // Ensure required props exist
+      if (!Array.isArray(props.products)) props.products = [];
+      if (!Array.isArray(props.features)) props.features = [];
+      if (!Array.isArray(props.data)) props.data = [];
+      if (!props.headline) {
+        props.headline = 'Sammenlign';
+      }
+      break;
+
+    case 'features-grid':
+    case 'icon-cards':
+      // Ensure features is an array
+      if (!Array.isArray(props.features)) {
+        props.features = [];
+      }
+      if (!props.headline) {
+        props.headline = 'Funktioner';
+      }
+      break;
+
+    case 'hero-section':
+      if (!props.headline) {
+        props.headline = 'Velkommen';
+      }
+      break;
+
+    default:
+      // No special normalization needed
+      break;
+  }
+
+  return props;
+}
+
+export async function getStaticPaths() {
+  try {
+    const API_URL = 'https://api.lavprishjemmeside.dk';
+
+    // Fetch all published page components
+    const response = await fetch(`${API_URL}/page-components/public?page=all`);
+
+    if (!response.ok) {
+      console.warn(`Failed to fetch page components: ${response.status}`);
+      return [];
+    }
+
+    const allPageComponents = await response.json();
+
+    // Group by page_path
+    const pageGroups = new Map<string, any[]>();
+
+    allPageComponents.forEach((pc: any) => {
+      const path = pc.page_path || '/';
+      if (!pageGroups.has(path)) {
+        pageGroups.set(path, []);
+      }
+      pageGroups.get(path)!.push(pc);
+    });
+
+    // Generate paths (excluding homepage)
+    const paths = [];
+
+    for (const [pagePath, components] of pageGroups.entries()) {
+      // Skip homepage (handled by index.astro)
+      if (pagePath === '/') continue;
+
+      // Sort components by sort_order
+      components.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+      // Generate slug from page_path
+      const slug = pagePath.replace(/^\//, '').replace(/\/$/, '');
+
+      if (!slug) continue; // Skip empty slugs
+
+      paths.push({
+        params: { slug },
+        props: {
+          pagePath,
+          pageComponents: components,
+        },
+      });
+    }
+
+    console.log(`Generated ${paths.length} dynamic page(s)`);
+    return paths;
+
+  } catch (error) {
+    console.error('Error in getStaticPaths:', error);
+    return [];
+  }
+}
+
+const { slug } = Astro.params;
+const { pagePath, pageComponents } = Astro.props;
+
+// Build breadcrumbs from path
+const pathSegments = pagePath.split('/').filter(Boolean);
+const breadcrumbItems = [
+  { label: 'Hjem', href: '/' },
+  ...pathSegments.map((segment: string, index: number) => ({
+    label: segment.charAt(0).toUpperCase() + segment.slice(1),
+    href: '/' + pathSegments.slice(0, index + 1).join('/'),
+  })),
+];
+
+// Page title from first component or path
+const pageTitle = pageComponents[0]?.content?.headline ||
+                  pathSegments[pathSegments.length - 1]?.charAt(0).toUpperCase() +
+                  pathSegments[pathSegments.length - 1]?.slice(1) ||
+                  'Side';
+---
+
+<Layout title={pageTitle}>
+  <Breadcrumbs items={breadcrumbItems} />
+
+  {pageComponents.map((pc: any) => {
+    const Component = componentMap[pc.slug];
+
+    if (!Component) {
+      console.warn(`Component not found: ${pc.slug}`);
+      return null;
+    }
+
+    // Normalize props to handle AI-generated mismatches
+    const normalizedProps = normalizeProps(pc.slug, pc.content || {});
+
+    try {
+      return <Component {...normalizedProps} />;
+    } catch (error) {
+      console.error(`Error rendering component ${pc.slug}:`, error);
+      return null;
+    }
+  })}
+</Layout>
