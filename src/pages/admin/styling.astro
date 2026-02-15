@@ -122,6 +122,46 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
               </div>
             </div>
 
+            <!-- Feature Toggles -->
+            <div class="mb-8 border-t border-gray-200 pt-8">
+              <h2 class="text-lg font-semibold mb-4 text-gray-900">Funktionsindstillinger</h2>
+              <p class="text-sm text-gray-600 mb-4">Slå visse styling-funktioner til eller fra.</p>
+
+              <div class="space-y-3 mb-4">
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" id="feature_smooth_scroll" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                  <span class="text-sm text-gray-700">Smooth scroll</span>
+                </label>
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" id="feature_grain_overlay" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                  <span class="text-sm text-gray-700">Korn-overlay</span>
+                </label>
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" id="feature_page_loader" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                  <span class="text-sm text-gray-700">Sideloader</span>
+                </label>
+                <!-- Page loader options (when enabled) -->
+                <div id="page-loader-options" class="ml-6 pl-4 border-l-2 border-gray-200 space-y-3 mt-2">
+                  <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Tekst</label>
+                    <input type="text" id="page_loader_text" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" placeholder="Indlæser..." maxlength="100">
+                  </div>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="page_loader_show_logo" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <span class="text-sm text-gray-700">Vis logo</span>
+                  </label>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Varighed (sek.): <span id="page_loader_duration_val">2.5</span></label>
+                    <input type="range" id="page_loader_duration" min="0.5" max="3" step="0.5" value="2.5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                  </div>
+                </div>
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" id="feature_sticky_header" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                  <span class="text-sm text-gray-700">Klæbende header</span>
+                </label>
+              </div>
+            </div>
+
             <!-- Shapes Section -->
             <div class="mb-8 border-t border-gray-200 pt-8">
               <h2 class="text-lg font-semibold mb-4 text-gray-900">Former</h2>
@@ -403,6 +443,31 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         }
       });
 
+      // Feature toggles (1 = checked, 0 = unchecked; default to 1 if missing)
+      const featureFields = ['feature_smooth_scroll', 'feature_grain_overlay', 'feature_page_loader', 'feature_sticky_header'];
+      featureFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input) {
+          input.checked = currentSettings[field] !== 0 && currentSettings[field] !== false && currentSettings[field] !== '0';
+        }
+      });
+
+      // Page loader options
+      const loaderText = document.getElementById('page_loader_text');
+      const loaderLogo = document.getElementById('page_loader_show_logo');
+      const loaderDuration = document.getElementById('page_loader_duration');
+      const loaderDurationVal = document.getElementById('page_loader_duration_val');
+      if (loaderText) loaderText.value = currentSettings.page_loader_text || 'Indlæser...';
+      if (loaderLogo) loaderLogo.checked = (currentSettings.page_loader_show_logo ?? 1) !== 0;
+      if (loaderDuration) {
+        const d = parseFloat(currentSettings.page_loader_duration) || 2.5;
+        loaderDuration.value = Math.min(3, Math.max(0.5, d));
+        if (loaderDurationVal) loaderDurationVal.textContent = loaderDuration.value;
+        loaderDuration.addEventListener('input', function() {
+          if (loaderDurationVal) loaderDurationVal.textContent = this.value;
+        });
+      }
+
       document.getElementById('loading').classList.add('hidden');
       document.getElementById('content').classList.remove('hidden');
       updatePreview();
@@ -529,6 +594,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
       if (borderRadius) formData.border_radius = borderRadius.value;
       if (shadowStyle) formData.shadow_style = shadowStyle.value;
+
+      // Feature toggles
+      const featureFields = ['feature_smooth_scroll', 'feature_grain_overlay', 'feature_page_loader', 'feature_sticky_header'];
+      featureFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input) formData[field] = input.checked ? 1 : 0;
+      });
+
+      // Page loader options
+      const loaderText = document.getElementById('page_loader_text');
+      const loaderLogo = document.getElementById('page_loader_show_logo');
+      const loaderDuration = document.getElementById('page_loader_duration');
+      if (loaderText) formData.page_loader_text = loaderText.value || 'Indlæser...';
+      if (loaderLogo) formData.page_loader_show_logo = loaderLogo.checked ? 1 : 0;
+      if (loaderDuration) formData.page_loader_duration = parseFloat(loaderDuration.value) || 2.5;
 
       try {
         const res = await fetch(API + '/design-settings/update', {

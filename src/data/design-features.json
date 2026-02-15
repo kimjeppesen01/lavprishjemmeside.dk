@@ -1,0 +1,9 @@
+{
+  "smoothScroll": true,
+  "grainOverlay": true,
+  "pageLoader": true,
+  "stickyHeader": true,
+  "pageLoaderText": "Indlæser...",
+  "pageLoaderShowLogo": true,
+  "pageLoaderDuration": 2.5
+}

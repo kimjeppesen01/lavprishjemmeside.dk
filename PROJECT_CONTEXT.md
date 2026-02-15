@@ -510,27 +510,17 @@ script: |
 - **Phase 4**: Production infrastructure — rate limiting (5 login/15min, 100 events/15min), query caching (60s TTL), database indexes (sessions.last_activity, security_logs composite)
 - **Phase 5**: Email infrastructure & password reset — Resend API integration, forgot-password and reset-password pages, password_reset_tokens table (60-min expiry, rate limited 3/15min), Danish email templates (HTML + plain text), email enumeration prevention, auto-login after reset
 
+## Global Features
+
+Styling-funktioner (smooth scroll, korn-overlay, sideloader, klæbende header) styres fra Admin → Design & styling. Se `docs/GLOBAL_FEATURES.md` for beskrivelse.
+
+---
+
 ## Pending
 - **Dashboard enhancements**: Date filtering, charts, auto-refresh, CSV export (see Admin Dashboard section above)
 - **Dashboard pages**: Security logs, content management, user management, session detail view
 - **Public pages**: Priser, Om os, Kontakt
 - **SEO content optimization**
-
----
-
-## Saren/Pethemes-Inspired Features (2026-02-15)
-
-Inspired by the Pe Themes WordPress theme documentation (`.cursor/rules/saren-pethemes-inspiration.md`). Implemented with Tailwind + vanilla CSS/JS.
-
-| Feature | Location | Description |
-|---------|----------|-------------|
-| **Smooth Scroll** | `src/styles/global.css` | `scroll-behavior: smooth` on `html` for anchor navigation |
-| **Grain Overlay** | `Layout.astro` + `global.css` | Subtle SVG noise texture overlay (`grain-overlay`), `opacity: 0.03`, `pointer-events: none` |
-| **Page Loader** | `Layout.astro` + `global.css` | Full-screen overlay with logo + "Indlæser..."; fades out on `window.load` or after 2.5s max |
-| **Sticky Header** | `Header.astro` | `sticky top-0 z-40`; adds `shadow-sm` when scrolled >8px |
-| **Custom 404** | `src/pages/404.astro` | Danish error page with "Tilbage til forsiden" CTA, uses design tokens |
-
-**Not implemented** (by design): Page transitions (MPA full reload makes transitions complex), custom mouse cursor (accessibility concern), layout switcher (single layout), dual logos (single logo sufficient for MVP).
 
 ---
 

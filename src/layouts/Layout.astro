@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import Tracker from '../components/Tracker.astro';
+import designFeatures from '../data/design-features.json';
 
 interface Props {
   title: string;
@@ -24,7 +25,7 @@ const schemaOrg = {
 ---
 
 <!doctype html>
-<html lang="da">
+<html lang="da" class:list={[designFeatures.smoothScroll && 'smooth-scroll']}>
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -60,29 +61,34 @@ const schemaOrg = {
     </script>
   </head>
   <body class="min-h-screen flex flex-col bg-white text-gray-900 antialiased">
-    <!-- Page loader: fades out when page is ready (Saren/Pethemes-inspired) -->
+    {designFeatures.pageLoader && (
     <div id="page-loader" class="page-loader" aria-hidden="true">
       <div class="flex flex-col items-center gap-4">
-        <img src="/favicon.svg" alt="" class="h-10 w-10 animate-pulse" width="40" height="40" />
-        <span class="text-sm text-[var(--color-text-secondary)]">Indlæser...</span>
+        {designFeatures.pageLoaderShowLogo && (
+          <img src="/favicon.svg" alt="" class="h-10 w-10 animate-pulse" width="40" height="40" />
+        )}
+        <span class="text-sm text-[var(--color-text-secondary)]">{designFeatures.pageLoaderText || 'Indlæser...'}</span>
       </div>
     </div>
-    <!-- Grain overlay: subtle texture (Saren/Pethemes-inspired) -->
-    <div class="grain-overlay" aria-hidden="true"></div>
+    )}
+    {designFeatures.grainOverlay && <div class="grain-overlay" aria-hidden="true"></div>}
 
     <slot />
     <Tracker />
 
-    <script is:inline>
+    {designFeatures.pageLoader && (
+    <script is:inline define:vars={{ pageLoaderDuration: designFeatures.pageLoaderDuration ?? 2.5 }}>
       (function() {
         var loader = document.getElementById('page-loader');
+        var durationMs = (pageLoaderDuration || 2.5) * 1000;
         function hide() {
           if (loader) loader.classList.add('page-loader--hidden');
         }
         if (document.readyState === 'complete') hide();
         else window.addEventListener('load', hide);
-        setTimeout(hide, 2500);
+        setTimeout(hide, durationMs);
       })();
     </script>
+    )}
   </body>
 </html>

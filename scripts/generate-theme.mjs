@@ -7,6 +7,23 @@ const __dirname = path.dirname(__filename);
 
 const API_URL = process.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
 const THEME_FILE = path.join(__dirname, '../src/styles/theme.css');
+const FEATURES_FILE = path.join(__dirname, '../src/data/design-features.json');
+const HEADER_FOOTER_FILE = path.join(__dirname, '../src/data/header-footer.json');
+
+const DEFAULT_HEADER_FOOTER = {
+  header_layout: 'regular',
+  header_logo_url: '/favicon.svg',
+  header_logo_text: 'lavprishjemmeside.dk',
+  header_menu_1: [{ href: '/', label: 'Forside' }, { href: '/priser', label: 'Priser' }, { href: '/om-os', label: 'Om os' }, { href: '/kontakt', label: 'Kontakt' }],
+  header_menu_2: [{ href: '/kontakt', label: 'Få et tilbud' }],
+  header_mega_html: null,
+  footer_columns: [
+    { title: 'lavprishjemmeside.dk', text: 'Professionelle hjemmesider til lav pris for danske virksomheder.' },
+    { title: 'Sider', links: [{ href: '/', label: 'Forside' }, { href: '/priser', label: 'Priser' }, { href: '/om-os', label: 'Om os' }, { href: '/kontakt', label: 'Kontakt' }] },
+    { title: 'Kontakt', links: [{ href: 'mailto:info@lavprishjemmeside.dk', label: 'info@lavprishjemmeside.dk' }] },
+  ],
+  footer_copyright: null,
+};
 
 // Default tokens (fallback if API fails)
 const DEFAULT_TOKENS = {
@@ -31,6 +48,13 @@ const DEFAULT_TOKENS = {
   font_size_base: '1rem',
   border_radius: 'medium',
   shadow_style: 'subtle',
+  feature_smooth_scroll: 1,
+  feature_grain_overlay: 1,
+  feature_page_loader: 1,
+  feature_sticky_header: 1,
+  page_loader_text: 'Indlæser...',
+  page_loader_show_logo: 1,
+  page_loader_duration: 2.5,
 };
 
 async function generateTheme() {
@@ -51,11 +75,52 @@ async function generateTheme() {
     const css = buildCSS(tokens);
     fs.writeFileSync(THEME_FILE, css, 'utf-8');
     console.log(`✓ Generated ${THEME_FILE}`);
+
+    // Write feature flags and page loader config for Layout/Header
+    const features = {
+      smoothScroll: (tokens.feature_smooth_scroll ?? 1) !== 0,
+      grainOverlay: (tokens.feature_grain_overlay ?? 1) !== 0,
+      pageLoader: (tokens.feature_page_loader ?? 1) !== 0,
+      stickyHeader: (tokens.feature_sticky_header ?? 1) !== 0,
+      pageLoaderText: String(tokens.page_loader_text ?? 'Indlæser...').slice(0, 100),
+      pageLoaderShowLogo: (tokens.page_loader_show_logo ?? 1) !== 0,
+      pageLoaderDuration: Math.min(3, Math.max(0.5, parseFloat(tokens.page_loader_duration) || 2.5)),
+    };
+    const featuresDir = path.dirname(FEATURES_FILE);
+    if (!fs.existsSync(featuresDir)) fs.mkdirSync(featuresDir, { recursive: true });
+    fs.writeFileSync(FEATURES_FILE, JSON.stringify(features, null, 2), 'utf-8');
+    console.log(`✓ Generated ${FEATURES_FILE}`);
+
+    const hfRes = await fetch(`${API_URL}/header-footer/public`);
+    if (hfRes.ok) {
+      const hf = await hfRes.json();
+      const hfDir = path.dirname(HEADER_FOOTER_FILE);
+      if (!fs.existsSync(hfDir)) fs.mkdirSync(hfDir, { recursive: true });
+      fs.writeFileSync(HEADER_FOOTER_FILE, JSON.stringify(hf, null, 2), 'utf-8');
+      console.log(`✓ Generated ${HEADER_FOOTER_FILE}`);
+    }
   } catch (error) {
     console.warn('⚠ API fetch failed, using defaults:', error.message);
     const css = buildCSS(DEFAULT_TOKENS);
     fs.writeFileSync(THEME_FILE, css, 'utf-8');
     console.log(`✓ Generated ${THEME_FILE} (with defaults)`);
+    const features = {
+      smoothScroll: true,
+      grainOverlay: true,
+      pageLoader: true,
+      stickyHeader: true,
+      pageLoaderText: 'Indlæser...',
+      pageLoaderShowLogo: true,
+      pageLoaderDuration: 2.5,
+    };
+    const featuresDir = path.dirname(FEATURES_FILE);
+    if (!fs.existsSync(featuresDir)) fs.mkdirSync(featuresDir, { recursive: true });
+    fs.writeFileSync(FEATURES_FILE, JSON.stringify(features, null, 2), 'utf-8');
+    console.log(`✓ Generated ${FEATURES_FILE} (with defaults)`);
+    const hfDir = path.dirname(HEADER_FOOTER_FILE);
+    if (!fs.existsSync(hfDir)) fs.mkdirSync(hfDir, { recursive: true });
+    fs.writeFileSync(HEADER_FOOTER_FILE, JSON.stringify(DEFAULT_HEADER_FOOTER, null, 2), 'utf-8');
+    console.log(`✓ Generated ${HEADER_FOOTER_FILE} (with defaults)`);
   }
 }
 

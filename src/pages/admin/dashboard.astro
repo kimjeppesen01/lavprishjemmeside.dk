@@ -173,13 +173,18 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       }
       document.getElementById('settings-pages').innerHTML = pagesHtml;
 
-      // Settings: Global (design)
+      // Settings: Global (design) + feature toggles
       var globalHtml = '';
       if (designSettings) {
         globalHtml = '<div class="flex items-center gap-2 py-1"><span class="w-4 h-4 rounded border border-gray-300" style="background:' + esc(designSettings.color_primary || '#2563EB') + '"></span><span>Primær: ' + esc(designSettings.color_primary || '—') + '</span></div>'
           + '<div class="py-1">Font: ' + esc(designSettings.font_heading || designSettings.font_body || '—') + '</div>'
           + '<div class="py-1">Kantradius: ' + esc(designSettings.border_radius || '—') + '</div>'
-          + '<div class="py-1">Skygge: ' + esc(designSettings.shadow_style || '—') + '</div>';
+          + '<div class="py-1">Skygge: ' + esc(designSettings.shadow_style || '—') + '</div>'
+          + '<div class="pt-2 mt-2 border-t border-gray-100 space-y-1"><span class="text-xs text-gray-500 uppercase tracking-wider">Funktioner</span>'
+          + '<div class="py-1">' + ((designSettings.feature_smooth_scroll ?? 1) !== 0 ? '<span class="text-green-600">●</span>' : '<span class="text-gray-400">○</span>') + ' Smooth scroll</div>'
+          + '<div class="py-1">' + ((designSettings.feature_grain_overlay ?? 1) !== 0 ? '<span class="text-green-600">●</span>' : '<span class="text-gray-400">○</span>') + ' Korn-overlay</div>'
+          + '<div class="py-1">' + ((designSettings.feature_page_loader ?? 1) !== 0 ? '<span class="text-green-600">●</span>' : '<span class="text-gray-400">○</span>') + ' Sideloader</div>'
+          + '<div class="py-1">' + ((designSettings.feature_sticky_header ?? 1) !== 0 ? '<span class="text-green-600">●</span>' : '<span class="text-gray-400">○</span>') + ' Klæbende header</div></div>';
       } else {
         globalHtml = '<p class="text-gray-500">Kunne ikke hente. <a href="/admin/styling/" class="text-blue-600 hover:underline">Åbn styling</a></p>';
       }

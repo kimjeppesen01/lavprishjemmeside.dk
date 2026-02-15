@@ -9,6 +9,7 @@ const eventRoutes = require('./src/routes/events');
 const authRoutes = require('./src/routes/auth');
 const sessionRoutes = require('./src/routes/sessions');
 const designSettingsRoutes = require('./src/routes/design-settings');
+const headerFooterRoutes = require('./src/routes/header-footer');
 const themePresetsRoutes = require('./src/routes/theme-presets');
 const componentsRoutes = require('./src/routes/components');
 const pageComponentsRoutes = require('./src/routes/page-components');
@@ -26,7 +27,7 @@ app.use(cors({
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json({ limit: '10kb' }));
+app.use(express.json({ limit: '500kb' }));
 app.use(requestLogger);
 
 app.use('/health', healthRoutes);
@@ -34,6 +35,7 @@ app.use('/events', eventRoutes);
 app.use('/auth', authRoutes);
 app.use('/sessions', sessionRoutes);
 app.use('/design-settings', designSettingsRoutes);
+app.use('/header-footer', headerFooterRoutes);
 app.use('/theme-presets', themePresetsRoutes);
 app.use('/components', componentsRoutes);
 app.use('/page-components', pageComponentsRoutes);

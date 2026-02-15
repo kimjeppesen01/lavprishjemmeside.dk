@@ -34,6 +34,13 @@ router.get('/public', async (req, res) => {
     if (rows.length === 0) {
       // Return defaults if no settings exist
       return res.json({
+        feature_smooth_scroll: 1,
+        feature_grain_overlay: 1,
+        feature_page_loader: 1,
+        feature_sticky_header: 1,
+        page_loader_text: 'Indlæser...',
+        page_loader_show_logo: 1,
+        page_loader_duration: 2.5,
         color_primary: '#2563EB',
         color_primary_hover: '#1D4ED8',
         color_primary_light: '#DBEAFE',
@@ -127,6 +134,27 @@ router.post('/update', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Ugyldig shadow_style værdi' });
     }
 
+    // Validate feature toggles (0 or 1)
+    const featureFields = ['feature_smooth_scroll', 'feature_grain_overlay', 'feature_page_loader', 'feature_sticky_header', 'page_loader_show_logo'];
+    for (const key of featureFields) {
+      const v = req.body[key];
+      if (v !== undefined && v !== 0 && v !== 1 && v !== true && v !== false) {
+        return res.status(400).json({ error: `Ugyldig værdi for ${key}: brug 0 eller 1` });
+      }
+    }
+
+    // Validate page loader
+    if (req.body.page_loader_text !== undefined) {
+      const t = String(req.body.page_loader_text);
+      if (t.length > 100) return res.status(400).json({ error: 'page_loader_text må max være 100 tegn' });
+    }
+    if (req.body.page_loader_duration !== undefined) {
+      const d = parseFloat(req.body.page_loader_duration);
+      if (isNaN(d) || d < 0.5 || d > 3) {
+        return res.status(400).json({ error: 'page_loader_duration skal være mellem 0,5 og 3 sekunder' });
+      }
+    }
+
     // Whitelist of columns that exist in design_settings (DB has no color_neutral_400/500)
     const allowedColumns = new Set([
       'color_primary', 'color_primary_hover', 'color_primary_light',
@@ -134,7 +162,9 @@ router.post('/update', requireAuth, async (req, res) => {
       'color_accent', 'color_accent_hover',
       'color_neutral_50', 'color_neutral_100', 'color_neutral_200', 'color_neutral_300',
       'color_neutral_600', 'color_neutral_700', 'color_neutral_800', 'color_neutral_900',
-      'font_heading', 'font_body', 'font_size_base', 'border_radius', 'shadow_style'
+      'font_heading', 'font_body', 'font_size_base', 'border_radius', 'shadow_style',
+      'feature_smooth_scroll', 'feature_grain_overlay', 'feature_page_loader', 'feature_sticky_header',
+      'page_loader_text', 'page_loader_show_logo', 'page_loader_duration'
     ]);
 
     const updates = [];
@@ -143,7 +173,15 @@ router.post('/update', requireAuth, async (req, res) => {
     Object.entries(req.body).forEach(([key, value]) => {
       if (value !== undefined && key !== 'site_id' && key !== 'id' && allowedColumns.has(key)) {
         updates.push(`${key} = ?`);
-        values.push(value);
+        // Normalize feature toggles to 0/1 for MySQL TINYINT(1)
+        const boolFields = ['feature_smooth_scroll', 'feature_grain_overlay', 'feature_page_loader', 'feature_sticky_header', 'page_loader_show_logo'];
+        if (boolFields.includes(key)) {
+          values.push(value === true || value === 1 || value === '1' ? 1 : 0);
+        } else if (key === 'page_loader_duration') {
+          values.push(Math.min(3, Math.max(0.5, parseFloat(value) || 2.5)));
+        } else {
+          values.push(value);
+        }
       }
     });
 

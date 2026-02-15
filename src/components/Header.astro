@@ -1,39 +1,110 @@
 ---
-const navLinks = [
-  { href: "/", label: "Forside" },
-  { href: "/priser", label: "Priser" },
-  { href: "/om-os", label: "Om os" },
-  { href: "/kontakt", label: "Kontakt" },
-];
+import designFeatures from '../data/design-features.json';
+import headerFooter from '../data/header-footer.json';
+
+const stickyClass = designFeatures.stickyHeader ? 'sticky top-0 z-40' : '';
+const layout = headerFooter.header_layout || 'regular';
+const logoUrl = headerFooter.header_logo_url || '/favicon.svg';
+const logoText = headerFooter.header_logo_text || 'lavprishjemmeside.dk';
+const menu1 = Array.isArray(headerFooter.header_menu_1) ? headerFooter.header_menu_1 : [];
+const menu2 = Array.isArray(headerFooter.header_menu_2) ? headerFooter.header_menu_2 : [];
+const megaHtml = headerFooter.header_mega_html;
 ---
 
-<header id="main-header" class="sticky top-0 z-40 bg-white border-b border-gray-200 transition-shadow duration-300">
-  <nav class="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
-    <a href="/" class="text-xl font-bold text-blue-600">
-      lavprishjemmeside.dk
-    </a>
-    <ul class="hidden md:flex gap-8">
-      {navLinks.map((link) => (
-        <li>
-          <a href={link.href} class="text-gray-700 hover:text-blue-600 transition-colors">
-            {link.label}
-          </a>
-        </li>
-      ))}
-    </ul>
-    <a href="/kontakt" class="hidden md:inline-block bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
-      Få et tilbud
-    </a>
-  </nav>
-</header>
+{layout === 'mega' && megaHtml ? (
+  <header id="main-header" class={`${stickyClass} bg-white border-b border-gray-200`}>
+    <div class="mega-nav-wrapper" set:html={megaHtml} />
+  </header>
+) : layout === 'modern' ? (
+  <header id="main-header" class={`${stickyClass} bg-white border-b border-gray-200 transition-shadow duration-300`}>
+    <nav class="mx-auto max-w-6xl px-4 py-6 flex flex-col items-center gap-4">
+      <a href="/" class="flex items-center gap-2">
+        <img src={logoUrl} alt={logoText} class="h-10 w-auto" width="40" height="40" />
+        <span class="text-xl font-bold text-[var(--color-primary)]">{logoText}</span>
+      </a>
+      <button id="mobile-menu-btn-modern" type="button" class="md:hidden p-2 text-gray-600" aria-label="Menu">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <ul id="modern-menu" class="hidden md:flex flex-wrap justify-center gap-6">
+        {menu1.map((link) => (
+          <li>
+            <a href={link.href} class="text-gray-700 hover:text-[var(--color-primary)] transition-colors">
+              {link.label}
+            </a>
+          </li>
+        ))}
+        {menu2.map((link) => (
+          <li>
+            <a href={link.href} class="inline-block bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity text-sm font-medium">
+              {link.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+    <div id="mobile-menu-modern" class="md:hidden hidden w-full border-t border-gray-200 px-4 py-4">
+      <ul class="flex flex-col gap-2">
+        {menu1.map((link) => (
+          <li><a href={link.href} class="block py-2 text-gray-700 hover:text-[var(--color-primary)]">{link.label}</a></li>
+        ))}
+        {menu2.map((link) => (
+          <li><a href={link.href} class="block py-2 text-[var(--color-primary)] font-medium">{link.label}</a></li>
+        ))}
+      </ul>
+    </div>
+  </header>
+) : (
+  <header id="main-header" class={`${stickyClass} bg-white border-b border-gray-200 transition-shadow duration-300`}>
+    <nav class="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between gap-4">
+      <a href="/" class="flex items-center gap-2 shrink-0">
+        <img src={logoUrl} alt={logoText} class="h-8 w-auto hidden sm:block" width="32" height="32" />
+        <span class="text-xl font-bold text-[var(--color-primary)]">{logoText}</span>
+      </a>
+      <button id="mobile-menu-btn" type="button" class="md:hidden p-2 text-gray-600 hover:text-gray-900" aria-label="Menu">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <ul id="desktop-nav" class="hidden md:flex gap-8 flex-1 justify-center">
+        {menu1.map((link) => (
+          <li>
+            <a href={link.href} class="text-gray-700 hover:text-[var(--color-primary)] transition-colors">
+              {link.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+      <ul class="hidden md:flex gap-4 shrink-0">
+        {menu2.map((link) => (
+          <li>
+            <a href={link.href} class="inline-block bg-[var(--color-primary)] text-white px-5 py-2 rounded-lg hover:opacity-90 transition-opacity text-sm font-medium">
+              {link.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+    <div id="mobile-menu" class="md:hidden hidden border-t border-gray-200 bg-white px-4 py-4">
+      <ul class="space-y-2">
+        {menu1.map((link) => (
+          <li><a href={link.href} class="block py-2 text-gray-700 hover:text-[var(--color-primary)]">{link.label}</a></li>
+        ))}
+        {menu2.map((link) => (
+          <li><a href={link.href} class="block py-2 text-[var(--color-primary)] font-medium">{link.label}</a></li>
+        ))}
+      </ul>
+    </div>
+  </header>
+)}
 
 <script>
   const header = document.getElementById('main-header');
   if (header) {
-    const toggleShadow = () => {
-      header.classList.toggle('shadow-sm', window.scrollY > 8);
-    };
+    const toggleShadow = () => header.classList.toggle('shadow-sm', window.scrollY > 8);
     window.addEventListener('scroll', toggleShadow, { passive: true });
     toggleShadow();
+    [['mobile-menu-btn', 'mobile-menu'], ['mobile-menu-btn-modern', 'mobile-menu-modern']].forEach(([btnId, menuId]) => {
+      const btn = document.getElementById(btnId);
+      const menu = document.getElementById(menuId);
+      if (btn && menu) btn.addEventListener('click', () => menu.classList.toggle('hidden'));
+    });
   }
 </script>
