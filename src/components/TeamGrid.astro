@@ -1,0 +1,105 @@
+---
+interface Props {
+  headline: string;
+  members: Array<{
+    name: string;
+    role: string;
+    photo: string;
+    bio?: string;
+    social?: Array<{ platform: string; url: string }>;
+  }>;
+  columns?: 2 | 3 | 4;
+}
+
+const { headline, members, columns = 3 } = Astro.props;
+
+const colClass =
+  columns === 2
+    ? 'md:grid-cols-2'
+    : columns === 4
+      ? 'md:grid-cols-2 lg:grid-cols-4'
+      : 'md:grid-cols-2 lg:grid-cols-3';
+
+function socialLabel(platform: string, name: string): string {
+  const labels: Record<string, string> = {
+    linkedin: `${name} på LinkedIn`,
+    twitter: `${name} på Twitter`,
+    x: `${name} på X`,
+  };
+  return labels[platform.toLowerCase()] || `${name} ${platform}`;
+}
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby="team-heading"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <h2
+      id="team-heading"
+      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+      style="font-family: var(--font-heading)"
+    >
+      {headline}
+    </h2>
+    <div class={`mt-12 grid grid-cols-1 gap-8 ${colClass}`}>
+      {members.map((member) => (
+        <article class="text-center">
+          <img
+            src={member.photo}
+            alt={`Portræt af ${member.name}`}
+            class="mx-auto h-32 w-32 rounded-[var(--radius-full)] object-cover shadow-[var(--shadow-md)]"
+            loading="lazy"
+          />
+          <h3
+            class="mt-4 text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)]"
+            style="font-family: var(--font-heading)"
+          >
+            {member.name}
+          </h3>
+          <p
+            class="text-[var(--font-size-base)] text-[var(--color-primary)]"
+            style="font-family: var(--font-body)"
+          >
+            {member.role}
+          </p>
+          {member.bio && (
+            <p
+              class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+              style="font-family: var(--font-body)"
+            >
+              {member.bio}
+            </p>
+          )}
+          {member.social && member.social.length > 0 && (
+            <div class="mt-4 flex justify-center gap-3">
+              {member.social.map((s) => (
+                <a
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+                  aria-label={socialLabel(s.platform, member.name)}
+                >
+                  {s.platform === 'linkedin' && (
+                    <span class="text-lg" aria-hidden="true">
+                      in
+                    </span>
+                  )}
+                  {s.platform === 'twitter' && (
+                    <span class="text-lg" aria-hidden="true">
+                      𝕏
+                    </span>
+                  )}
+                  {!['linkedin', 'twitter'].includes(s.platform.toLowerCase()) && (
+                    <span aria-hidden="true">{s.platform}</span>
+                  )}
+                </a>
+              ))}
+            </div>
+          )}
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

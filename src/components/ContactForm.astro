@@ -1,0 +1,127 @@
+---
+interface Props {
+  headline: string;
+  description?: string;
+  fields?: Array<{
+    type: 'text' | 'email' | 'tel' | 'textarea' | 'select';
+    name: string;
+    label: string;
+    required?: boolean;
+    options?: string[];
+  }>;
+  submitText?: string;
+  successMessage?: string;
+}
+
+const {
+  headline,
+  description,
+  fields = [
+    { type: 'text', name: 'name', label: 'Navn', required: true },
+    { type: 'email', name: 'email', label: 'E-mail', required: true },
+    { type: 'textarea', name: 'message', label: 'Besked', required: true },
+  ],
+  submitText = 'Send',
+  successMessage = 'Tak for din henvendelse! Vi vender tilbage hurtigst muligt.',
+} = Astro.props;
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby="contact-heading"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <h2
+      id="contact-heading"
+      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+      style="font-family: var(--font-heading)"
+    >
+      {headline}
+    </h2>
+    {description && (
+      <p
+        class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+        style="font-family: var(--font-body)"
+      >
+        {description}
+      </p>
+    )}
+    <form
+      id="contact-form"
+      class="mt-8 max-w-xl space-y-4"
+      method="post"
+      action="/api/contact"
+    >
+      {fields.map((field) => (
+        <div>
+          <label
+            for={`field-${field.name}`}
+            class="mb-1 block text-[var(--font-size-base)] font-medium text-[var(--color-text-primary)]"
+            style="font-family: var(--font-body)"
+          >
+            {field.label}
+            {field.required && <span class="text-[var(--color-primary)]">*</span>}
+          </label>
+          {field.type === 'textarea' ? (
+            <textarea
+              id={`field-${field.name}`}
+              name={field.name}
+              required={field.required}
+              rows={4}
+              class="w-full rounded-[var(--radius-input)] border border-[var(--color-border)] bg-[var(--color-bg-page)] px-4 py-2 text-[var(--font-size-base)] text-[var(--color-text-primary)] transition-colors focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+              style="font-family: var(--font-body)"
+              aria-required={field.required || undefined}
+            />
+          ) : field.type === 'select' ? (
+            <select
+              id={`field-${field.name}`}
+              name={field.name}
+              required={field.required}
+              class="w-full rounded-[var(--radius-input)] border border-[var(--color-border)] bg-[var(--color-bg-page)] px-4 py-2 text-[var(--font-size-base)] text-[var(--color-text-primary)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+              style="font-family: var(--font-body)"
+            >
+              <option value="">Vælg...</option>
+              {field.options?.map((opt) => (
+                <option value={opt}>{opt}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type={field.type}
+              id={`field-${field.name}`}
+              name={field.name}
+              required={field.required}
+              autocomplete={
+                field.type === 'email'
+                  ? 'email'
+                  : field.type === 'tel'
+                    ? 'tel'
+                    : field.name === 'name'
+                      ? 'name'
+                      : undefined
+              }
+              class="w-full rounded-[var(--radius-input)] border border-[var(--color-border)] bg-[var(--color-bg-page)] px-4 py-2 text-[var(--font-size-base)] text-[var(--color-text-primary)] transition-colors focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+              style="font-family: var(--font-body)"
+              aria-required={field.required || undefined}
+            />
+          )}
+        </div>
+      ))}
+      <button
+        type="submit"
+        class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 disabled:opacity-50"
+        style="font-family: var(--font-body)"
+      >
+        {submitText}
+      </button>
+    </form>
+    <div
+      id="form-success"
+      class="mt-4 hidden rounded-[var(--radius-md)] bg-[var(--color-primary-light)] p-4 text-[var(--font-size-base)] text-[var(--color-text-primary)]"
+      role="alert"
+      aria-live="polite"
+    >
+      {successMessage}
+    </div>
+  </div>
+</section>

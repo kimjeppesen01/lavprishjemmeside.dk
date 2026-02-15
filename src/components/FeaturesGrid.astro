@@ -1,0 +1,70 @@
+---
+interface Props {
+  headline: string;
+  description?: string;
+  features: Array<{ icon: string; title: string; description: string }>;
+  columns?: 2 | 3 | 4;
+}
+
+const {
+  headline,
+  description,
+  features,
+  columns = 3,
+} = Astro.props;
+
+const colClass =
+  columns === 2
+    ? 'md:grid-cols-2'
+    : columns === 4
+      ? 'md:grid-cols-2 lg:grid-cols-4'
+      : 'md:grid-cols-2 lg:grid-cols-3';
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby="features-heading"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div class="text-center">
+      <h2
+        id="features-heading"
+        class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+        style="font-family: var(--font-heading)"
+      >
+        {headline}
+      </h2>
+      {description && (
+        <p
+          class="mx-auto mt-4 max-w-2xl text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+          style="font-family: var(--font-body)"
+        >
+          {description}
+        </p>
+      )}
+    </div>
+    <div class={`mt-12 grid grid-cols-1 gap-6 ${colClass}`}>
+      {features.map((feature) => (
+        <article
+          class="rounded-[var(--radius-card)] bg-[var(--color-bg-page)] p-6 shadow-[var(--shadow-card)]"
+        >
+          <div class="text-2xl text-[var(--color-primary)]" aria-hidden="true">
+            {feature.icon}
+          </div>
+          <h3
+            class="mt-4 text-[var(--font-size-xl)] font-semibold text-[var(--color-text-primary)]"
+            style="font-family: var(--font-heading)"
+          >
+            {feature.title}
+          </h3>
+          <p
+            class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+            style="font-family: var(--font-body)"
+          >
+            {feature.description}
+          </p>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

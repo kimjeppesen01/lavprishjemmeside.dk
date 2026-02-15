@@ -1,0 +1,68 @@
+---
+interface Props {
+  headline: string;
+  cards: Array<{
+    icon: string;
+    title: string;
+    description: string;
+    link?: { text: string; href: string };
+  }>;
+  columns?: 2 | 3 | 4;
+}
+
+const { headline, cards, columns = 3 } = Astro.props;
+
+const colClass =
+  columns === 2
+    ? 'md:grid-cols-2'
+    : columns === 4
+      ? 'md:grid-cols-2 lg:grid-cols-4'
+      : 'md:grid-cols-2 lg:grid-cols-3';
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby="icon-cards-heading"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <h2
+      id="icon-cards-heading"
+      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+      style="font-family: var(--font-heading)"
+    >
+      {headline}
+    </h2>
+    <div class={`mt-12 grid grid-cols-1 gap-6 ${colClass}`}>
+      {cards.map((card) => (
+        <article
+          class="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-6 shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--color-primary)]/30"
+        >
+          <div class="text-2xl text-[var(--color-primary)]" aria-hidden="true">
+            {card.icon}
+          </div>
+          <h3
+            class="mt-4 text-[var(--font-size-xl)] font-semibold text-[var(--color-text-primary)]"
+            style="font-family: var(--font-heading)"
+          >
+            {card.title}
+          </h3>
+          <p
+            class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+            style="font-family: var(--font-body)"
+          >
+            {card.description}
+          </p>
+          {card.link && (
+            <a
+              href={card.link.href}
+              class="mt-4 inline-flex min-h-[44px] items-center text-[var(--font-size-base)] font-medium text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+              style="font-family: var(--font-body)"
+            >
+              {card.link.text} →
+            </a>
+          )}
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

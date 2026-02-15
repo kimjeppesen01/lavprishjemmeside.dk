@@ -1,0 +1,83 @@
+---
+interface Props {
+  headline: string;
+  tiers: Array<{
+    name: string;
+    price: string;
+    period: string;
+    features: string[];
+    cta: { text: string; href: string };
+    featured?: boolean;
+  }>;
+}
+
+const { headline, tiers } = Astro.props;
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby="pricing-heading"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <h2
+      id="pricing-heading"
+      class="text-center text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+      style="font-family: var(--font-heading)"
+    >
+      {headline}
+    </h2>
+    <div class="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+      {tiers.map((tier) => (
+        <article
+          class:list={[
+            'flex flex-col rounded-[var(--radius-card)] border p-6 shadow-[var(--shadow-card)]',
+            tier.featured
+              ? 'border-[var(--color-primary)] shadow-[var(--shadow-lg)]'
+              : 'border-[var(--color-border)]',
+          ]}
+        >
+          <h3
+            class="text-[var(--font-size-xl)] font-semibold text-[var(--color-text-primary)]"
+            style="font-family: var(--font-heading)"
+          >
+            {tier.name}
+          </h3>
+          <div class="mt-4 flex items-baseline gap-1">
+            <span
+              class="text-[var(--font-size-3xl)] font-bold text-[var(--color-primary)]"
+              style="font-family: var(--font-heading)"
+            >
+              {tier.price}
+            </span>
+            <span
+              class="text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+              style="font-family: var(--font-body)"
+            >
+              {tier.period}
+            </span>
+          </div>
+          <ul class="mt-6 flex-1 space-y-2" role="list">
+            {tier.features.map((f) => (
+              <li
+                class="flex items-center gap-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+                style="font-family: var(--font-body)"
+              >
+                <span class="text-[var(--color-primary)]" aria-hidden="true">
+                  ✓
+                </span>
+                {f}
+              </li>
+            ))}
+          </ul>
+          <a
+            href={tier.cta.href}
+            class="mt-6 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+            style="font-family: var(--font-body)"
+          >
+            {tier.cta.text}
+          </a>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

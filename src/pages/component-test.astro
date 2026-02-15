@@ -1,0 +1,249 @@
+---
+import Layout from '../layouts/Layout.astro';
+import HeroSection from '../components/HeroSection.astro';
+import CtaSection from '../components/CtaSection.astro';
+import StatsBanner from '../components/StatsBanner.astro';
+import FeaturesGrid from '../components/FeaturesGrid.astro';
+import IconCards from '../components/IconCards.astro';
+import ContentImageSplit from '../components/ContentImageSplit.astro';
+import VideoEmbed from '../components/VideoEmbed.astro';
+import Timeline from '../components/Timeline.astro';
+import TestimonialsCarousel from '../components/TestimonialsCarousel.astro';
+import TeamGrid from '../components/TeamGrid.astro';
+import LogoCloud from '../components/LogoCloud.astro';
+import PricingTable from '../components/PricingTable.astro';
+import ComparisonTable from '../components/ComparisonTable.astro';
+import ContactForm from '../components/ContactForm.astro';
+import FaqAccordion from '../components/FaqAccordion.astro';
+import NewsletterSignup from '../components/NewsletterSignup.astro';
+import GalleryGrid from '../components/GalleryGrid.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+
+const heroData = {
+  headline: 'Test Overskrift',
+  description: 'Test beskrivelse — en professionel løsning til din virksomhed.',
+  primaryCta: { text: 'Kom i gang', href: '/kontakt' },
+  secondaryCta: { text: 'Læs mere', href: '/om-os' },
+  alignment: 'left' as const,
+};
+
+const ctaData = {
+  headline: 'Klar til at komme i gang?',
+  description: 'Få et uforpligtende tilbud inden for 24 timer.',
+  ctaButton: { text: 'Kontakt os i dag', href: '/kontakt' },
+  backgroundColor: 'primary' as const,
+  layout: 'centered' as const,
+};
+
+const statsData = {
+  stats: [
+    { value: '500+', label: 'tilfredse kunder' },
+    { value: '99%', label: 'tilfredshedsrate' },
+    { value: '15', label: 'år i branchen' },
+  ],
+};
+
+const featuresData = {
+  headline: 'Hvorfor vælge os',
+  description: 'Vi skil os ud med kvalitet og service.',
+  features: [
+    { icon: '✓', title: 'Skræddersyet', description: 'Tilpasset dine behov.' },
+    { icon: '⚡', title: 'Hurtig levering', description: 'Typisk 2-3 uger.' },
+    { icon: '💬', title: 'Support', description: 'Vi er altid tilgængelige.' },
+  ],
+  columns: 3 as const,
+};
+
+const iconCardsData = {
+  headline: 'Vores ydelser',
+  cards: [
+    {
+      icon: '🌐',
+      title: 'Hjemmesider',
+      description: 'Moderne, responsive hjemmesider.',
+      link: { text: 'Læs mere', href: '/ydelser' },
+    },
+    {
+      icon: '📈',
+      title: 'SEO',
+      description: 'Bliv fundet på Google.',
+      link: { text: 'Læs mere', href: '/seo' },
+    },
+  ],
+  columns: 2 as const,
+};
+
+const contentImageData = {
+  headline: 'Vi bygger hjemmesider der virker',
+  content: '<p>Med over 10 års erfaring hjælper vi virksomheder med at komme online. Vi fokuserer på brugervenlige løsninger.</p>',
+  imageUrl: 'https://placehold.co/600x400/f3f4f6/6b7280?text=Billede',
+  imagePosition: 'right' as const,
+};
+
+const videoData = {
+  videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  title: 'Se hvordan det virker',
+  description: 'Kort video der viser uens løsning.',
+  provider: 'youtube' as const,
+};
+
+const timelineData = {
+  headline: 'Vores historie',
+  events: [
+    { year: '2010', title: 'Grundlagt', description: 'Vi startede med små projekter.' },
+    { year: '2020', title: '100 kunder', description: 'Vi nåede 100 tilfredse kunder.' },
+    { year: '2025', title: 'I dag', description: 'Vi servicerer hele Danmark.' },
+  ],
+};
+
+const testimonialsData = {
+  headline: 'Hvad vores kunder siger',
+  testimonials: [
+    {
+      quote: 'Professionel service og hurtig levering. Meget tilfredse!',
+      author: 'Anna Nielsen',
+      role: 'Marketingchef',
+      company: 'Nielsen & Co',
+      rating: 5,
+    },
+    {
+      quote: 'De forstod vores behov fra starten.',
+      author: 'Lars Petersen',
+      role: 'Grundlægger',
+      company: 'Petersen A/S',
+      rating: 5,
+    },
+  ],
+};
+
+const teamData = {
+  headline: 'Mød teamet',
+  members: [
+    {
+      name: 'Lars Jensen',
+      role: 'Grundlægger',
+      photo: 'https://placehold.co/128x128/f3f4f6/6b7280?text=LJ',
+      bio: '15 års erfaring.',
+      social: [{ platform: 'linkedin', url: 'https://linkedin.com' }],
+    },
+  ],
+  columns: 3 as const,
+};
+
+const logoData = {
+  headline: 'Kunder der stoler på os',
+  logos: [
+    { imageUrl: 'https://placehold.co/120x48/f3f4f6/6b7280?text=Logo1', alt: 'Kunde 1' },
+    { imageUrl: 'https://placehold.co/120x48/f3f4f6/6b7280?text=Logo2', alt: 'Kunde 2' },
+  ],
+  grayscale: true,
+};
+
+const pricingData = {
+  headline: 'Vælg den plan der passer dig',
+  tiers: [
+    {
+      name: 'Basis',
+      price: '499',
+      period: 'kr/måned',
+      features: ['5 sider', 'Responsiv design'],
+      cta: { text: 'Vælg Basis', href: '/kontakt?plan=basis' },
+      featured: false,
+    },
+    {
+      name: 'Professionel',
+      price: '999',
+      period: 'kr/måned',
+      features: ['10 sider', 'SEO', 'Prioriteret support'],
+      cta: { text: 'Vælg Professionel', href: '/kontakt?plan=pro' },
+      featured: true,
+    },
+  ],
+};
+
+const comparisonData = {
+  headline: 'Sammenlign planerne',
+  products: ['Basis', 'Professionel'],
+  features: ['Antal sider', 'SEO', 'Support'],
+  data: [
+    ['5 sider', '10 sider'],
+    [false, true],
+    ['E-mail', 'Prioriteret'],
+  ],
+};
+
+const contactData = {
+  headline: 'Kontakt os',
+  description: 'Udfyld formularen, så vender vi tilbage.',
+  fields: [
+    { type: 'text' as const, name: 'name', label: 'Navn', required: true },
+    { type: 'email' as const, name: 'email', label: 'E-mail', required: true },
+    { type: 'textarea' as const, name: 'message', label: 'Besked', required: true },
+  ],
+  submitText: 'Send besked',
+  successMessage: 'Tak! Vi vender tilbage hurtigst muligt.',
+};
+
+const faqData = {
+  headline: 'Ofte stillede spørgsmål',
+  faqs: [
+    {
+      question: 'Hvor lang tid tager det?',
+      answer: 'Typisk 2-4 uger afhængigt af størrelse.',
+    },
+    {
+      question: 'Hvad koster det?',
+      answer: 'Vores priser starter ved 5.000 kr.',
+    },
+  ],
+  defaultOpen: 0,
+};
+
+const newsletterData = {
+  headline: 'Få nyheder og tips',
+  description: 'Tilmeld dig vores nyhedsbrev.',
+  placeholder: 'Din e-mail',
+  buttonText: 'Tilmeld mig',
+};
+
+const galleryData = {
+  images: [
+    { url: 'https://placehold.co/400x300/f3f4f6/6b7280?text=1', alt: 'Billede 1', caption: 'Forside' },
+    { url: 'https://placehold.co/400x300/f3f4f6/6b7280?text=2', alt: 'Billede 2', caption: 'Ydelser' },
+  ],
+  columns: 2 as const,
+  lightbox: true,
+};
+
+const breadcrumbData = {
+  items: [
+    { label: 'Forside', href: '/' },
+    { label: 'Ydelser', href: '/ydelser' },
+    { label: 'Hjemmesider', href: '' },
+  ],
+  separator: '>',
+};
+---
+
+<Layout title="Component Test | lavprishjemmeside.dk">
+  <main class="min-h-screen" style="background-color: var(--color-bg-page); color: var(--color-text-primary);">
+    <Breadcrumbs {...breadcrumbData} />
+    <HeroSection {...heroData} />
+    <FeaturesGrid {...featuresData} />
+    <IconCards {...iconCardsData} />
+    <ContentImageSplit {...contentImageData} />
+    <StatsBanner {...statsData} />
+    <VideoEmbed {...videoData} />
+    <Timeline {...timelineData} />
+    <TestimonialsCarousel {...testimonialsData} />
+    <TeamGrid {...teamData} />
+    <LogoCloud {...logoData} />
+    <PricingTable {...pricingData} />
+    <ComparisonTable {...comparisonData} />
+    <FaqAccordion {...faqData} />
+    <NewsletterSignup {...newsletterData} />
+    <GalleryGrid {...galleryData} />
+    <ContactForm {...contactData} />
+    <CtaSection {...ctaData} />
+  </main>
+</Layout>

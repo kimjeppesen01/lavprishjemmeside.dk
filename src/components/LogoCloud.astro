@@ -1,0 +1,53 @@
+---
+interface Props {
+  headline?: string;
+  logos: Array<{ imageUrl: string; alt: string; link?: string }>;
+  grayscale?: boolean;
+}
+
+const { headline, logos, grayscale = true } = Astro.props;
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby={headline ? 'logo-heading' : undefined}
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    {headline && (
+      <h2
+        id="logo-heading"
+        class="text-center text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+        style="font-family: var(--font-heading)"
+      >
+        {headline}
+      </h2>
+    )}
+    <div
+      class={`mt-12 flex flex-wrap items-center justify-center gap-8 md:gap-12 ${grayscale ? '[filter:grayscale(100%)]' : ''}`}
+    >
+      {logos.map((logo) => {
+        const img = (
+          <img
+            src={logo.imageUrl}
+            alt={logo.alt}
+            class="h-12 max-w-[140px] object-contain opacity-70 transition-opacity hover:opacity-100"
+            loading="lazy"
+          />
+        );
+        return logo.link ? (
+          <a
+            href={logo.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+            aria-label={logo.alt}
+          >
+            {img}
+          </a>
+        ) : (
+          img
+        );
+      })}
+    </div>
+  </div>
+</section>

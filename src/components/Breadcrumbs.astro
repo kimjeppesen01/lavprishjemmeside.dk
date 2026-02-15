@@ -1,0 +1,52 @@
+---
+interface Props {
+  items: Array<{ label: string; href: string }>;
+  separator?: string;
+}
+
+const { items, separator = '>' } = Astro.props;
+---
+
+<nav
+  class="py-4 px-[var(--container-padding-x)]"
+  aria-label="Brødkrummesti"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <ol
+      class="flex flex-wrap items-center gap-2 text-[var(--font-size-base)]"
+      style="font-family: var(--font-body)"
+    >
+      {items.map((item, index) => {
+        const isLast = index === items.length - 1;
+        const hasHref = item.href && item.href !== '';
+        return (
+          <li class="flex items-center gap-2">
+            {index > 0 && (
+              <span
+                class="text-[var(--color-text-secondary)]"
+                aria-hidden="true"
+              >
+                {separator}
+              </span>
+            )}
+            {hasHref ? (
+              <a
+                href={item.href}
+                class="text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+              >
+                {item.label}
+              </a>
+            ) : (
+              <span
+                class="text-[var(--color-text-secondary)]"
+                aria-current="page"
+              >
+                {item.label}
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  </div>
+</nav>

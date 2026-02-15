@@ -1,0 +1,75 @@
+---
+interface Props {
+  headline: string;
+  description?: string;
+  placeholder?: string;
+  buttonText?: string;
+  privacyText?: string;
+}
+
+const {
+  headline,
+  description,
+  placeholder = 'Din e-mail',
+  buttonText = 'Tilmeld',
+  privacyText = 'Vi deler aldrig din e-mail med tredjeparter. Du kan afmelde dig når som helst.',
+} = Astro.props;
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)] bg-[var(--color-bg-section-alt)]"
+  aria-labelledby="newsletter-heading"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <h2
+      id="newsletter-heading"
+      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+      style="font-family: var(--font-heading)"
+    >
+      {headline}
+    </h2>
+    {description && (
+      <p
+        class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+        style="font-family: var(--font-body)"
+      >
+        {description}
+      </p>
+    )}
+    <form
+      id="newsletter-form"
+      class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center"
+      method="post"
+      action="/api/newsletter"
+    >
+      <label for="newsletter-email" class="sr-only">
+        {placeholder}
+      </label>
+      <input
+        type="email"
+        id="newsletter-email"
+        name="email"
+        required
+        placeholder={placeholder}
+        autocomplete="email"
+        class="min-h-[44px] flex-1 rounded-[var(--radius-input)] border border-[var(--color-border)] bg-[var(--color-bg-page)] px-4 py-2 text-[var(--font-size-base)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+        style="font-family: var(--font-body)"
+      />
+      <button
+        type="submit"
+        class="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-primary)] px-6 py-2 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+        style="font-family: var(--font-body)"
+      >
+        {buttonText}
+      </button>
+    </form>
+    {privacyText && (
+      <p
+        class="mt-3 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+        style="font-family: var(--font-body)"
+      >
+        {privacyText}
+      </p>
+    )}
+  </div>
+</section>

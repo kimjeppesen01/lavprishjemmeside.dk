@@ -1,0 +1,88 @@
+---
+interface Props {
+  headline: string;
+  description?: string;
+  ctaButton?: { text: string; href: string };
+  backgroundColor?: 'default' | 'primary' | 'alt';
+  layout?: 'centered' | 'split';
+}
+
+const {
+  headline,
+  description,
+  ctaButton,
+  backgroundColor = 'primary',
+  layout = 'centered',
+} = Astro.props;
+
+const bgClass =
+  backgroundColor === 'primary'
+    ? 'bg-[var(--color-primary)]'
+    : backgroundColor === 'alt'
+      ? 'bg-[var(--color-bg-section-alt)]'
+      : 'bg-[var(--color-bg-page)]';
+
+const textClass =
+  backgroundColor === 'primary'
+    ? 'text-[var(--color-text-on-primary)]'
+    : 'text-[var(--color-text-primary)]';
+
+const descClass =
+  backgroundColor === 'primary'
+    ? 'text-[var(--color-text-on-primary)]/90'
+    : 'text-[var(--color-text-secondary)]';
+
+const buttonClass =
+  backgroundColor === 'primary'
+    ? 'bg-[var(--color-text-on-primary)] text-[var(--color-primary)] hover:bg-[var(--color-neutral-100)]'
+    : 'bg-[var(--color-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-primary-hover)]';
+---
+
+<section
+  class={`py-[var(--section-padding-y)] px-[var(--container-padding-x)] ${bgClass}`}
+  aria-labelledby="cta-heading"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div
+      class:list={[
+        layout === 'centered' && 'flex flex-col items-center text-center',
+        layout === 'split' &&
+          'flex flex-col gap-6 md:flex-row md:items-center md:justify-between',
+      ]}
+    >
+      <div class={layout === 'split' ? 'flex-1' : ''}>
+        <h2
+          id="cta-heading"
+          class={`text-[var(--font-size-2xl)] font-bold md:text-[var(--font-size-3xl)] ${textClass}`}
+          style="font-family: var(--font-heading)"
+        >
+          {headline}
+        </h2>
+        {description && (
+          <p
+            class={`mt-2 text-[var(--font-size-base)] ${descClass}`}
+            style="font-family: var(--font-body)"
+          >
+            {description}
+          </p>
+        )}
+      </div>
+      {ctaButton && (
+        <div
+          class:list={[
+            layout === 'centered' && 'mt-6',
+            layout === 'split' && 'md:ml-8 md:shrink-0',
+          ]}
+        >
+          <a
+            href={ctaButton.href}
+            class={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] px-6 py-3 text-[var(--font-size-base)] font-medium shadow-[var(--shadow-sm)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 ${buttonClass}`}
+            style="font-family: var(--font-body)"
+          >
+            {ctaButton.text}
+          </a>
+        </div>
+      )}
+    </div>
+  </div>
+</section>

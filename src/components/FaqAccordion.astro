@@ -1,0 +1,52 @@
+---
+interface Props {
+  headline: string;
+  faqs: Array<{ question: string; answer: string }>;
+  defaultOpen?: number;
+}
+
+const { headline, faqs, defaultOpen = 0 } = Astro.props;
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby="faq-heading"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <h2
+      id="faq-heading"
+      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+      style="font-family: var(--font-heading)"
+    >
+      {headline}
+    </h2>
+    <div class="mt-8 divide-y divide-[var(--color-border)]" role="list">
+      {faqs.map((faq, index) => (
+        <details
+          class="group"
+          role="listitem"
+          open={index === defaultOpen}
+        >
+          <summary
+            class="flex cursor-pointer list-none items-center justify-between py-4 text-[var(--font-size-base)] font-medium text-[var(--color-text-primary)] transition-colors hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden"
+            style="font-family: var(--font-body)"
+          >
+            {faq.question}
+            <span
+              class="ml-2 shrink-0 text-[var(--color-primary)] transition-transform group-open:rotate-180"
+              aria-hidden="true"
+            >
+              ▼
+            </span>
+          </summary>
+          <div
+            class="pb-4 pt-0 text-[var(--font-size-base)] leading-[var(--line-height-normal)] text-[var(--color-text-secondary)]"
+            style="font-family: var(--font-body)"
+          >
+            {faq.answer}
+          </div>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>

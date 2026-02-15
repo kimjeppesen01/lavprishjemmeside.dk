@@ -1,0 +1,64 @@
+---
+interface Props {
+  headline: string;
+  events: Array<{ year: string; title: string; description: string }>;
+}
+
+const { headline, events } = Astro.props;
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby="timeline-heading"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <h2
+      id="timeline-heading"
+      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+      style="font-family: var(--font-heading)"
+    >
+      {headline}
+    </h2>
+    <div class="mt-12" role="list">
+      {events.map((event, index) => (
+        <article
+          class="relative flex gap-6 pb-12 last:pb-0"
+          role="listitem"
+        >
+          <div class="relative flex shrink-0 flex-col items-center">
+            <div
+              class="flex h-4 w-4 shrink-0 items-center justify-center rounded-[var(--radius-full)] bg-[var(--color-primary)]"
+              aria-hidden="true"
+            ></div>
+            {index < events.length - 1 && (
+              <div
+                class="absolute left-2 top-6 h-[calc(100%-1.5rem)] w-0.5 bg-[var(--color-border)]"
+                aria-hidden="true"
+              ></div>
+            )}
+          </div>
+          <div class="min-w-0 flex-1 pt-0.5">
+            <span
+              class="text-[var(--font-size-base)] font-semibold text-[var(--color-primary)]"
+              style="font-family: var(--font-heading)"
+            >
+              {event.year}
+            </span>
+            <h3
+              class="mt-1 text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)]"
+              style="font-family: var(--font-heading)"
+            >
+              {event.title}
+            </h3>
+            <p
+              class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+              style="font-family: var(--font-body)"
+            >
+              {event.description}
+            </p>
+          </div>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

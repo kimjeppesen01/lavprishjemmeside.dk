@@ -1,0 +1,81 @@
+---
+interface Props {
+  headline: string;
+  content: string;
+  imageUrl: string;
+  imagePosition?: 'left' | 'right';
+  backgroundColor?: 'default' | 'alt';
+}
+
+const {
+  headline,
+  content,
+  imageUrl,
+  imagePosition = 'right',
+  backgroundColor = 'default',
+} = Astro.props;
+
+const bgClass =
+  backgroundColor === 'alt'
+    ? 'bg-[var(--color-bg-section-alt)]'
+    : 'bg-[var(--color-bg-page)]';
+---
+
+<section
+  class={`py-[var(--section-padding-y)] px-[var(--container-padding-x)] ${bgClass}`}
+  aria-labelledby="split-heading"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
+      {imagePosition === 'left' ? (
+        <>
+          <div class="order-2 lg:order-1 relative overflow-hidden rounded-[var(--radius-lg)]">
+            <img
+              src={imageUrl}
+              alt={headline}
+              class="h-full w-full object-cover"
+              loading="lazy"
+            />
+          </div>
+          <div id="split-heading" class="order-1 flex flex-col justify-center lg:order-2">
+            <h2
+              class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+              style="font-family: var(--font-heading)"
+            >
+              {headline}
+            </h2>
+            <div
+              class="mt-4 text-[var(--font-size-base)] leading-[var(--line-height-normal)] text-[var(--color-text-secondary)] [&>p]:mt-4 [&>p:first-child]:mt-0"
+              style="font-family: var(--font-body)"
+              set:html={content}
+            />
+          </div>
+        </>
+      ) : (
+        <>
+          <div id="split-heading" class="flex flex-col justify-center">
+            <h2
+              class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+              style="font-family: var(--font-heading)"
+            >
+              {headline}
+            </h2>
+            <div
+              class="mt-4 text-[var(--font-size-base)] leading-[var(--line-height-normal)] text-[var(--color-text-secondary)] [&>p]:mt-4 [&>p:first-child]:mt-0"
+              style="font-family: var(--font-body)"
+              set:html={content}
+            />
+          </div>
+          <div class="relative overflow-hidden rounded-[var(--radius-lg)]">
+            <img
+              src={imageUrl}
+              alt={headline}
+              class="h-full w-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        </>
+      )}
+    </div>
+  </div>
+</section>

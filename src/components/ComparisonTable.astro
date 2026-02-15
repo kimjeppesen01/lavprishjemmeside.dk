@@ -1,0 +1,93 @@
+---
+interface Props {
+  headline: string;
+  products: string[];
+  features: string[];
+  data: (string | boolean | null)[][];
+}
+
+const { headline, products, features, data } = Astro.props;
+
+function renderCell(value: string | boolean | null): string {
+  if (value === true) return '✓';
+  if (value === false) return '✗';
+  if (value === null) return '—';
+  return value;
+}
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby="comparison-heading"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <h2
+      id="comparison-heading"
+      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+      style="font-family: var(--font-heading)"
+    >
+      {headline}
+    </h2>
+    <div class="mt-8 overflow-x-auto">
+      <table class="w-full min-w-[400px] border-collapse" role="table">
+        <thead>
+          <tr class="border-b-2 border-[var(--color-border)]">
+            <th
+              scope="col"
+              class="px-4 py-3 text-left text-[var(--font-size-base)] font-semibold text-[var(--color-text-primary)]"
+              style="font-family: var(--font-heading)"
+            >
+              <span class="sr-only">Funktion</span>
+            </th>
+            {products.map((name) => (
+              <th
+                scope="col"
+                class="px-4 py-3 text-center text-[var(--font-size-base)] font-semibold text-[var(--color-text-primary)]"
+                style="font-family: var(--font-heading)"
+              >
+                {name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {features.map((feature, rowIndex) => (
+            <tr
+              class="border-b border-[var(--color-border)] bg-[var(--color-bg-page)] even:bg-[var(--color-bg-section-alt)]"
+            >
+              <th
+                scope="row"
+                class="px-4 py-3 text-left text-[var(--font-size-base)] font-medium text-[var(--color-text-primary)]"
+                style="font-family: var(--font-body)"
+              >
+                {feature}
+              </th>
+              {products.map((_, colIndex) => {
+                const val = data[rowIndex]?.[colIndex];
+                const display = renderCell(val);
+                const isCheck = val === true;
+                const isCross = val === false;
+                return (
+                  <td
+                    class="px-4 py-3 text-center text-[var(--font-size-base)]"
+                    style="font-family: var(--font-body)"
+                  >
+                    <span
+                      class:list={[
+                        isCheck && 'text-[var(--color-primary)]',
+                        isCross && 'text-[var(--color-text-secondary)]',
+                        !isCheck && !isCross && 'text-[var(--color-text-secondary)]',
+                      ]}
+                    >
+                      {display}
+                    </span>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,72 @@
+---
+interface Props {
+  videoUrl: string;
+  title?: string;
+  description?: string;
+  thumbnail?: string;
+  provider?: 'youtube' | 'vimeo';
+}
+
+const { videoUrl, title, description, provider } = Astro.props;
+
+function extractVideoId(url: string, prov?: string): string | null {
+  if (prov === 'youtube' || url.includes('youtube.com') || url.includes('youtu.be')) {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/);
+    return match ? match[1] : null;
+  }
+  if (prov === 'vimeo' || url.includes('vimeo.com')) {
+    const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    return match ? match[1] : null;
+  }
+  return null;
+}
+
+const videoId = extractVideoId(videoUrl, provider);
+const isYoutube = provider === 'youtube' || videoUrl.includes('youtube') || videoUrl.includes('youtu.be');
+
+const embedUrl = videoId
+  ? isYoutube
+    ? `https://www.youtube-nocookie.com/embed/${videoId}`
+    : `https://player.vimeo.com/video/${videoId}`
+  : null;
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby={title ? 'video-heading' : undefined}
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    {title && (
+      <h2
+        id="video-heading"
+        class="mb-4 text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)]"
+        style="font-family: var(--font-heading)"
+      >
+        {title}
+      </h2>
+    )}
+    {embedUrl ? (
+      <div class="relative aspect-video overflow-hidden rounded-[var(--radius-lg)]">
+        <iframe
+          src={embedUrl}
+          title={title || 'Video'}
+          class="absolute inset-0 h-full w-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      </div>
+    ) : (
+      <div class="flex aspect-video items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
+        Ugyldig video-URL
+      </div>
+    )}
+    {description && (
+      <p
+        class="mt-4 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+        style="font-family: var(--font-body)"
+      >
+        {description}
+      </p>
+    )}
+  </div>
+</section>

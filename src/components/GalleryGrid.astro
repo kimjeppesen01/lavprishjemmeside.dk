@@ -1,0 +1,129 @@
+---
+interface Props {
+  images: Array<{ url: string; alt: string; caption?: string }>;
+  columns?: 2 | 3 | 4;
+  lightbox?: boolean;
+}
+
+const { images, columns = 3, lightbox = true } = Astro.props;
+
+const colClass =
+  columns === 2
+    ? 'md:grid-cols-2'
+    : columns === 4
+      ? 'md:grid-cols-2 lg:grid-cols-4'
+      : 'md:grid-cols-2 lg:grid-cols-3';
+
+const galleryId = 'gallery-' + Math.random().toString(36).slice(2);
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-label="Billedgalleri"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div class={`grid grid-cols-1 gap-4 ${colClass}`}>
+      {images.map((img, i) => (
+        <figure class="group">
+          {lightbox ? (
+            <a
+              href={img.url}
+              class="block overflow-hidden rounded-[var(--radius-lg)]"
+              data-lightbox={galleryId}
+              data-index={i}
+              aria-label={`Åbn billede ${i + 1}: ${img.alt}`}
+            >
+              <img
+                src={img.url}
+                alt={img.alt}
+                class="h-48 w-full object-cover transition-transform group-hover:scale-105"
+                loading="lazy"
+              />
+            </a>
+          ) : (
+            <img
+              src={img.url}
+              alt={img.alt}
+              class="h-48 w-full rounded-[var(--radius-lg)] object-cover"
+              loading="lazy"
+            />
+          )}
+          {img.caption && (
+            <figcaption
+              class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+              style="font-family: var(--font-body)"
+            >
+              {img.caption}
+            </figcaption>
+          )}
+        </figure>
+      ))}
+    </div>
+  </div>
+  {lightbox && (
+    <div
+      id={`${galleryId}-overlay`}
+      class="fixed inset-0 z-50 hidden items-center justify-center bg-[var(--color-neutral-900)]/90 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Billede i fuld størrelse"
+    >
+      <button
+        type="button"
+        class="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-[var(--radius-full)] bg-[var(--color-bg-page)] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-neutral-100)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+        aria-label="Luk"
+        data-lightbox-close
+      >
+        ✕
+      </button>
+      <img
+        src=""
+        alt=""
+        class="max-h-[90vh] max-w-full rounded-[var(--radius-lg)] object-contain shadow-[var(--shadow-lg)]"
+        data-lightbox-img
+      />
+    </div>
+  )}
+</section>
+
+{lightbox && (
+  <script is:inline>
+    (function(){
+      if (window.__galleryLightboxInit) return;
+      window.__galleryLightboxInit = true;
+      document.addEventListener('click', function(e) {
+      const link = (e.target && 'closest' in e.target) ? e.target.closest('a[data-lightbox]') : null;
+      if (link) {
+        e.preventDefault();
+        const id = link.getAttribute('data-lightbox');
+        const overlay = id ? document.getElementById(id + '-overlay') : null;
+        const img = overlay && overlay.querySelector('[data-lightbox-img]');
+        if (overlay && img) {
+          img.src = link.getAttribute('href') || '';
+          img.alt = link.querySelector('img')?.getAttribute('alt') || '';
+          overlay.classList.remove('hidden');
+          overlay.classList.add('flex');
+          document.body.style.overflow = 'hidden';
+        }
+      }
+      const closeBtn = (e.target && 'closest' in e.target) ? e.target.closest('[data-lightbox-close]') : null;
+      if (closeBtn) {
+        const overlay = closeBtn.closest('[role="dialog"]');
+        overlay?.classList.add('hidden');
+        overlay?.classList.remove('flex');
+        document.body.style.overflow = '';
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          const overlay = document.querySelector('[role="dialog"]');
+          if (overlay?.classList.contains('flex')) {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+            document.body.style.overflow = '';
+          }
+        }
+      });
+    })();
+  </script>
+)}

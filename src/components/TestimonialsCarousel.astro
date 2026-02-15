@@ -1,0 +1,81 @@
+---
+interface Props {
+  headline: string;
+  testimonials: Array<{
+    quote: string;
+    author: string;
+    role: string;
+    company: string;
+    photo?: string;
+    rating?: number;
+  }>;
+}
+
+const { headline, testimonials } = Astro.props;
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)] bg-[var(--color-bg-section-alt)]"
+  aria-labelledby="testimonials-heading"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <h2
+      id="testimonials-heading"
+      class="text-center text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+      style="font-family: var(--font-heading)"
+    >
+      {headline}
+    </h2>
+    <div
+      class="mt-12 flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth"
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="Kundetilfredsheder"
+    >
+      {testimonials.map((t, i) => (
+        <article
+          class="min-w-[85vw] shrink-0 snap-center rounded-[var(--radius-card)] bg-[var(--color-bg-page)] p-6 shadow-[var(--shadow-card)] md:min-w-[45vw] lg:min-w-[calc(var(--container-max-width)/3-1rem)]"
+          aria-roledescription="slide"
+          aria-label={`Tilfredshed ${i + 1} af ${testimonials.length}`}
+        >
+          {t.rating !== undefined && (
+            <div class="flex gap-1 text-[var(--color-accent)]" aria-hidden="true">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span>{star <= t.rating! ? '★' : '☆'}</span>
+              ))}
+            </div>
+          )}
+          <blockquote class="mt-4">
+            <p
+              class="text-[var(--font-size-lg)] italic text-[var(--color-text-primary)]"
+              style="font-family: var(--font-body)"
+            >
+              "{t.quote}"
+            </p>
+          </blockquote>
+          <footer class="mt-4 flex items-center gap-3">
+            {t.photo && (
+              <img
+                src={t.photo}
+                alt=""
+                class="h-12 w-12 rounded-[var(--radius-full)] object-cover"
+                aria-hidden="true"
+              />
+            )}
+            <div>
+              <cite class="not-italic font-semibold text-[var(--color-text-primary)]">
+                {t.author}
+              </cite>
+              <p
+                class="text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+                style="font-family: var(--font-body)"
+              >
+                {t.role}, {t.company}
+              </p>
+            </div>
+          </footer>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
