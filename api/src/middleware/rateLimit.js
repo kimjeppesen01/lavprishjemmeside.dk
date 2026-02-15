@@ -22,4 +22,19 @@ const eventRateLimiter = rateLimit({
   }
 });
 
-module.exports = { loginRateLimiter, eventRateLimiter };
+// Password reset rate limiter (prevents abuse)
+const passwordResetRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3, // 3 reset requests per email per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({ error: 'For mange anmodninger. Prøv igen om 15 minutter' });
+  },
+  // Key by email from request body (not IP, to prevent per-email abuse)
+  keyGenerator: (req) => {
+    return req.body.email || req.ip;
+  }
+});
+
+module.exports = { loginRateLimiter, eventRateLimiter, passwordResetRateLimiter };
