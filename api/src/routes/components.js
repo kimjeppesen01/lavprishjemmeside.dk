@@ -10,15 +10,23 @@ router.get('/', requireAuth, async (req, res) => {
   try {
     const { category } = req.query;
 
-    let query = 'SELECT id, slug, name_da, description_da, category, created_at, updated_at FROM components';
+    let query = `SELECT
+      id, slug,
+      name_da AS name,
+      description_da AS description,
+      category,
+      schema_fields AS default_props,
+      doc_path AS documentation,
+      created_at, updated_at
+    FROM components WHERE is_active = 1`;
     const params = [];
 
     if (category) {
-      query += ' WHERE category = ?';
+      query += ' AND category = ?';
       params.push(category);
     }
 
-    query += ' ORDER BY category, name_da ASC';
+    query += ' ORDER BY sort_order ASC, name_da ASC';
 
     const [rows] = await pool.execute(query, params);
 
