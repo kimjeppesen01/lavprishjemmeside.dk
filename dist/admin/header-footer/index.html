@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Header &amp; Footer — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.CxO0QAL6.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Header &amp; Footer — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.ChPL0Xzc.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -34,7 +34,9 @@ Log ud
 Gem indstillinger
 </button> <a href="/admin/dashboard/" class="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium">
 Annuller
-</a> </div> </form> </div> <div id="success-toast" class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-3 rounded-xl shadow-lg hidden z-50">
+</a> </div> <!-- Publish to live --> <section class="mt-8 p-6 rounded-2xl border-2 border-amber-200 bg-amber-50/50"> <h3 class="font-semibold text-gray-900 mb-1">Publicer til live</h3> <p class="text-sm text-gray-600 mb-4">Ændringer er gemt i databasen, men kræver en genbuild for at vises på sitet. Klik for at starte udrulning.</p> <button type="button" id="publish-btn" class="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-xl transition-colors">
+Publicer til live nu (~90 sek)
+</button> </section> </form> </div> <div id="success-toast" class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-3 rounded-xl shadow-lg hidden z-50">
 ✓ Indstillinger gemt
 </div> </div> <script>
   (function() {
@@ -260,11 +262,40 @@ Annuller
         });
         if (!res.ok) throw new Error((await res.json()).error || 'Fejl');
         document.getElementById('success-toast').classList.remove('hidden');
-        setTimeout(() => document.getElementById('success-toast').classList.add('hidden'), 3000);
+        document.getElementById('success-toast').textContent = '✓ Indstillinger gemt. Klik "Publicer til live" for at vise på sitet.';
+        setTimeout(() => {
+          document.getElementById('success-toast').classList.add('hidden');
+          document.getElementById('success-toast').textContent = '✓ Indstillinger gemt';
+        }, 5000);
       } catch (err) {
         alert('Fejl: ' + err.message);
       } finally {
         if (btn) { btn.disabled = false; btn.textContent = 'Gem indstillinger'; }
+      }
+    });
+
+    document.getElementById('publish-btn').addEventListener('click', async function() {
+      const btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Starter...';
+      try {
+        const res = await fetch(API + '/publish', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          btn.textContent = '✓ Udrulning startet';
+          btn.classList.remove('bg-amber-600', 'hover:bg-amber-700');
+          btn.classList.add('bg-green-600');
+        } else {
+          throw new Error(data.error || res.status);
+        }
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+        btn.textContent = 'Publicer til live nu (~90 sek)';
+      } finally {
+        btn.disabled = false;
       }
     });
 
