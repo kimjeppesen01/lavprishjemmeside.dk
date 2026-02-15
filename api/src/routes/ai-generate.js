@@ -19,12 +19,14 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
     }
 
     // 1. Fetch dynamic context
+    console.log(`Fetching context from: ${API_BASE_URL}/ai/context`);
     const contextResponse = await fetch(`${API_BASE_URL}/ai/context`, {
       headers: { 'Authorization': req.headers.authorization }
     });
 
+    console.log(`Context fetch status: ${contextResponse.status}`);
     if (!contextResponse.ok) {
-      throw new Error('Could not fetch AI context');
+      throw new Error(`Could not fetch AI context - HTTP ${contextResponse.status}`);
     }
 
     const context = await contextResponse.json();
@@ -114,9 +116,11 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
 
   } catch (error) {
     console.error('Error generating page content:', error.message);
+    console.error('Full error:', error);
     res.status(500).json({
       error: 'Kunne ikke generere sideindhold',
-      debug: error.message
+      debug: error.message,
+      stack: error.stack
     });
   }
 });
