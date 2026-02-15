@@ -164,7 +164,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-6">
             <h2 class="text-lg font-semibold mb-6 text-gray-900">Live forhåndsvisning</h2>
 
-            <style id="preview-styles">
+            <style id="preview-styles" is:inline>
               :root {
                 --color-primary: #3b82f6;
                 --color-primary-hover: #2563eb;
@@ -265,10 +265,22 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     let currentSettings = {};
 
+    // Diagnostic: verify required DOM elements exist before we use them
+    function diagnoseDOM() {
+      const ids = ['loading', 'error', 'error-text', 'content', 'neutral-colors-container', 'preview-styles', 'styling-form'];
+      const missing = ids.filter(id => !document.getElementById(id));
+      if (missing.length > 0) {
+        console.warn('[styling] Missing DOM elements:', missing);
+        return false;
+      }
+      return true;
+    }
+
     // Create neutral color inputs
     function createNeutralInputs() {
       const neutralShades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
       const container = document.getElementById('neutral-colors-container');
+      if (!container) return;
       container.innerHTML = '';
 
       neutralShades.forEach(shade => {
@@ -323,9 +335,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         currentSettings = await res.json();
         populateForm();
       } catch (err) {
-        document.getElementById('loading').classList.add('hidden');
-        document.getElementById('error-text').textContent = 'Fejl ved indlæsning: ' + err.message;
-        document.getElementById('error').classList.remove('hidden');
+        console.error('[styling] loadSettings error:', err.message, err.stack);
+        const missing = diagnoseDOM() ? 'none' : ' (some DOM elements missing - check console)';
+        document.getElementById('loading')?.classList.add('hidden');
+        const errEl = document.getElementById('error-text');
+        const errBox = document.getElementById('error');
+        if (errEl) errEl.textContent = 'Fejl ved indlæsning: ' + err.message + (missing === 'none' ? '' : missing);
+        if (errBox) errBox.classList.remove('hidden');
       }
     }
 
@@ -389,8 +405,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     // Update live preview
     function updatePreview() {
-      const root = document.querySelector(':root');
       const style = document.getElementById('preview-styles');
+      if (!style) return;
 
       // Update colors
       const colorFields = [
@@ -479,12 +495,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     }
 
     // Save settings
-    document.getElementById('styling-form').addEventListener('submit', async function(e) {
-      e.preventDefault();
+    const form = document.getElementById('styling-form');
+    if (form) {
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
 
-      const btn = this.querySelector('button[type="submit"]');
-      btn.disabled = true;
-      btn.textContent = 'Gemmer...';
+        const btn = this.querySelector('button[type="submit"]');
+        if (btn) { btn.disabled = true; btn.textContent = 'Gemmer...'; }
 
       const formData = {};
 
@@ -550,10 +567,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       } catch (err) {
         alert('Fejl: ' + err.message);
       } finally {
-        btn.disabled = false;
-        btn.textContent = 'Gem indstillinger';
+        if (btn) { btn.disabled = false; btn.textContent = 'Gem indstillinger'; }
       }
     });
+    }
 
     // Load settings on page load
     loadSettings();

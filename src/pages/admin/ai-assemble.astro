@@ -64,18 +64,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
               <strong>Bemærk:</strong> AI-generering kan tage op til 30 sekunder. Vent venligst på resultatet.
             </p>
           </div>
-
-          <!-- Publish existing page (if pages list is broken) -->
-          <div class="mt-6 border border-gray-200 rounded-lg p-4">
-            <p class="text-sm font-medium text-gray-700 mb-2">Publicer eksisterende side</p>
-            <p class="text-xs text-gray-500 mb-2">Hvis en side ikke vises på sitet, indtast sidestien og publicer:</p>
-            <div class="flex gap-2">
-              <input type="text" id="publish-path" placeholder="f.eks. /om-os" class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm">
-              <button onclick="publishExistingPage()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded">
-                Publicer
-              </button>
-            </div>
-          </div>
         </div>
 
         <!-- Result Panel (Right) -->
@@ -216,30 +204,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     window.goToPageBuilder = function() {
       window.location.href = '/admin/pages/';
-    };
-
-    window.publishExistingPage = async function() {
-      const pathInput = document.getElementById('publish-path');
-      const pagePath = (pathInput?.value || '').trim();
-      if (!pagePath) {
-        alert('Indtast en sidesti (f.eks. /om-os)');
-        return;
-      }
-      try {
-        const res = await fetch(API + '/page-components/publish-page', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ page_path: pagePath })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          alert(`✓ ${data.count || 0} komponenter publiceret. Udløs udrulning for at se siden live.`);
-        } else {
-          alert('Fejl: ' + (data.error || res.status));
-        }
-      } catch (err) {
-        alert('Fejl: ' + err.message);
-      }
     };
 
     window.triggerDeploy = async function() {

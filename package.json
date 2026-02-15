@@ -5,6 +5,7 @@
   "scripts": {
     "generate-theme": "node scripts/generate-theme.mjs",
     "prebuild": "node scripts/generate-theme.mjs",
+    "verify-pages": "node scripts/verify-pages.mjs",
     "dev": "astro dev",
     "build": "npm run prebuild && astro build",
     "preview": "astro preview",
