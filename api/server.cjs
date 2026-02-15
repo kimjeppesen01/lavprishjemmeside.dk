@@ -15,6 +15,7 @@ const componentsRoutes = require('./src/routes/components');
 const pageComponentsRoutes = require('./src/routes/page-components');
 const aiContextRoutes = require('./src/routes/ai-context');
 const aiGenerateRoutes = require('./src/routes/ai-generate');
+const aiPromptSettingsRoutes = require('./src/routes/ai-prompt-settings');
 const publishRoutes = require('./src/routes/publish');
 const { requestLogger } = require('./src/middleware/logger');
 
@@ -41,6 +42,7 @@ app.use('/components', componentsRoutes);
 app.use('/page-components', pageComponentsRoutes);
 app.use('/ai', aiContextRoutes);
 app.use('/ai-generate', aiGenerateRoutes);
+app.use('/ai-prompt-settings', aiPromptSettingsRoutes);
 app.use('/publish', publishRoutes);
 
 app.use((err, req, res, next) => {

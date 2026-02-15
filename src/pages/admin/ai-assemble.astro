@@ -21,6 +21,60 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     <!-- Main content -->
     <div id="content" class="hidden">
+      <!-- Prompt settings (collapsible) -->
+      <details class="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <summary class="px-6 py-4 cursor-pointer hover:bg-gray-50 font-medium text-gray-900 flex items-center gap-2">
+          <span>⚙️</span> Prompt-indstillinger (Emne, kundesegment, personlighed, intention, format)
+        </summary>
+        <div class="px-6 pb-6 pt-2 border-t border-gray-100 space-y-4">
+          <p class="text-sm text-gray-600">Disse indstillinger påvirker AI'ens tone og stil for al genereret sideindhold. Gem før generering.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="prompt_emne" class="block text-sm font-medium text-gray-700 mb-1">Emne</label>
+              <input type="text" id="prompt_emne" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Forretningsudvikling for kreative og tidsstyring" maxlength="500">
+            </div>
+            <div>
+              <label for="prompt_kundesegment" class="block text-sm font-medium text-gray-700 mb-1">Kundesegment</label>
+              <input type="text" id="prompt_kundesegment" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Freelance grafiske designere, der kæmper med at finde kunder." maxlength="500">
+            </div>
+            <div>
+              <label for="prompt_personlighed" class="block text-sm font-medium text-gray-700 mb-1">Personlighed</label>
+              <input type="text" id="prompt_personlighed" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Vittig, samtalende og let sarkastisk, som en troværdig mentor." maxlength="500">
+            </div>
+            <div>
+              <label for="prompt_intention" class="block text-sm font-medium text-gray-700 mb-1">Intention</label>
+              <input type="text" id="prompt_intention" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Uddan læseren om vores software og få dem til at klikke på 'Book en demo'." maxlength="500">
+            </div>
+            <div class="md:col-span-2">
+              <label for="prompt_format" class="block text-sm font-medium text-gray-700 mb-1">Format</label>
+              <input type="text" id="prompt_format" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Et LinkedIn-opslag på 300 ord. Brug korte afsnit. Undgå AI-klichéer som 'dykke ned i', 'tapet', 'vidnesbyrd'." maxlength="500">
+            </div>
+          </div>
+          <button type="button" id="save-prompt-settings" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg text-sm">Gem prompt-indstillinger</button>
+          <span id="prompt-saved-toast" class="ml-3 text-sm text-green-600 hidden">✓ Gemt</span>
+        </div>
+      </details>
+
+      <!-- Avanceret personlighed (markdown) -->
+      <details class="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <summary class="px-6 py-4 cursor-pointer hover:bg-gray-50 font-medium text-gray-900 flex items-center gap-2">
+          <span>📄</span> Avanceret personlighed (regler fra .md-fil)
+        </summary>
+        <div class="px-6 pb-6 pt-2 border-t border-gray-100 space-y-4">
+          <p class="text-sm text-gray-600">Tilføj detaljerede regler i Markdown. AI'en læser indholdet som bindende instruktioner for tone og språgbrug. Brug overskrifter (##), bullet-lister og fed for at strukturere reglerne.</p>
+          <div class="flex gap-2 mb-2">
+            <button type="button" id="load-default-avanceret" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg">Indlæs fra standardfil</button>
+            <label class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg cursor-pointer">
+              Vælg .md-fil
+              <input type="file" id="avanceret-file-input" accept=".md,text/markdown" class="hidden">
+            </label>
+          </div>
+          <textarea id="prompt_avanceret_personlighed" rows="16" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono" placeholder="Indsæt eller indlæs Markdown med regler for personlighed, forbudte ord, anbefalede formuleringer osv."></textarea>
+          <button type="button" id="save-avanceret" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg text-sm">Gem avanceret personlighed</button>
+          <span id="avanceret-saved-toast" class="ml-3 text-sm text-green-600 hidden">✓ Gemt</span>
+        </div>
+      </details>
+
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Input Form (Left) -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -145,6 +199,82 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     // Hide loading on page load
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('content').classList.remove('hidden');
+
+    // Load prompt settings
+    async function loadPromptSettings() {
+      try {
+        const res = await fetch(API + '/ai-prompt-settings', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('prompt_emne').value = data.prompt_emne || '';
+          document.getElementById('prompt_kundesegment').value = data.prompt_kundesegment || '';
+          document.getElementById('prompt_personlighed').value = data.prompt_personlighed || '';
+          document.getElementById('prompt_intention').value = data.prompt_intention || '';
+          document.getElementById('prompt_format').value = data.prompt_format || '';
+          document.getElementById('prompt_avanceret_personlighed').value = data.prompt_avanceret_personlighed || '';
+        }
+      } catch (e) { /* ignore */ }
+    }
+    loadPromptSettings();
+
+    // Load default avanceret from file
+    document.getElementById('load-default-avanceret').addEventListener('click', async function() {
+      try {
+        const res = await fetch(API + '/ai-prompt-settings/default-avanceret', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (res.ok) {
+          const { content } = await res.json();
+          document.getElementById('prompt_avanceret_personlighed').value = content || '';
+        }
+      } catch (e) { /* ignore */ }
+    });
+
+    // Load .md from file picker
+    document.getElementById('avanceret-file-input').addEventListener('change', function(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function() { document.getElementById('prompt_avanceret_personlighed').value = reader.result || ''; };
+      reader.readAsText(file, 'UTF-8');
+      e.target.value = '';
+    });
+
+    async function savePromptSettings(sourceBtn, toastId) {
+      const btn = sourceBtn;
+      const toast = document.getElementById(toastId);
+      btn.disabled = true;
+      toast.classList.add('hidden');
+      try {
+        const res = await fetch(API + '/ai-prompt-settings/update', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt_emne: document.getElementById('prompt_emne').value,
+            prompt_kundesegment: document.getElementById('prompt_kundesegment').value,
+            prompt_personlighed: document.getElementById('prompt_personlighed').value,
+            prompt_intention: document.getElementById('prompt_intention').value,
+            prompt_format: document.getElementById('prompt_format').value,
+            prompt_avanceret_personlighed: document.getElementById('prompt_avanceret_personlighed').value,
+          })
+        });
+        if (res.ok) {
+          toast.classList.remove('hidden');
+          setTimeout(() => toast.classList.add('hidden'), 2500);
+        } else {
+          alert('Kunne ikke gemme: ' + ((await res.json()).error || res.status));
+        }
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    document.getElementById('save-prompt-settings').addEventListener('click', function() {
+      savePromptSettings(this, 'prompt-saved-toast');
+    });
+    document.getElementById('save-avanceret').addEventListener('click', function() {
+      savePromptSettings(this, 'avanceret-saved-toast');
+    });
 
     window.generateContent = async function(event) {
       event.preventDefault();

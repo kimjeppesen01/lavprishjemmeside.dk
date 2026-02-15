@@ -45,12 +45,42 @@ async function generatePageContent(userPrompt, context) {
  * Includes full component schemas so the AI generates correct prop structures.
  */
 function buildSystemPrompt(context) {
-  const { designTokens, componentLibrary, cssVariableSyntax } = context;
+  const { designTokens, componentLibrary, cssVariableSyntax, promptSettings = {} } = context;
 
   // Build a concise but exact schema reference from the component docs
   const componentSchemas = buildComponentSchemaReference(componentLibrary.components);
 
+  const emne = promptSettings.prompt_emne || 'Forretningsudvikling og professionel kommunikation';
+  const kundesegment = promptSettings.prompt_kundesegment || 'Små virksomheder og selvstændige';
+  const personlighed = promptSettings.prompt_personlighed || 'Professionel og venlig';
+  const intention = promptSettings.prompt_intention || 'Informere og få læseren til at tage kontakt';
+  const formatStyle = promptSettings.prompt_format || 'Professionel hjemmesidetekst med korte afsnit';
+  const avanceret = (promptSettings.prompt_avanceret_personlighed || '').trim();
+
+  const avanceretSection = avanceret
+    ? `
+
+## Avanceret personlighed (supplerende regler – følg disse bindende instruktioner)
+
+Følg nøje disse regler for tone, språgbrug og stil. De supplerer og uddyber indholdsprofilen ovenfor.
+
+${avanceret}
+
+`
+    : '';
+
   return `Du er en professionel dansk hjemmeside-designer. Din opgave er at sammensætte sider ved hjælp af en komponentbibliotek.
+
+## Indholdsprofil (brug denne profil for al genereret tekst)
+
+- **Emne:** ${emne}
+- **Kundesegment:** ${kundesegment}
+- **Personlighed:** ${personlighed}
+- **Intention:** ${intention}
+- **Format/stil:** ${formatStyle}
+
+Alle overskrifter, beskrivelser og CTA-tekster skal følge denne profil. Tilpas tonen og indholdet herefter.
+${avanceretSection}
 
 ## Tilgængelige Komponenter
 
