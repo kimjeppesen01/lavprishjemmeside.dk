@@ -20,7 +20,7 @@ Log ud
 &#9776; Menu
 </button> <div class="flex-1"></div> <span id="admin-email" class="text-sm text-gray-500"></span> </header> <!-- Page content --> <main class="flex-1 p-6">  <div class="max-w-7xl mx-auto"> <!-- Header --> <div class="mb-8"> <h1 class="text-3xl font-bold text-gray-900">Design System Editor</h1> <p class="text-gray-600 mt-2">Rediger farver, typografi og former</p> </div> <!-- Loading state --> <div id="loading" class="text-center py-12 text-gray-500">Henter indstillinger...</div> <!-- Error state --> <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6"> <p class="text-red-700 mb-2" id="error-text"></p> <button onclick="window.location.reload()" class="text-red-600 underline text-sm">Prøv igen</button> </div> <!-- Main content --> <div id="content" class="hidden"> <div class="grid grid-cols-1 lg:grid-cols-3 gap-6"> <!-- Settings Form (Left) --> <div class="lg:col-span-1"> <form id="styling-form" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"> <!-- Colors Section --> <div class="mb-8"> <h2 class="text-lg font-semibold mb-4 text-gray-900">Farver</h2> <!-- Primary Colors --> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Primærfarve</label> <div class="flex gap-2"> <input type="color" id="color_primary" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_primary_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Primærfarve - Hover</label> <div class="flex gap-2"> <input type="color" id="color_primary_hover" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_primary_hover_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Primærfarve - Lys</label> <div class="flex gap-2"> <input type="color" id="color_primary_light" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_primary_light_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <!-- Secondary Colors --> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Sekundærfarve</label> <div class="flex gap-2"> <input type="color" id="color_secondary" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_secondary_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Sekundærfarve - Hover</label> <div class="flex gap-2"> <input type="color" id="color_secondary_hover" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_secondary_hover_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Sekundærfarve - Lys</label> <div class="flex gap-2"> <input type="color" id="color_secondary_light" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_secondary_light_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <!-- Accent Colors --> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Accentfarve</label> <div class="flex gap-2"> <input type="color" id="color_accent" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_accent_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Accentfarve - Hover</label> <div class="flex gap-2"> <input type="color" id="color_accent_hover" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_accent_hover_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <!-- Neutral Colors --> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-4">Neutrale farver (50-900)</label> <div class="space-y-3"> <div id="neutral-colors-container"></div> </div> </div> </div> <!-- Typography Section --> <div class="mb-8 border-t border-gray-200 pt-8"> <h2 class="text-lg font-semibold mb-4 text-gray-900">Typografi</h2> <div class="mb-4"> <label class="block text-sm font-medium text-gray-700 mb-2">Font for overskrifter</label> <input type="text" id="font_heading" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="e.g., 'Inter', sans-serif"> </div> <div class="mb-4"> <label class="block text-sm font-medium text-gray-700 mb-2">Font for brødtekst</label> <input type="text" id="font_body" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="e.g., 'Inter', sans-serif"> </div> <div class="mb-4"> <label class="block text-sm font-medium text-gray-700 mb-2">Grundlæggende skriftstørrelse</label> <select id="font_size_base" class="w-full border border-gray-300 rounded px-3 py-2"> <option value="0.875rem">0.875rem (14px)</option> <option value="1rem">1rem (16px)</option> <option value="1.125rem">1.125rem (18px)</option> </select> </div> </div> <!-- Shapes Section --> <div class="mb-8 border-t border-gray-200 pt-8"> <h2 class="text-lg font-semibold mb-4 text-gray-900">Former</h2> <div class="mb-4"> <label class="block text-sm font-medium text-gray-700 mb-2">Kantradius</label> <select id="border_radius" class="w-full border border-gray-300 rounded px-3 py-2"> <option value="none">Ingen</option> <option value="small">Lille</option> <option value="medium">Medium</option> <option value="large">Stor</option> <option value="full">Fuld</option> </select> </div> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Skygge</label> <select id="shadow_style" class="w-full border border-gray-300 rounded px-3 py-2"> <option value="none">Ingen</option> <option value="subtle">Subtil</option> <option value="medium">Medium</option> <option value="dramatic">Dramatisk</option> </select> </div> </div> <!-- Save Button --> <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-3 rounded-lg transition-colors">
 Gem indstillinger
-</button> </form> <!-- Success/Error Message --> <div id="success-message" class="hidden mt-4 bg-green-50 border border-green-200 rounded-lg p-4"> <p class="text-green-700 text-sm">✓ Indstillinger gemt</p> </div> </div> <!-- Live Preview (Right) --> <div class="lg:col-span-2"> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-6"> <h2 class="text-lg font-semibold mb-6 text-gray-900">Live forhåndsvisning</h2> <style id="preview-styles">
+</button> </form> <!-- Success/Error Message --> <div id="success-message" class="hidden mt-4 bg-green-50 border border-green-200 rounded-lg p-4"> <p class="text-green-700 text-sm">✓ Indstillinger gemt</p> </div> <div id="save-error-message" class="hidden mt-4 bg-red-50 border border-red-200 rounded-lg p-4"> <p class="text-red-700 text-sm" id="save-error-text"></p> </div> </div> <!-- Live Preview (Right) --> <div class="lg:col-span-2"> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-6"> <h2 class="text-lg font-semibold mb-6 text-gray-900">Live forhåndsvisning</h2> <style id="preview-styles">
               :root {
                 --color-primary: #3b82f6;
                 --color-primary-hover: #2563eb;
@@ -172,11 +172,13 @@ Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved 
       neutralShades.forEach(shade => {
         const field = `color_neutral_${shade}`;
         const value = currentSettings[field];
-        if (value) {
-          const colorInput = document.getElementById(field);
-          const hexInput = document.getElementById(field + '_hex');
-          if (colorInput) colorInput.value = value;
-          if (hexInput) hexInput.value = value.toUpperCase();
+        const colorInput = document.getElementById(field);
+        const hexInput = document.getElementById(field + '_hex');
+        if (colorInput && hexInput) {
+          if (value) {
+            colorInput.value = value;
+            hexInput.value = value.toUpperCase();
+          }
           setupColorSync(field);
         }
       });
@@ -206,12 +208,19 @@ Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved 
       updatePreview();
     }
 
+    // Form field names use underscore (color_secondary); CSS vars use hyphen (--color-secondary)
+    function toCssVar(field) {
+      return field.replace(/_/g, '-');
+    }
+
     // Update live preview
     function updatePreview() {
       const style = document.getElementById('preview-styles');
       if (!style) return;
 
-      // Update colors
+      let css = style.textContent;
+
+      // Update colors (form: color_secondary → CSS: --color-secondary)
       const colorFields = [
         'color_primary', 'color_primary_hover', 'color_primary_light',
         'color_secondary', 'color_secondary_hover', 'color_secondary_light',
@@ -221,15 +230,8 @@ Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved 
       colorFields.forEach(field => {
         const input = document.getElementById(field);
         if (input && input.value) {
-          style.textContent = style.textContent.replace(
-            `--${field}: #[0-9A-Fa-f]{6};`,
-            `--${field}: ${input.value};`
-          );
-          const newStyle = style.textContent.replace(
-            new RegExp(`--${field}: [^;]+;`),
-            `--${field}: ${input.value};`
-          );
-          style.textContent = newStyle;
+          const cssName = toCssVar(field);
+          css = css.replace(new RegExp(`--${cssName}: [^;]+;`), `--${cssName}: ${input.value};`);
         }
       });
 
@@ -239,11 +241,8 @@ Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved 
         const field = `color_neutral_${shade}`;
         const input = document.getElementById(field);
         if (input && input.value) {
-          const newStyle = style.textContent.replace(
-            new RegExp(`--${field}: [^;]+;`),
-            `--${field}: ${input.value};`
-          );
-          style.textContent = newStyle;
+          const cssName = toCssVar(field);
+          css = css.replace(new RegExp(`--${cssName}: [^;]+;`), `--${cssName}: ${input.value};`);
         }
       });
 
@@ -253,48 +252,34 @@ Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved 
       const baseFontSize = document.getElementById('font_size_base');
 
       if (fontHeading && fontHeading.value) {
-        const newStyle = style.textContent.replace(
-          /--font-heading: [^;]+;/,
-          `--font-heading: ${fontHeading.value};`
-        );
-        style.textContent = newStyle;
+        css = css.replace(/--font-heading: [^;]+;/, `--font-heading: '${fontHeading.value}', sans-serif;`);
       }
-
       if (fontBody && fontBody.value) {
-        const newStyle = style.textContent.replace(
-          /--font-body: [^;]+;/,
-          `--font-body: ${fontBody.value};`
-        );
-        style.textContent = newStyle;
+        css = css.replace(/--font-body: [^;]+;/, `--font-body: '${fontBody.value}', sans-serif;`);
       }
-
       if (baseFontSize && baseFontSize.value) {
-        const newStyle = style.textContent.replace(
-          /--base-font-size: [^;]+;/,
-          `--base-font-size: ${baseFontSize.value};`
-        );
-        style.textContent = newStyle;
+        css = css.replace(/--base-font-size: [^;]+;/, `--base-font-size: ${baseFontSize.value};`);
       }
 
-      // Shapes
+      // Shapes: map enum to CSS value (preview uses simple rem/shadow)
       const borderRadius = document.getElementById('border_radius');
       const shadowStyle = document.getElementById('shadow_style');
+      const radiusMap = { none: '0', small: '0.25rem', medium: '0.5rem', large: '0.75rem', full: '9999px' };
+      const shadowMap = {
+        none: 'none',
+        subtle: '0 4px 6px rgba(0,0,0,0.1)',
+        medium: '0 8px 12px -2px rgba(0,0,0,0.15)',
+        dramatic: '0 12px 20px -4px rgba(0,0,0,0.25)'
+      };
 
       if (borderRadius && borderRadius.value) {
-        const newStyle = style.textContent.replace(
-          /--border-radius: [^;]+;/,
-          `--border-radius: ${borderRadius.value};`
-        );
-        style.textContent = newStyle;
+        css = css.replace(/--border-radius: [^;]+;/, `--border-radius: ${radiusMap[borderRadius.value] ?? '0.5rem'};`);
+      }
+      if (shadowStyle && shadowStyle.value) {
+        css = css.replace(/--shadow-style: [^;]+;/, `--shadow-style: ${shadowMap[shadowStyle.value] ?? shadowMap.subtle};`);
       }
 
-      if (shadowStyle && shadowStyle.value) {
-        const newStyle = style.textContent.replace(
-          /--shadow-style: [^;]+;/,
-          `--shadow-style: ${shadowStyle.value};`
-        );
-        style.textContent = newStyle;
-      }
+      style.textContent = css;
     }
 
     // Save settings
@@ -305,6 +290,7 @@ Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved 
 
         const btn = this.querySelector('button[type="submit"]');
         if (btn) { btn.disabled = true; btn.textContent = 'Gemmer...'; }
+        document.getElementById('save-error-message')?.classList.add('hidden');
 
       const formData = {};
 
@@ -360,15 +346,25 @@ Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved 
             window.location.href = '/admin/';
             return;
           }
-          throw new Error('Fejl ved gemning');
+          let msg = 'Fejl ved gemning';
+          try {
+            const data = await res.json();
+            if (data && data.error) msg = data.error;
+          } catch (_) { /* use fallback */ }
+          throw new Error(msg);
         }
 
-        document.getElementById('success-message').classList.remove('hidden');
+        document.getElementById('save-error-message')?.classList.add('hidden');
+        document.getElementById('success-message')?.classList.remove('hidden');
         setTimeout(() => {
-          document.getElementById('success-message').classList.add('hidden');
+          document.getElementById('success-message')?.classList.add('hidden');
         }, 3000);
       } catch (err) {
-        alert('Fejl: ' + err.message);
+        const errBox = document.getElementById('save-error-message');
+        const errText = document.getElementById('save-error-text');
+        if (errText) errText.textContent = err.message;
+        if (errBox) errBox.classList.remove('hidden');
+        document.getElementById('success-message')?.classList.add('hidden');
       } finally {
         if (btn) { btn.disabled = false; btn.textContent = 'Gem indstillinger'; }
       }
