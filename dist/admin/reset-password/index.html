@@ -1,0 +1,151 @@
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Få en professionel hjemmeside til lav pris. Vi bygger moderne, hurtige og SEO-optimerede hjemmesider for danske virksomheder."><meta name="generator" content="Astro v5.17.2"><meta name="google-site-verification" content="d7dWCSM6V-nAjgcm2GJtBf13c_xq44QPs4AMMmHIaB8"><title>Nulstil adgangskode</title><script async src="https://www.googletagmanager.com/gtag/js?id=G-GWCL1R11WP"></script><script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-GWCL1R11WP');
+    </script><link rel="stylesheet" href="/_astro/dashboard.D64lbauI.css"></head> <body class="min-h-screen flex flex-col bg-white text-gray-900 antialiased">  <div class="min-h-screen flex items-center justify-center -m-6"> <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm"> <h1 class="text-2xl font-bold text-center mb-2">Nulstil adgangskode</h1> <p class="text-sm text-gray-600 text-center mb-6">
+Indtast din nye adgangskode nedenfor.
+</p> <!-- Token validation loading --> <div id="validating" class="text-center py-4 text-gray-500">
+Validerer link...
+</div> <!-- Invalid token message --> <div id="invalid-token" class="hidden"> <div class="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg mb-4"> <p class="font-medium mb-1">Ugyldigt eller udløbet link</p> <p class="text-xs">Dette link er enten udløbet eller allerede blevet brugt.</p> </div> <a href="/admin/forgot-password" class="block w-full text-center bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+Anmod om nyt link
+</a> </div> <!-- Error message --> <div id="error-msg" class="hidden bg-red-50 text-red-700 text-sm px-4 py-2 rounded-lg mb-4"></div> <!-- Reset form --> <form id="reset-form" class="hidden space-y-4"> <div> <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
+Ny adgangskode
+</label> <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"> <p class="text-xs text-gray-500 mt-1">Mindst 8 tegn</p> </div> <div> <label for="password-confirm" class="block text-sm font-medium text-gray-700 mb-1">
+Bekræft adgangskode
+</label> <input type="password" id="password-confirm" name="password-confirm" required minlength="8" autocomplete="new-password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"> </div> <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+Nulstil adgangskode
+</button> </form> <div class="mt-4 text-center"> <a href="/admin/" class="text-sm text-blue-600 hover:underline">
+Tilbage til login
+</a> </div> </div> </div> <script>
+  (function() {
+    var API = 'https://api.lavprishjemmeside.dk';
+    var form = document.getElementById('reset-form');
+    var errorMsg = document.getElementById('error-msg');
+    var submitBtn = document.getElementById('submit-btn');
+    var validating = document.getElementById('validating');
+    var invalidToken = document.getElementById('invalid-token');
+    var passwordInput = document.getElementById('password');
+    var passwordConfirmInput = document.getElementById('password-confirm');
+
+    // Get token from URL
+    var urlParams = new URLSearchParams(window.location.search);
+    var token = urlParams.get('token');
+
+    // Validate token exists in URL
+    if (!token) {
+      validating.classList.add('hidden');
+      invalidToken.classList.remove('hidden');
+      return;
+    }
+
+    // Show form (token exists)
+    validating.classList.add('hidden');
+    form.classList.remove('hidden');
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      errorMsg.classList.add('hidden');
+
+      var password = passwordInput.value;
+      var passwordConfirm = passwordConfirmInput.value;
+
+      // Client-side validation
+      if (password !== passwordConfirm) {
+        errorMsg.textContent = 'Adgangskoderne matcher ikke';
+        errorMsg.classList.remove('hidden');
+        return;
+      }
+
+      if (password.length < 8) {
+        errorMsg.textContent = 'Adgangskoden skal være mindst 8 tegn';
+        errorMsg.classList.remove('hidden');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Nulstiller...';
+
+      fetch(API + '/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: token, password: password })
+      })
+      .then(function(res) {
+        return res.json().then(function(data) {
+          return { ok: res.ok, data: data };
+        });
+      })
+      .then(function(result) {
+        if (!result.ok) {
+          throw new Error(result.data.error || 'Nulstilling mislykkedes');
+        }
+
+        // Save token and redirect to dashboard
+        localStorage.setItem('admin_token', result.data.token);
+        window.location.href = '/admin/dashboard/';
+      })
+      .catch(function(err) {
+        errorMsg.textContent = err.message;
+        errorMsg.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Nulstil adgangskode';
+
+        // If token is invalid, show invalid token message
+        if (err.message.includes('Ugyldigt') || err.message.includes('udløbet')) {
+          form.classList.add('hidden');
+          invalidToken.classList.remove('hidden');
+        }
+      });
+    });
+  })();
+  </script>  <script>
+(function() {
+  const API = 'https://api.lavprishjemmeside.dk';
+
+  // Generate or retrieve session ID
+  function getSessionId() {
+    let sid = sessionStorage.getItem('_sid');
+    if (!sid) {
+      sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      sessionStorage.setItem('_sid', sid);
+    }
+    return sid;
+  }
+
+  function track(eventType, eventName, metadata) {
+    const payload = {
+      event_type: eventType,
+      event_name: eventName,
+      page_url: window.location.pathname,
+      referrer: document.referrer || null,
+      session_id: getSessionId(),
+      metadata: metadata || null
+    };
+
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(API + '/events', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+    } else {
+      fetch(API + '/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true
+      }).catch(function() {});
+    }
+  }
+
+  // Track page view
+  track('pageview', 'page_view');
+
+  // Track clicks on elements with data-track attribute
+  document.addEventListener('click', function(e) {
+    var el = e.target.closest('[data-track]');
+    if (el) {
+      track('click', el.getAttribute('data-track'), {
+        text: (el.textContent || '').trim().slice(0, 100)
+      });
+    }
+  });
+})();
+</script> </body></html>
