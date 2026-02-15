@@ -4,6 +4,7 @@ const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 
 // GET /page-components?page=/ — Get components for a page (ordered)
+// GET /page-components?page=all — Get all (admin pages list)
 router.get('/', requireAuth, async (req, res) => {
   try {
     const { page } = req.query;
@@ -12,14 +13,23 @@ router.get('/', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'page query parameter er påkrævet' });
     }
 
-    const [rows] = await pool.execute(
-      `SELECT pc.*, c.slug, c.name_da, c.category
-       FROM page_components pc
-       JOIN components c ON pc.component_id = c.id
-       WHERE pc.page_path = ?
-       ORDER BY pc.sort_order ASC`,
-      [page]
-    );
+    let query, params;
+    if (page === 'all') {
+      query = `SELECT pc.*, c.slug, c.name_da, c.category
+               FROM page_components pc
+               JOIN components c ON pc.component_id = c.id
+               ORDER BY pc.page_path ASC, pc.sort_order ASC`;
+      params = [];
+    } else {
+      query = `SELECT pc.*, c.slug, c.name_da, c.category
+               FROM page_components pc
+               JOIN components c ON pc.component_id = c.id
+               WHERE pc.page_path = ?
+               ORDER BY pc.sort_order ASC`;
+      params = [page];
+    }
+
+    const [rows] = await pool.execute(query, params);
 
     // Parse JSON content field
     const components = rows.map(row => ({

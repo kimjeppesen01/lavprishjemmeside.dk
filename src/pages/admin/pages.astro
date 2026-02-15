@@ -154,7 +154,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     async function loadData() {
       try {
         const [pagesRes, componentsRes] = await Promise.all([
-          fetch(API + '/page-components', {
+          fetch(API + '/page-components?page=all', {
             headers: { 'Authorization': 'Bearer ' + token }
           }),
           fetch(API + '/components', {
@@ -168,7 +168,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             window.location.href = '/admin/';
             return;
           }
-          throw new Error('Fejl ved indlæsning af data');
+          const failed = !pagesRes.ok ? pagesRes : componentsRes;
+          const body = await failed.text();
+          let detail = '';
+          try {
+            const j = JSON.parse(body);
+            if (j.error) detail = ' — ' + j.error;
+          } catch (_) {}
+          throw new Error(
+            'Fejl ved indlæsning af data (HTTP ' + failed.status + (detail || ': ' + body.slice(0, 100))
+          );
         }
 
         allPageComponents = await pagesRes.json();
