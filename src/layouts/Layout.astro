@@ -60,7 +60,29 @@ const schemaOrg = {
     </script>
   </head>
   <body class="min-h-screen flex flex-col bg-white text-gray-900 antialiased">
+    <!-- Page loader: fades out when page is ready (Saren/Pethemes-inspired) -->
+    <div id="page-loader" class="page-loader" aria-hidden="true">
+      <div class="flex flex-col items-center gap-4">
+        <img src="/favicon.svg" alt="" class="h-10 w-10 animate-pulse" width="40" height="40" />
+        <span class="text-sm text-[var(--color-text-secondary)]">Indlæser...</span>
+      </div>
+    </div>
+    <!-- Grain overlay: subtle texture (Saren/Pethemes-inspired) -->
+    <div class="grain-overlay" aria-hidden="true"></div>
+
     <slot />
     <Tracker />
+
+    <script is:inline>
+      (function() {
+        var loader = document.getElementById('page-loader');
+        function hide() {
+          if (loader) loader.classList.add('page-loader--hidden');
+        }
+        if (document.readyState === 'complete') hide();
+        else window.addEventListener('load', hide);
+        setTimeout(hide, 2500);
+      })();
+    </script>
   </body>
 </html>

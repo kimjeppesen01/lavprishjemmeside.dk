@@ -13,6 +13,6 @@ export default defineConfig({
   },
 
   integrations: [sitemap({
-    filter: (page) => !page.includes('/admin/')
+    filter: (page) => !page.includes('/admin/') && !page.includes('/404')
   })]
 });

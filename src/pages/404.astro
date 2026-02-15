@@ -1,0 +1,27 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="Siden blev ikke fundet | lavprishjemmeside.dk" description="Den side du leder efter eksisterer ikke.">
+  <Header />
+
+  <main class="flex-1 flex flex-col items-center justify-center px-4 py-20 text-center">
+    <p class="text-6xl font-bold text-[var(--color-primary)]">404</p>
+    <h1 class="mt-4 text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
+      Siden blev ikke fundet
+    </h1>
+    <p class="mt-2 text-[var(--color-text-secondary)] max-w-md">
+      Den side du forsøger at åbne eksisterer ikke, eller adressen er forkert.
+    </p>
+    <a
+      href="/"
+      class="mt-8 inline-flex items-center justify-center min-h-[44px] rounded-[var(--radius-button)] bg-[var(--color-primary)] px-6 py-3 text-white font-medium transition-colors hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+    >
+      Tilbage til forsiden
+    </a>
+  </main>
+
+  <Footer />
+</Layout>

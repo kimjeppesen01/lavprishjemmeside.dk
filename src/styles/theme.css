@@ -1,27 +1,27 @@
 /* ===== DESIGN TOKENS ===== */
 /* Generated at build time from database */
 /* Source: https://api.lavprishjemmeside.dk/design-settings/public */
-/* Last updated: 2026-02-15T13:34:47.027Z */
+/* Last updated: 2026-02-15T14:01:37.314Z */
 
 :root {
   /* --- Brand Colors --- */
-  --color-primary: #2563EB;
-  --color-primary-hover: #1D4ED8;
-  --color-primary-light: #DBEAFE;
-  --color-secondary: #7C3AED;
-  --color-secondary-hover: #6D28D9;
-  --color-secondary-light: #EDE9FE;
-  --color-accent: #F59E0B;
-  --color-accent-hover: #D97706;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-light: #dbeafe;
+  --color-secondary: #7c3aed;
+  --color-secondary-hover: #6d28d9;
+  --color-secondary-light: #ede9fe;
+  --color-accent: #008509;
+  --color-accent-hover: #d97706;
 
   /* --- Neutral Scale --- */
-  --color-neutral-50: #F9FAFB;
-  --color-neutral-100: #F3F4F6;
-  --color-neutral-200: #E5E7EB;
-  --color-neutral-300: #D1D5DB;
-  --color-neutral-600: #4B5563;
+  --color-neutral-50: #f9fafb;
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-600: #4b5563;
   --color-neutral-700: #374151;
-  --color-neutral-800: #1F2937;
+  --color-neutral-800: #1f2937;
   --color-neutral-900: #111827;
 
   /* --- Semantic Colors --- */

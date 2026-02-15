@@ -518,6 +518,22 @@ script: |
 
 ---
 
+## Saren/Pethemes-Inspired Features (2026-02-15)
+
+Inspired by the Pe Themes WordPress theme documentation (`.cursor/rules/saren-pethemes-inspiration.md`). Implemented with Tailwind + vanilla CSS/JS.
+
+| Feature | Location | Description |
+|---------|----------|-------------|
+| **Smooth Scroll** | `src/styles/global.css` | `scroll-behavior: smooth` on `html` for anchor navigation |
+| **Grain Overlay** | `Layout.astro` + `global.css` | Subtle SVG noise texture overlay (`grain-overlay`), `opacity: 0.03`, `pointer-events: none` |
+| **Page Loader** | `Layout.astro` + `global.css` | Full-screen overlay with logo + "Indlæser..."; fades out on `window.load` or after 2.5s max |
+| **Sticky Header** | `Header.astro` | `sticky top-0 z-40`; adds `shadow-sm` when scrolled >8px |
+| **Custom 404** | `src/pages/404.astro` | Danish error page with "Tilbage til forsiden" CTA, uses design tokens |
+
+**Not implemented** (by design): Page transitions (MPA full reload makes transitions complex), custom mouse cursor (accessibility concern), layout switcher (single layout), dual logos (single logo sufficient for MVP).
+
+---
+
 ## Future Phases (Product Vision)
 
 ### Phase 6: Component Library & Styling Dashboard

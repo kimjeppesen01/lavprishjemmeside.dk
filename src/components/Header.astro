@@ -7,7 +7,7 @@ const navLinks = [
 ];
 ---
 
-<header class="bg-white border-b border-gray-200">
+<header id="main-header" class="sticky top-0 z-40 bg-white border-b border-gray-200 transition-shadow duration-300">
   <nav class="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
     <a href="/" class="text-xl font-bold text-blue-600">
       lavprishjemmeside.dk
@@ -26,3 +26,14 @@ const navLinks = [
     </a>
   </nav>
 </header>
+
+<script>
+  const header = document.getElementById('main-header');
+  if (header) {
+    const toggleShadow = () => {
+      header.classList.toggle('shadow-sm', window.scrollY > 8);
+    };
+    window.addEventListener('scroll', toggleShadow, { passive: true });
+    toggleShadow();
+  }
+</script>

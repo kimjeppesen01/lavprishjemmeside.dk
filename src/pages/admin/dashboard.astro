@@ -16,6 +16,28 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   <div id="dashboard" class="hidden">
     <h1 class="text-2xl font-bold mb-6">Oversigt</h1>
 
+    <!-- Settings overview: Pages + Global -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-gray-900">Sider</h2>
+          <a href="/admin/pages/" class="text-sm text-blue-600 hover:underline">Rediger →</a>
+        </div>
+        <div id="settings-pages" class="space-y-2 text-sm">
+          <p class="text-gray-500">Henter...</p>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-gray-900">Globale indstillinger</h2>
+          <a href="/admin/styling/" class="text-sm text-blue-600 hover:underline">Rediger →</a>
+        </div>
+        <div id="settings-global" class="space-y-2 text-sm">
+          <p class="text-gray-500">Henter...</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Metric cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
@@ -118,11 +140,50 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     Promise.all([
       authFetch(API + '/events/summary'),
-      authFetch(API + '/sessions/summary')
+      authFetch(API + '/sessions/summary'),
+      authFetch(API + '/design-settings/').catch(function() { return null; }),
+      authFetch(API + '/page-components?page=all').catch(function() { return []; })
     ])
     .then(function(results) {
       var events = results[0];
       var sessions = results[1];
+      var designSettings = results[2];
+      var pageComponents = results[3] || [];
+
+      // Settings: Pages (group by page_path)
+      var pageGroups = {};
+      pageComponents.forEach(function(pc) {
+        var path = (pc.page_path || '/').trim();
+        if (!pageGroups[path]) pageGroups[path] = { total: 0, published: 0 };
+        pageGroups[path].total++;
+        if (pc.is_published) pageGroups[path].published++;
+      });
+      var pagesHtml = '';
+      var paths = Object.keys(pageGroups).sort();
+      if (paths.length === 0) {
+        pagesHtml = '<p class="text-gray-500">Ingen sider endnu. <a href="/admin/ai-assemble/" class="text-blue-600 hover:underline">Opret side</a></p>';
+      } else {
+        paths.forEach(function(path) {
+          var g = pageGroups[path];
+          var pub = g.published === g.total ? '<span class="text-green-600">●</span>' : '<span class="text-amber-500">○</span>';
+          pagesHtml += '<div class="flex justify-between py-1 border-b border-gray-100 last:border-0">'
+            + '<span class="font-mono text-xs">' + esc(path) + '</span>'
+            + '<span>' + pub + ' ' + g.published + '/' + g.total + ' komp.</span></div>';
+        });
+      }
+      document.getElementById('settings-pages').innerHTML = pagesHtml;
+
+      // Settings: Global (design)
+      var globalHtml = '';
+      if (designSettings) {
+        globalHtml = '<div class="flex items-center gap-2 py-1"><span class="w-4 h-4 rounded border border-gray-300" style="background:' + esc(designSettings.color_primary || '#2563EB') + '"></span><span>Primær: ' + esc(designSettings.color_primary || '—') + '</span></div>'
+          + '<div class="py-1">Font: ' + esc(designSettings.font_heading || designSettings.font_body || '—') + '</div>'
+          + '<div class="py-1">Kantradius: ' + esc(designSettings.border_radius || '—') + '</div>'
+          + '<div class="py-1">Skygge: ' + esc(designSettings.shadow_style || '—') + '</div>';
+      } else {
+        globalHtml = '<p class="text-gray-500">Kunne ikke hente. <a href="/admin/styling/" class="text-blue-600 hover:underline">Åbn styling</a></p>';
+      }
+      document.getElementById('settings-global').innerHTML = globalHtml;
 
       // Metric cards
       document.getElementById('stat-events-total').textContent = events.total.toLocaleString('da-DK');
