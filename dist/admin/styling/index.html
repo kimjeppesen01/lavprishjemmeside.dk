@@ -1,0 +1,382 @@
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Design Token Editor — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.CWEj0ZM5.css">
+<style>:root{--color-primary: #3b82f6;--color-primary-hover: #2563eb;--color-primary-light: #dbeafe;--color-secondary: #10b981;--color-secondary-hover: #059669;--color-secondary-light: #d1fae5;--color-accent: #f59e0b;--color-accent-hover: #d97706;--color-neutral-50: #f9fafb;--color-neutral-100: #f3f4f6;--color-neutral-200: #e5e7eb;--color-neutral-300: #d1d5db;--color-neutral-400: #9ca3af;--color-neutral-500: #6b7280;--color-neutral-600: #4b5563;--color-neutral-700: #374151;--color-neutral-800: #1f2937;--color-neutral-900: #111827;--font-heading: "Inter", sans-serif;--font-body: "Inter", sans-serif;--base-font-size: 1rem;--border-radius: .5rem;--shadow-style: 0 4px 6px rgba(0,0,0,.1)}
+</style></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+    (function() {
+      var token = localStorage.getItem('admin_token');
+      var path = window.location.pathname.replace(/\/$/, '') || '/admin';
+      var isLoginPage = path === '/admin';
+      if (!token && !isLoginPage) {
+        window.location.href = '/admin/';
+        return;
+      }
+      if (token && isLoginPage) {
+        window.location.href = '/admin/dashboard/';
+        return;
+      }
+    })();
+    </script> <div class="flex min-h-screen"> <!-- Sidebar --> <aside id="admin-sidebar" class="hidden w-64 bg-gray-900 text-gray-100 min-h-screen flex-col"> <div class="p-4 border-b border-gray-700"> <a href="/admin/dashboard/" class="text-lg font-bold text-white">LPH Admin</a> </div> <nav class="flex-1 p-4 space-y-1"> <a href="/admin/dashboard/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm">
+Oversigt
+</a> </nav> <div class="p-4 border-t border-gray-700"> <button id="logout-btn" class="w-full text-left text-sm text-gray-400 hover:text-white">
+Log ud
+</button> </div> </aside> <!-- Main content --> <div class="flex-1 flex flex-col"> <!-- Top bar --> <header id="admin-header" class="hidden bg-white border-b border-gray-200 px-6 py-3 items-center justify-between"> <button id="mobile-menu-btn" class="lg:hidden text-gray-600 text-sm">
+&#9776; Menu
+</button> <div class="flex-1"></div> <span id="admin-email" class="text-sm text-gray-500"></span> </header> <!-- Page content --> <main class="flex-1 p-6">  <div class="max-w-7xl mx-auto" data-astro-cid-52fbdhbo> <!-- Header --> <div class="mb-8" data-astro-cid-52fbdhbo> <h1 class="text-3xl font-bold text-gray-900" data-astro-cid-52fbdhbo>Design System Editor</h1> <p class="text-gray-600 mt-2" data-astro-cid-52fbdhbo>Rediger farver, typografi og former</p> </div> <!-- Loading state --> <div id="loading" class="text-center py-12 text-gray-500" data-astro-cid-52fbdhbo>Henter indstillinger...</div> <!-- Error state --> <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6" data-astro-cid-52fbdhbo> <p class="text-red-700 mb-2" id="error-text" data-astro-cid-52fbdhbo></p> <button onclick="window.location.reload()" class="text-red-600 underline text-sm" data-astro-cid-52fbdhbo>Prøv igen</button> </div> <!-- Main content --> <div id="content" class="hidden" data-astro-cid-52fbdhbo> <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" data-astro-cid-52fbdhbo> <!-- Settings Form (Left) --> <div class="lg:col-span-1" data-astro-cid-52fbdhbo> <form id="styling-form" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6" data-astro-cid-52fbdhbo> <!-- Colors Section --> <div class="mb-8" data-astro-cid-52fbdhbo> <h2 class="text-lg font-semibold mb-4 text-gray-900" data-astro-cid-52fbdhbo>Farver</h2> <!-- Primary Colors --> <div class="mb-6" data-astro-cid-52fbdhbo> <label class="block text-sm font-medium text-gray-700 mb-2" data-astro-cid-52fbdhbo>Primærfarve</label> <div class="flex gap-2" data-astro-cid-52fbdhbo> <input type="color" id="color_primary" class="w-12 h-10 border border-gray-300 rounded cursor-pointer" data-astro-cid-52fbdhbo> <input type="text" id="color_primary_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000" data-astro-cid-52fbdhbo> </div> </div> <div class="mb-6" data-astro-cid-52fbdhbo> <label class="block text-sm font-medium text-gray-700 mb-2" data-astro-cid-52fbdhbo>Primærfarve - Hover</label> <div class="flex gap-2" data-astro-cid-52fbdhbo> <input type="color" id="color_primary_hover" class="w-12 h-10 border border-gray-300 rounded cursor-pointer" data-astro-cid-52fbdhbo> <input type="text" id="color_primary_hover_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000" data-astro-cid-52fbdhbo> </div> </div> <div class="mb-6" data-astro-cid-52fbdhbo> <label class="block text-sm font-medium text-gray-700 mb-2" data-astro-cid-52fbdhbo>Primærfarve - Lys</label> <div class="flex gap-2" data-astro-cid-52fbdhbo> <input type="color" id="color_primary_light" class="w-12 h-10 border border-gray-300 rounded cursor-pointer" data-astro-cid-52fbdhbo> <input type="text" id="color_primary_light_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000" data-astro-cid-52fbdhbo> </div> </div> <!-- Secondary Colors --> <div class="mb-6" data-astro-cid-52fbdhbo> <label class="block text-sm font-medium text-gray-700 mb-2" data-astro-cid-52fbdhbo>Sekundærfarve</label> <div class="flex gap-2" data-astro-cid-52fbdhbo> <input type="color" id="color_secondary" class="w-12 h-10 border border-gray-300 rounded cursor-pointer" data-astro-cid-52fbdhbo> <input type="text" id="color_secondary_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000" data-astro-cid-52fbdhbo> </div> </div> <div class="mb-6" data-astro-cid-52fbdhbo> <label class="block text-sm font-medium text-gray-700 mb-2" data-astro-cid-52fbdhbo>Sekundærfarve - Hover</label> <div class="flex gap-2" data-astro-cid-52fbdhbo> <input type="color" id="color_secondary_hover" class="w-12 h-10 border border-gray-300 rounded cursor-pointer" data-astro-cid-52fbdhbo> <input type="text" id="color_secondary_hover_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000" data-astro-cid-52fbdhbo> </div> </div> <div class="mb-6" data-astro-cid-52fbdhbo> <label class="block text-sm font-medium text-gray-700 mb-2" data-astro-cid-52fbdhbo>Sekundærfarve - Lys</label> <div class="flex gap-2" data-astro-cid-52fbdhbo> <input type="color" id="color_secondary_light" class="w-12 h-10 border border-gray-300 rounded cursor-pointer" data-astro-cid-52fbdhbo> <input type="text" id="color_secondary_light_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000" data-astro-cid-52fbdhbo> </div> </div> <!-- Accent Colors --> <div class="mb-6" data-astro-cid-52fbdhbo> <label class="block text-sm font-medium text-gray-700 mb-2" data-astro-cid-52fbdhbo>Accentfarve</label> <div class="flex gap-2" data-astro-cid-52fbdhbo> <input type="color" id="color_accent" class="w-12 h-10 border border-gray-300 rounded cursor-pointer" data-astro-cid-52fbdhbo> <input type="text" id="color_accent_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000" data-astro-cid-52fbdhbo> </div> </div> <div class="mb-6" data-astro-cid-52fbdhbo> <label class="block text-sm font-medium text-gray-700 mb-2" data-astro-cid-52fbdhbo>Accentfarve - Hover</label> <div class="flex gap-2" data-astro-cid-52fbdhbo> <input type="color" id="color_accent_hover" class="w-12 h-10 border border-gray-300 rounded cursor-pointer" data-astro-cid-52fbdhbo> <input type="text" id="color_accent_hover_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000" data-astro-cid-52fbdhbo> </div> </div> <!-- Neutral Colors --> <div class="mb-6" data-astro-cid-52fbdhbo> <label class="block text-sm font-medium text-gray-700 mb-4" data-astro-cid-52fbdhbo>Neutrale farver (50-900)</label> <div class="space-y-3" data-astro-cid-52fbdhbo> <div id="neutral-colors-container" data-astro-cid-52fbdhbo></div> </div> </div> </div> <!-- Typography Section --> <div class="mb-8 border-t border-gray-200 pt-8" data-astro-cid-52fbdhbo> <h2 class="text-lg font-semibold mb-4 text-gray-900" data-astro-cid-52fbdhbo>Typografi</h2> <div class="mb-4" data-astro-cid-52fbdhbo> <label class="block text-sm font-medium text-gray-700 mb-2" data-astro-cid-52fbdhbo>Font for overskrifter</label> <input type="text" id="font_heading" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="e.g., 'Inter', sans-serif" data-astro-cid-52fbdhbo> </div> <div class="mb-4" data-astro-cid-52fbdhbo> <label class="block text-sm font-medium text-gray-700 mb-2" data-astro-cid-52fbdhbo>Font for brødtekst</label> <input type="text" id="font_body" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="e.g., 'Inter', sans-serif" data-astro-cid-52fbdhbo> </div> <div class="mb-4" data-astro-cid-52fbdhbo> <label class="block text-sm font-medium text-gray-700 mb-2" data-astro-cid-52fbdhbo>Grundlæggende skriftstørrelse</label> <select id="font_size_base" class="w-full border border-gray-300 rounded px-3 py-2" data-astro-cid-52fbdhbo> <option value="0.875rem" data-astro-cid-52fbdhbo>0.875rem (14px)</option> <option value="1rem" data-astro-cid-52fbdhbo>1rem (16px)</option> <option value="1.125rem" data-astro-cid-52fbdhbo>1.125rem (18px)</option> </select> </div> </div> <!-- Shapes Section --> <div class="mb-8 border-t border-gray-200 pt-8" data-astro-cid-52fbdhbo> <h2 class="text-lg font-semibold mb-4 text-gray-900" data-astro-cid-52fbdhbo>Former</h2> <div class="mb-4" data-astro-cid-52fbdhbo> <label class="block text-sm font-medium text-gray-700 mb-2" data-astro-cid-52fbdhbo>Kantradius</label> <select id="border_radius" class="w-full border border-gray-300 rounded px-3 py-2" data-astro-cid-52fbdhbo> <option value="none" data-astro-cid-52fbdhbo>Ingen</option> <option value="small" data-astro-cid-52fbdhbo>Lille</option> <option value="medium" data-astro-cid-52fbdhbo>Medium</option> <option value="large" data-astro-cid-52fbdhbo>Stor</option> <option value="full" data-astro-cid-52fbdhbo>Fuld</option> </select> </div> <div class="mb-6" data-astro-cid-52fbdhbo> <label class="block text-sm font-medium text-gray-700 mb-2" data-astro-cid-52fbdhbo>Skygge</label> <select id="shadow_style" class="w-full border border-gray-300 rounded px-3 py-2" data-astro-cid-52fbdhbo> <option value="none" data-astro-cid-52fbdhbo>Ingen</option> <option value="subtle" data-astro-cid-52fbdhbo>Subtil</option> <option value="medium" data-astro-cid-52fbdhbo>Medium</option> <option value="dramatic" data-astro-cid-52fbdhbo>Dramatisk</option> </select> </div> </div> <!-- Save Button --> <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-3 rounded-lg transition-colors" data-astro-cid-52fbdhbo>
+Gem indstillinger
+</button> </form> <!-- Success/Error Message --> <div id="success-message" class="hidden mt-4 bg-green-50 border border-green-200 rounded-lg p-4" data-astro-cid-52fbdhbo> <p class="text-green-700 text-sm" data-astro-cid-52fbdhbo>✓ Indstillinger gemt</p> </div> </div> <!-- Live Preview (Right) --> <div class="lg:col-span-2" data-astro-cid-52fbdhbo> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-6" data-astro-cid-52fbdhbo> <h2 class="text-lg font-semibold mb-6 text-gray-900" data-astro-cid-52fbdhbo>Live forhåndsvisning</h2>  <div class="space-y-6" data-astro-cid-52fbdhbo> <!-- Primary Button --> <div data-astro-cid-52fbdhbo> <p class="text-xs text-gray-500 uppercase tracking-wider mb-2" data-astro-cid-52fbdhbo>Primær knap</p> <button class="px-6 py-3 rounded text-white font-medium transition-colors" style="background-color: var(--color-primary); border-radius: var(--border-radius);" onmouseover="this.style.backgroundColor = 'var(--color-primary-hover)'" onmouseout="this.style.backgroundColor = 'var(--color-primary)'" data-astro-cid-52fbdhbo>
+Primær handling
+</button> </div> <!-- Secondary Button --> <div data-astro-cid-52fbdhbo> <p class="text-xs text-gray-500 uppercase tracking-wider mb-2" data-astro-cid-52fbdhbo>Sekundær knap</p> <button class="px-6 py-3 rounded text-white font-medium transition-colors" style="background-color: var(--color-secondary); border-radius: var(--border-radius);" onmouseover="this.style.backgroundColor = 'var(--color-secondary-hover)'" onmouseout="this.style.backgroundColor = 'var(--color-secondary)'" data-astro-cid-52fbdhbo>
+Sekundær handling
+</button> </div> <!-- Accent Button --> <div data-astro-cid-52fbdhbo> <p class="text-xs text-gray-500 uppercase tracking-wider mb-2" data-astro-cid-52fbdhbo>Accent knap</p> <button class="px-6 py-3 rounded text-white font-medium transition-colors" style="background-color: var(--color-accent); border-radius: var(--border-radius);" onmouseover="this.style.backgroundColor = 'var(--color-accent-hover)'" onmouseout="this.style.backgroundColor = 'var(--color-accent)'" data-astro-cid-52fbdhbo>
+Accent handling
+</button> </div> <!-- Card Example --> <div class="border-t border-gray-200 pt-6" data-astro-cid-52fbdhbo> <p class="text-xs text-gray-500 uppercase tracking-wider mb-2" data-astro-cid-52fbdhbo>Kort eksempel</p> <div class="rounded p-4" style="background-color: var(--color-primary-light); border-radius: var(--border-radius); box-shadow: var(--shadow-style);" data-astro-cid-52fbdhbo> <h3 class="font-semibold mb-2" style="font-family: var(--font-heading); color: var(--color-primary);" data-astro-cid-52fbdhbo>Kort titel</h3> <p class="text-sm" style="font-family: var(--font-body); color: var(--color-neutral-600);" data-astro-cid-52fbdhbo>
+Dette er et eksempel på et kort med den nuværende design-stil.
+</p> </div> </div> <!-- Typography Example --> <div class="border-t border-gray-200 pt-6" data-astro-cid-52fbdhbo> <p class="text-xs text-gray-500 uppercase tracking-wider mb-2" data-astro-cid-52fbdhbo>Typografi</p> <h1 class="text-3xl font-bold mb-2" style="font-family: var(--font-heading); color: var(--color-neutral-900);" data-astro-cid-52fbdhbo>Overskrift H1</h1> <h2 class="text-xl font-semibold mb-2" style="font-family: var(--font-heading); color: var(--color-neutral-800);" data-astro-cid-52fbdhbo>Overskrift H2</h2> <p style="font-family: var(--font-body); color: var(--color-neutral-700);" data-astro-cid-52fbdhbo>
+Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved hjælp af designtokenerne.
+</p> </div> </div> </div> </div> </div> </div> </div> <script>
+  (function() {
+    const API = 'https://api.lavprishjemmeside.dk';
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      window.location.href = '/admin/';
+      return;
+    }
+
+    let currentSettings = {};
+
+    // Create neutral color inputs
+    function createNeutralInputs() {
+      const neutralShades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+      const container = document.getElementById('neutral-colors-container');
+      container.innerHTML = '';
+
+      neutralShades.forEach(shade => {
+        const key = `color_neutral_${shade}`;
+        const div = document.createElement('div');
+        div.className = 'flex gap-2 items-center';
+        div.innerHTML = `
+          <label class="text-xs text-gray-600 w-12">N${shade}</label>
+          <input type="color" id="${key}" class="w-10 h-8 border border-gray-300 rounded cursor-pointer">
+          <input type="text" id="${key}_hex" class="flex-1 border border-gray-300 rounded px-2 py-1 font-mono text-xs" placeholder="#000000">
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    createNeutralInputs();
+
+    // Sync color inputs with hex inputs
+    function setupColorSync(colorId) {
+      const colorInput = document.getElementById(colorId);
+      const hexInput = document.getElementById(colorId + '_hex');
+
+      if (!colorInput || !hexInput) return;
+
+      colorInput.addEventListener('change', function() {
+        hexInput.value = this.value.toUpperCase();
+        updatePreview();
+      });
+
+      hexInput.addEventListener('change', function() {
+        if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+          colorInput.value = this.value;
+          updatePreview();
+        }
+      });
+
+      colorInput.addEventListener('input', function() {
+        hexInput.value = this.value.toUpperCase();
+        updatePreview();
+      });
+    }
+
+    // Fetch current settings
+    async function loadSettings() {
+      try {
+        const res = await fetch(API + '/design-settings/1', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (!res.ok) throw new Error('Failed to load settings');
+
+        currentSettings = await res.json();
+        populateForm();
+      } catch (err) {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error-text').textContent = 'Fejl ved indlæsning: ' + err.message;
+        document.getElementById('error').classList.remove('hidden');
+      }
+    }
+
+    // Populate form with current values
+    function populateForm() {
+      const colorFields = [
+        'color_primary', 'color_primary_hover', 'color_primary_light',
+        'color_secondary', 'color_secondary_hover', 'color_secondary_light',
+        'color_accent', 'color_accent_hover'
+      ];
+
+      colorFields.forEach(field => {
+        const value = currentSettings[field];
+        if (value) {
+          const colorInput = document.getElementById(field);
+          const hexInput = document.getElementById(field + '_hex');
+          if (colorInput) colorInput.value = value;
+          if (hexInput) hexInput.value = value.toUpperCase();
+          setupColorSync(field);
+        }
+      });
+
+      // Neutral colors
+      const neutralShades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+      neutralShades.forEach(shade => {
+        const field = `color_neutral_${shade}`;
+        const value = currentSettings[field];
+        if (value) {
+          const colorInput = document.getElementById(field);
+          const hexInput = document.getElementById(field + '_hex');
+          if (colorInput) colorInput.value = value;
+          if (hexInput) hexInput.value = value.toUpperCase();
+          setupColorSync(field);
+        }
+      });
+
+      // Typography
+      const typographyFields = ['font_heading', 'font_body', 'font_size_base'];
+      typographyFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input && currentSettings[field]) {
+          input.value = currentSettings[field];
+          input.addEventListener('change', updatePreview);
+        }
+      });
+
+      // Shapes
+      const shapeFields = ['border_radius', 'shadow_style'];
+      shapeFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input && currentSettings[field]) {
+          input.value = currentSettings[field];
+          input.addEventListener('change', updatePreview);
+        }
+      });
+
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('content').classList.remove('hidden');
+      updatePreview();
+    }
+
+    // Update live preview
+    function updatePreview() {
+      const root = document.querySelector(':root');
+      const style = document.getElementById('preview-styles');
+
+      // Update colors
+      const colorFields = [
+        'color_primary', 'color_primary_hover', 'color_primary_light',
+        'color_secondary', 'color_secondary_hover', 'color_secondary_light',
+        'color_accent', 'color_accent_hover'
+      ];
+
+      colorFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input && input.value) {
+          style.textContent = style.textContent.replace(
+            `--${field}: #[0-9A-Fa-f]{6};`,
+            `--${field}: ${input.value};`
+          );
+          const newStyle = style.textContent.replace(
+            new RegExp(`--${field}: [^;]+;`),
+            `--${field}: ${input.value};`
+          );
+          style.textContent = newStyle;
+        }
+      });
+
+      // Neutral colors
+      const neutralShades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+      neutralShades.forEach(shade => {
+        const field = `color_neutral_${shade}`;
+        const input = document.getElementById(field);
+        if (input && input.value) {
+          const newStyle = style.textContent.replace(
+            new RegExp(`--${field}: [^;]+;`),
+            `--${field}: ${input.value};`
+          );
+          style.textContent = newStyle;
+        }
+      });
+
+      // Typography
+      const fontHeading = document.getElementById('font_heading');
+      const fontBody = document.getElementById('font_body');
+      const baseFontSize = document.getElementById('font_size_base');
+
+      if (fontHeading && fontHeading.value) {
+        const newStyle = style.textContent.replace(
+          /--font-heading: [^;]+;/,
+          `--font-heading: ${fontHeading.value};`
+        );
+        style.textContent = newStyle;
+      }
+
+      if (fontBody && fontBody.value) {
+        const newStyle = style.textContent.replace(
+          /--font-body: [^;]+;/,
+          `--font-body: ${fontBody.value};`
+        );
+        style.textContent = newStyle;
+      }
+
+      if (baseFontSize && baseFontSize.value) {
+        const newStyle = style.textContent.replace(
+          /--base-font-size: [^;]+;/,
+          `--base-font-size: ${baseFontSize.value};`
+        );
+        style.textContent = newStyle;
+      }
+
+      // Shapes
+      const borderRadius = document.getElementById('border_radius');
+      const shadowStyle = document.getElementById('shadow_style');
+
+      if (borderRadius && borderRadius.value) {
+        const newStyle = style.textContent.replace(
+          /--border-radius: [^;]+;/,
+          `--border-radius: ${borderRadius.value};`
+        );
+        style.textContent = newStyle;
+      }
+
+      if (shadowStyle && shadowStyle.value) {
+        const newStyle = style.textContent.replace(
+          /--shadow-style: [^;]+;/,
+          `--shadow-style: ${shadowStyle.value};`
+        );
+        style.textContent = newStyle;
+      }
+    }
+
+    // Save settings
+    document.getElementById('styling-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const btn = this.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.textContent = 'Gemmer...';
+
+      const formData = {};
+
+      // Collect colors
+      const colorFields = [
+        'color_primary', 'color_primary_hover', 'color_primary_light',
+        'color_secondary', 'color_secondary_hover', 'color_secondary_light',
+        'color_accent', 'color_accent_hover'
+      ];
+
+      colorFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input) formData[field] = input.value;
+      });
+
+      // Neutral colors
+      const neutralShades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+      neutralShades.forEach(shade => {
+        const field = `color_neutral_${shade}`;
+        const input = document.getElementById(field);
+        if (input) formData[field] = input.value;
+      });
+
+      // Typography
+      const fontHeading = document.getElementById('font_heading');
+      const fontBody = document.getElementById('font_body');
+      const baseFontSize = document.getElementById('font_size_base');
+
+      if (fontHeading) formData.font_heading = fontHeading.value;
+      if (fontBody) formData.font_body = fontBody.value;
+      if (baseFontSize) formData.font_size_base = baseFontSize.value;
+
+      // Shapes
+      const borderRadius = document.getElementById('border_radius');
+      const shadowStyle = document.getElementById('shadow_style');
+
+      if (borderRadius) formData.border_radius = borderRadius.value;
+      if (shadowStyle) formData.shadow_style = shadowStyle.value;
+
+      try {
+        const res = await fetch(API + '/design-settings/1', {
+          method: 'PUT',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/admin/';
+            return;
+          }
+          throw new Error('Fejl ved gemning');
+        }
+
+        document.getElementById('success-message').classList.remove('hidden');
+        setTimeout(() => {
+          document.getElementById('success-message').classList.add('hidden');
+        }, 3000);
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Gem indstillinger';
+      }
+    });
+
+    // Load settings on page load
+    loadSettings();
+  })();
+  </script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
+    (function() {
+      var path = window.location.pathname.replace(/\/$/, '') || '/admin';
+      if (path === '/admin') return;
+
+      // Show sidebar and header on dashboard pages
+      var sidebar = document.getElementById('admin-sidebar');
+      var header = document.getElementById('admin-header');
+      if (sidebar) { sidebar.classList.remove('hidden'); sidebar.classList.add('lg:flex'); }
+      if (header) { header.classList.remove('hidden'); header.classList.add('flex'); }
+
+      // Show admin email from JWT
+      try {
+        var token = localStorage.getItem('admin_token');
+        if (token) {
+          var payload = JSON.parse(atob(token.split('.')[1]));
+          var emailEl = document.getElementById('admin-email');
+          if (emailEl) emailEl.textContent = payload.email || '';
+        }
+      } catch(e) {}
+
+      // Logout
+      var logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+          localStorage.removeItem('admin_token');
+          window.location.href = '/admin/';
+        });
+      }
+
+      // Mobile menu toggle
+      var menuBtn = document.getElementById('mobile-menu-btn');
+      if (menuBtn && sidebar) {
+        menuBtn.addEventListener('click', function() {
+          sidebar.classList.toggle('hidden');
+          sidebar.classList.toggle('fixed');
+          sidebar.classList.toggle('z-50');
+          sidebar.classList.toggle('inset-0');
+          sidebar.classList.toggle('flex');
+        });
+      }
+    })();
+    </script>  </body></html>

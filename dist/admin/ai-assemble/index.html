@@ -1,0 +1,138 @@
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>AI Content Developer — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.CWEj0ZM5.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+    (function() {
+      var token = localStorage.getItem('admin_token');
+      var path = window.location.pathname.replace(/\/$/, '') || '/admin';
+      var isLoginPage = path === '/admin';
+      if (!token && !isLoginPage) {
+        window.location.href = '/admin/';
+        return;
+      }
+      if (token && isLoginPage) {
+        window.location.href = '/admin/dashboard/';
+        return;
+      }
+    })();
+    </script> <div class="flex min-h-screen"> <!-- Sidebar --> <aside id="admin-sidebar" class="hidden w-64 bg-gray-900 text-gray-100 min-h-screen flex-col"> <div class="p-4 border-b border-gray-700"> <a href="/admin/dashboard/" class="text-lg font-bold text-white">LPH Admin</a> </div> <nav class="flex-1 p-4 space-y-1"> <a href="/admin/dashboard/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm">
+Oversigt
+</a> </nav> <div class="p-4 border-t border-gray-700"> <button id="logout-btn" class="w-full text-left text-sm text-gray-400 hover:text-white">
+Log ud
+</button> </div> </aside> <!-- Main content --> <div class="flex-1 flex flex-col"> <!-- Top bar --> <header id="admin-header" class="hidden bg-white border-b border-gray-200 px-6 py-3 items-center justify-between"> <button id="mobile-menu-btn" class="lg:hidden text-gray-600 text-sm">
+&#9776; Menu
+</button> <div class="flex-1"></div> <span id="admin-email" class="text-sm text-gray-500"></span> </header> <!-- Page content --> <main class="flex-1 p-6">  <div class="max-w-4xl mx-auto"> <!-- Header --> <div class="mb-8"> <h1 class="text-3xl font-bold text-gray-900">AI Indholdsudvikler</h1> <p class="text-gray-600 mt-2">Generer sideindhold ved hjælp af kunstig intelligens</p> </div> <!-- Loading state --> <div id="loading" class="text-center py-12 text-gray-500">Henter data...</div> <!-- Error state --> <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6"> <p class="text-red-700 mb-2" id="error-text"></p> <button onclick="window.location.reload()" class="text-red-600 underline text-sm">Prøv igen</button> </div> <!-- Main content --> <div id="content" class="hidden"> <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"> <!-- Input Form (Left) --> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"> <form id="generate-form" onsubmit="generateContent(event)"> <div class="mb-6"> <label for="page_path" class="block text-sm font-medium text-gray-700 mb-2">Sidesti:</label> <input type="text" id="page_path" placeholder="f.eks. /priser" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" required> <p class="text-xs text-gray-500 mt-1">Stien hvor siden skal gemmes (f.eks. /priser, /omoss, /kontakt)</p> </div> <div class="mb-6"> <label for="prompt" class="block text-sm font-medium text-gray-700 mb-2">Prompt (Dansk):</label> <textarea id="prompt" placeholder="Beskrive hvad siden skal indeholde. Eksempel: Lav en priser-side med 3 pakker, hero-sektion og CTA." rows="8" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono text-sm" required></textarea> <p class="text-xs text-gray-500 mt-1">Vær specifik om hvilket indhold der skal genereres</p> </div> <button type="submit" id="generate-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2"> <span>⚡ Generer side med AI</span> </button> </form> <!-- Info box --> <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4"> <p class="text-sm text-blue-800"> <strong>Bemærk:</strong> AI-generering kan tage op til 30 sekunder. Vent venligst på resultatet.
+</p> </div> </div> <!-- Result Panel (Right) --> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"> <h2 class="text-lg font-semibold mb-6 text-gray-900">Resultat</h2> <!-- Loading spinner (hidden by default) --> <div id="result-loading" class="hidden text-center py-8"> <div class="inline-block"> <div class="w-8 h-8 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div> </div> <p class="text-gray-600 mt-4">Genererer indhold med AI...</p> </div> <!-- Result content (hidden by default) --> <div id="result-content" class="hidden space-y-6"> <div class="bg-green-50 border border-green-200 rounded-lg p-4"> <p class="text-green-700 font-medium mb-3" id="result-title">✓ Siden blev genereret</p> <div class="space-y-3 text-sm text-green-700"> <div class="flex justify-between"> <span>Komponenter genereret:</span> <span class="font-medium" id="result-count">0</span> </div> <div class="flex justify-between"> <span>API-tokens brugt:</span> <span class="font-mono" id="result-tokens">0</span> </div> <div class="flex justify-between"> <span>Estimeret omkostning:</span> <span class="font-mono" id="result-cost">$0.00</span> </div> </div> </div> <button onclick="goToPageBuilder()" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2"> <span>→ Gå til Sidestyring</span> </button> </div> <!-- Error message (hidden by default) --> <div id="result-error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4"> <p class="text-red-700 font-medium mb-2">✗ Fejl under generering</p> <p class="text-red-600 text-sm" id="error-message"></p> </div> <!-- Empty state (shown by default) --> <div id="result-empty" class="text-center py-8 text-gray-500"> <p>Udfyld formularen og klik "Generer side med AI" for at starte</p> </div> </div> </div> </div> </div> <script>
+  (function() {
+    const API = 'https://api.lavprishjemmeside.dk';
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      window.location.href = '/admin/';
+      return;
+    }
+
+    // Hide loading on page load
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('content').classList.remove('hidden');
+
+    window.generateContent = async function(event) {
+      event.preventDefault();
+
+      const pagePath = document.getElementById('page_path').value;
+      const prompt = document.getElementById('prompt').value;
+      const btn = document.getElementById('generate-btn');
+
+      if (!pagePath || !prompt) {
+        alert('Udfyld alle felter');
+        return;
+      }
+
+      // Show loading state
+      btn.disabled = true;
+      document.getElementById('result-empty').classList.add('hidden');
+      document.getElementById('result-content').classList.add('hidden');
+      document.getElementById('result-error').classList.add('hidden');
+      document.getElementById('result-loading').classList.remove('hidden');
+
+      try {
+        const res = await fetch(API + '/ai-generate/page', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            page_path: pagePath,
+            prompt: prompt
+          })
+        });
+
+        const data = await res.json();
+
+        document.getElementById('result-loading').classList.add('hidden');
+
+        if (!res.ok) {
+          // Error
+          document.getElementById('error-message').textContent = data.error || 'Ukendt fejl';
+          document.getElementById('result-error').classList.remove('hidden');
+        } else {
+          // Success
+          document.getElementById('result-count').textContent = data.count || 0;
+          document.getElementById('result-tokens').textContent = (data.usage?.tokens || 0).toLocaleString('da-DK');
+          document.getElementById('result-cost').textContent = '$' + ((data.usage?.cost_usd || 0).toFixed(4));
+          document.getElementById('result-content').classList.remove('hidden');
+        }
+      } catch (err) {
+        document.getElementById('result-loading').classList.add('hidden');
+        document.getElementById('error-message').textContent = err.message;
+        document.getElementById('result-error').classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    window.goToPageBuilder = function() {
+      window.location.href = '/admin/pages/';
+    };
+  })();
+  </script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
+    (function() {
+      var path = window.location.pathname.replace(/\/$/, '') || '/admin';
+      if (path === '/admin') return;
+
+      // Show sidebar and header on dashboard pages
+      var sidebar = document.getElementById('admin-sidebar');
+      var header = document.getElementById('admin-header');
+      if (sidebar) { sidebar.classList.remove('hidden'); sidebar.classList.add('lg:flex'); }
+      if (header) { header.classList.remove('hidden'); header.classList.add('flex'); }
+
+      // Show admin email from JWT
+      try {
+        var token = localStorage.getItem('admin_token');
+        if (token) {
+          var payload = JSON.parse(atob(token.split('.')[1]));
+          var emailEl = document.getElementById('admin-email');
+          if (emailEl) emailEl.textContent = payload.email || '';
+        }
+      } catch(e) {}
+
+      // Logout
+      var logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+          localStorage.removeItem('admin_token');
+          window.location.href = '/admin/';
+        });
+      }
+
+      // Mobile menu toggle
+      var menuBtn = document.getElementById('mobile-menu-btn');
+      if (menuBtn && sidebar) {
+        menuBtn.addEventListener('click', function() {
+          sidebar.classList.toggle('hidden');
+          sidebar.classList.toggle('fixed');
+          sidebar.classList.toggle('z-50');
+          sidebar.classList.toggle('inset-0');
+          sidebar.classList.toggle('flex');
+        });
+      }
+    })();
+    </script>  </body></html>
