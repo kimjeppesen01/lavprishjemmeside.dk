@@ -25,7 +25,8 @@ router.get('/', requireAuth, async (req, res) => {
     res.json(rows);
   } catch (error) {
     console.error('Error fetching components:', error.message);
-    res.status(500).json({ error: 'Kunne ikke hente komponenter' });
+    console.error('Full error:', error);
+    res.status(500).json({ error: 'Kunne ikke hente komponenter', debug: error.message });
   }
 });
 
