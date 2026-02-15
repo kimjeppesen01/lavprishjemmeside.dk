@@ -5,20 +5,20 @@ const fs = require('fs');
 const path = require('path');
 const { requireAuth } = require('../middleware/auth');
 
-// GET /components — List all active components
+// GET /components — List all components (authenticated)
 router.get('/', requireAuth, async (req, res) => {
   try {
     const { category } = req.query;
 
-    let query = 'SELECT id, slug, name_da, description_da, category, tier, seo_heading_level, seo_schema_type, is_active, sort_order FROM components WHERE is_active = 1';
+    let query = 'SELECT id, slug, name_da, description_da, category, created_at, updated_at FROM components';
     const params = [];
 
     if (category) {
-      query += ' AND category = ?';
+      query += ' WHERE category = ?';
       params.push(category);
     }
 
-    query += ' ORDER BY category, sort_order ASC';
+    query += ' ORDER BY category, name_da ASC';
 
     const [rows] = await pool.execute(query, params);
 
@@ -33,7 +33,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/:slug', requireAuth, async (req, res) => {
   try {
     const [rows] = await pool.execute(
-      'SELECT * FROM components WHERE slug = ? AND is_active = 1',
+      'SELECT * FROM components WHERE slug = ?',
       [req.params.slug]
     );
 
@@ -43,9 +43,10 @@ router.get('/:slug', requireAuth, async (req, res) => {
 
     const component = rows[0];
 
-    // Parse JSON fields
-    component.schema_fields = JSON.parse(component.schema_fields);
-    component.default_content = JSON.parse(component.default_content);
+    // Parse JSON props_schema if it's a string
+    if (typeof component.props_schema === 'string') {
+      component.props_schema = JSON.parse(component.props_schema);
+    }
 
     res.json(component);
   } catch (error) {
