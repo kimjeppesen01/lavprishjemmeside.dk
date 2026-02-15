@@ -15,6 +15,7 @@ A Danish business website offering affordable web development services. Built as
 - **API**: Node.js Express (CommonJS, `.cjs` files) in `api/` subfolder
 - **Database**: MySQL (`theartis_lavpris`, user `theartis_lavapi`)
 - **Auth**: JWT (jsonwebtoken + bcrypt)
+- **Email**: Resend API via Nodemailer (3,000 emails/month free tier)
 - **Integrations**: `@astrojs/sitemap` for auto-generated sitemaps
 - **Language**: TypeScript (strict mode) for Astro, CommonJS for API
 - **Hosting**: cPanel on Nordicway (LiteSpeed web server)
@@ -47,20 +48,23 @@ A Danish business website offering affordable web development services. Built as
 > **READ THIS SECTION CAREFULLY.** These issues cost hours to debug. They apply to ANY project on cPanel with LiteSpeed and Node.js.
 
 ### 1. Restarting Node.js Apps on LiteSpeed
-LiteSpeed uses `lsnode:` processes (NOT traditional Passenger). The standard restart methods DO NOT WORK reliably:
-- `touch tmp/restart.txt` — **UNRELIABLE**, often does nothing
-- cPanel "Stop/Start" button — **UNRELIABLE**, may not actually restart the process
+LiteSpeed uses `lsnode:` processes (NOT traditional Passenger). Different restart methods work in different contexts:
 
-**The ONLY reliable way to restart:**
+**For GitHub Actions deployment:**
+```bash
+mkdir -p tmp && touch tmp/restart.txt
+```
+- Use ONLY `tmp/restart.txt` — **DO NOT use pkill in GitHub Actions**
+- pkill causes SSH action to fail with exit code 143 (TERM signal)
+- The `tmp/restart.txt` method works reliably in automated deployments
+
+**For manual SSH restarts:**
 ```bash
 pkill -f 'lsnode:.*<app-directory-name>'
 # LiteSpeed will auto-restart the app on the next HTTP request
 ```
-
-The CI/CD deploy script MUST include this kill step. Example:
-```bash
-pkill -f 'lsnode:.*lavprishjemmeside' || true
-```
+- pkill works fine for manual operations via SSH
+- cPanel "Stop/Start" button is **UNRELIABLE** — prefer SSH pkill
 
 ### 2. ESM vs CommonJS Conflict
 Astro's root `package.json` has `"type": "module"`. If you have a Node.js API in a subfolder:
@@ -124,7 +128,6 @@ Astro's root `package.json` has `"type": "module"`. If you have a Node.js API in
    - `git fetch origin && git reset --hard origin/main`
    - `cp -Rf dist/* ~/lavprishjemmeside.dk/` (deploy frontend)
    - `cd api && npm install --production` (install API deps)
-   - `pkill -f 'lsnode:.*lavprishjemmeside' || true` (kill stale processes)
    - `mkdir -p tmp && touch tmp/restart.txt` (signal restart)
 
 **GitHub Secrets** (configured on the repo):
@@ -166,14 +169,19 @@ lavprishjemmeside.dk/
 │   │   ├── middleware/
 │   │   │   ├── auth.js              # JWT verification (admin role required)
 │   │   │   ├── logger.js            # Request logging to security_logs table
-│   │   │   ├── rateLimit.js         # Rate limiting (login: 5/15min, events: 100/15min)
+│   │   │   ├── rateLimit.js         # Rate limiting (login: 5/15min, events: 100/15min, password reset: 3/15min)
 │   │   │   └── cache.js             # Query caching (60s TTL) + invalidation
 │   │   ├── routes/
 │   │   │   ├── health.js            # GET /health (DB connectivity check)
 │   │   │   ├── events.js            # POST /events (public), GET /events/summary (admin)
 │   │   │   ├── sessions.js          # GET /sessions/summary (admin)
-│   │   │   └── auth.js              # POST /auth/login, POST /auth/register, GET /auth/me
+│   │   │   └── auth.js              # POST /auth/login, /register, /forgot-password, /reset-password, GET /auth/me
+│   │   ├── services/
+│   │   │   └── email.js             # Nodemailer + Resend SMTP transporter, sendEmail() helper
+│   │   ├── templates/
+│   │   │   └── passwordReset.js     # Danish HTML/text email template for password reset
 │   │   ├── schema.sql               # Database schema (5 tables + admin user seed)
+│   │   ├── schema_password_reset.sql # Password reset tokens table
 │   │   └── schema_indexes.sql       # Production indexes (idx_last_activity, idx_created_at_action)
 │   └── tmp/
 │       └── restart.txt              # Touched to signal app restart
@@ -191,6 +199,8 @@ lavprishjemmeside.dk/
         ├── index.astro              # Homepage (hero, features, CTA)
         └── admin/
             ├── index.astro          # Admin login page (/admin/)
+            ├── forgot-password.astro # Password reset request page
+            ├── reset-password.astro  # Password reset form page (token from URL)
             └── dashboard.astro      # Dashboard overview (/admin/dashboard/)
 ```
 
@@ -207,8 +217,10 @@ lavprishjemmeside.dk/
 | `POST` | `/auth/login` | None | Returns JWT token |
 | `POST` | `/auth/register` | JWT (admin) | Create new user |
 | `GET` | `/auth/me` | JWT | Get current user info |
+| `POST` | `/auth/forgot-password` | None | Send password reset email (rate limited: 3/15min) |
+| `POST` | `/auth/reset-password` | None | Reset password with token, returns JWT for auto-login |
 
-**Admin credentials**: `admin@lavprishjemmeside.dk` / `change_me_immediately`
+**Admin credentials**: `info@lavprishjemmeside.dk` / (set via password reset)
 
 ---
 
@@ -221,6 +233,7 @@ lavprishjemmeside.dk/
 | `content_pages` | Track pages and SEO status | path, title, status (draft/published/archived) |
 | `security_logs` | Login attempts, API access | action, ip_address, user_id, details (JSON) |
 | `sessions` | Visitor sessions | session_id, first_page, last_page, page_count |
+| `password_reset_tokens` | Password reset tokens | token (unique), user_id, expires_at, used_at, ip_address |
 
 ---
 
@@ -453,11 +466,10 @@ script: |
   git reset --hard origin/main
   cp -Rf dist/* ~/client-domain.dk/
   cd api && npm install --production
-  pkill -f 'lsnode:.*client-domain' || true
   mkdir -p tmp && touch tmp/restart.txt
 ```
 
-The `pkill` line is **ESSENTIAL** — without it, LiteSpeed will keep running stale code.
+**Important**: Do NOT use `pkill` in GitHub Actions deployment — it causes the SSH action to fail with exit code 143 (TERM signal). The `tmp/restart.txt` method works reliably for automated deployments.
 
 ---
 
@@ -481,7 +493,8 @@ The `pkill` line is **ESSENTIAL** — without it, LiteSpeed will keep running st
 - **Danish language**: All user-facing text is in Danish. `<html lang="da">`.
 - **Don't touch public_html**: WordPress site lives there for a different domain.
 - **API files must be `.cjs`**: The root `package.json` has `"type": "module"` for Astro. Node 22 will treat `.js` files as ESM and crash.
-- **Kill lsnode on deploy**: `pkill -f 'lsnode:.*lavprishjemmeside' || true` is required in every deploy.
+- **Restart in GitHub Actions**: Use ONLY `mkdir -p tmp && touch tmp/restart.txt` — do NOT use pkill (causes exit code 143).
+- **Manual restart via SSH**: `pkill -f 'lsnode:.*lavprishjemmeside'` works fine for manual operations.
 - **DB_HOST must be 127.0.0.1**: Using `localhost` can cause Unix socket connection failures in LiteSpeed.
 - **dotenv needs absolute path**: Use `path.join(__dirname, '.env')` or the `.env` won't be found when LiteSpeed starts the app.
 - **SSH Node version**: Default is v10. Use the virtual env or `/opt/alt/alt-nodejs22/root/usr/bin/node`.
@@ -495,6 +508,7 @@ The `pkill` line is **ESSENTIAL** — without it, LiteSpeed will keep running st
 - **Phase 2**: Express API, MySQL database (5 tables), JWT auth, event tracking, deploy pipeline with lsnode restart
 - **Phase 3**: Admin dashboard infrastructure — login page, overview dashboard, sessions API, AdminLayout with auth guard
 - **Phase 4**: Production infrastructure — rate limiting (5 login/15min, 100 events/15min), query caching (60s TTL), database indexes (sessions.last_activity, security_logs composite)
+- **Phase 5**: Email infrastructure & password reset — Resend API integration, forgot-password and reset-password pages, password_reset_tokens table (60-min expiry, rate limited 3/15min), Danish email templates (HTML + plain text), email enumeration prevention, auto-login after reset
 
 ## Pending
 - **Dashboard enhancements**: Date filtering, charts, auto-refresh, CSV export (see Admin Dashboard section above)
