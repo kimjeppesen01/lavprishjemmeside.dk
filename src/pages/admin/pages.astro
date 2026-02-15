@@ -92,6 +92,50 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     </div>
   </div>
 
+  <!-- Edit Component Modal -->
+  <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="border-b border-gray-200 p-6 flex justify-between items-center flex-shrink-0">
+        <div>
+          <h3 class="text-xl font-bold text-gray-900">Rediger komponent</h3>
+          <p id="edit-component-name" class="text-sm text-gray-500 mt-1"></p>
+        </div>
+        <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+      </div>
+      <div class="p-6 flex-1 overflow-y-auto">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Komponent indhold (JSON):
+          <span class="text-xs text-gray-500 ml-2">Rediger props som JSON</span>
+        </label>
+        <textarea
+          id="edit-content-json"
+          rows="15"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm"
+          spellcheck="false"
+          placeholder='{"headline": "...", "description": "..."}'
+        ></textarea>
+        <div id="edit-json-error" class="hidden mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2"></div>
+        <div class="mt-4 text-xs text-gray-600">
+          <strong>Tips:</strong> Brug formateret JSON (4 mellemrum indrykning) for bedre læsbarhed.
+          <button
+            onclick="formatEditJson()"
+            class="ml-2 text-blue-600 hover:underline"
+          >
+            Formatér JSON
+          </button>
+        </div>
+      </div>
+      <div class="bg-gray-50 border-t border-gray-200 p-6 flex gap-3 flex-shrink-0">
+        <button onclick="closeEditModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-lg transition-colors">
+          Annuller
+        </button>
+        <button onclick="saveComponentEdit()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
+          Gem ændringer
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script is:inline>
   (function() {
     const API = 'https://api.lavprishjemmeside.dk';
@@ -217,6 +261,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           <div class="flex gap-2">
             ${index > 0 ? `<button onclick="reorderComponent(${pc.id}, -1)" class="px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm">↑</button>` : '<span class="px-3 py-2 text-sm text-gray-300">↑</span>'}
             ${index < pageComponents.length - 1 ? `<button onclick="reorderComponent(${pc.id}, 1)" class="px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm">↓</button>` : '<span class="px-3 py-2 text-sm text-gray-300">↓</span>'}
+            <button onclick="editComponent(${pc.id})" class="px-3 py-2 bg-blue-100 hover:bg-blue-200 border border-blue-300 text-blue-700 rounded text-sm">Rediger</button>
             <button onclick="deleteComponent(${pc.id})" class="px-3 py-2 bg-red-100 hover:bg-red-200 border border-red-300 text-red-700 rounded text-sm">Slet</button>
           </div>
         `;
@@ -427,6 +472,100 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         renderPages();
 
         alert(`✓ Side slettet: ${result.deleted_count} komponent(er) fjernet`);
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+      }
+    };
+
+    // Edit component modal
+    let editingComponentId = null;
+
+    window.editComponent = function(id) {
+      const pc = allPageComponents.find(x => x.id === id);
+      if (!pc) {
+        alert('Komponent ikke fundet');
+        return;
+      }
+
+      const component = allComponents.find(c => c.id === pc.component_id);
+      editingComponentId = id;
+
+      // Set modal title
+      document.getElementById('edit-component-name').textContent =
+        component ? component.name_da || component.name : 'Ukendt komponent';
+
+      // Set JSON content
+      const jsonTextarea = document.getElementById('edit-content-json');
+      jsonTextarea.value = JSON.stringify(pc.content, null, 2);
+
+      // Clear error
+      document.getElementById('edit-json-error').classList.add('hidden');
+
+      // Show modal
+      document.getElementById('edit-modal').classList.remove('hidden');
+    };
+
+    window.closeEditModal = function() {
+      document.getElementById('edit-modal').classList.add('hidden');
+      editingComponentId = null;
+    };
+
+    window.formatEditJson = function() {
+      try {
+        const textarea = document.getElementById('edit-content-json');
+        const json = JSON.parse(textarea.value);
+        textarea.value = JSON.stringify(json, null, 2);
+        document.getElementById('edit-json-error').classList.add('hidden');
+      } catch (err) {
+        const errorDiv = document.getElementById('edit-json-error');
+        errorDiv.textContent = 'Ugyldig JSON: ' + err.message;
+        errorDiv.classList.remove('hidden');
+      }
+    };
+
+    window.saveComponentEdit = async function() {
+      if (!editingComponentId) return;
+
+      const textarea = document.getElementById('edit-content-json');
+      let content;
+
+      // Validate JSON
+      try {
+        content = JSON.parse(textarea.value);
+      } catch (err) {
+        const errorDiv = document.getElementById('edit-json-error');
+        errorDiv.textContent = 'Ugyldig JSON: ' + err.message;
+        errorDiv.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const res = await fetch(API + '/page-components/update', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            id: editingComponentId,
+            content: content
+          })
+        });
+
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Fejl ved opdatering');
+        }
+
+        // Update local state
+        const pc = allPageComponents.find(x => x.id === editingComponentId);
+        if (pc) {
+          pc.content = content;
+        }
+
+        closeEditModal();
+        selectPage(selectedPage); // Refresh component list
+        alert('✓ Komponent opdateret');
       } catch (err) {
         alert('Fejl: ' + err.message);
       }
