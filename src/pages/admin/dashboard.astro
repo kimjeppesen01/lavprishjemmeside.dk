@@ -14,7 +14,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
   <!-- Dashboard content (hidden until data loads) -->
   <div id="dashboard" class="hidden">
-    <h1 class="text-2xl font-bold mb-6">Oversigt</h1>
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <h1 class="text-2xl font-bold">Oversigt</h1>
+      <button id="dashboard-publish-btn" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-sm">
+        Publicer til live (~90 sek)
+      </button>
+    </div>
 
     <!-- Settings overview: Pages + Global -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -30,7 +35,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-gray-900">Globale indstillinger</h2>
-          <a href="/admin/styling/" class="text-sm text-blue-600 hover:underline">Rediger →</a>
+          <div class="flex gap-3">
+            <a href="/admin/styling/" class="text-sm text-blue-600 hover:underline">Design →</a>
+            <a href="/admin/header-footer/" class="text-sm text-blue-600 hover:underline">Header →</a>
+          </div>
         </div>
         <div id="settings-global" class="space-y-2 text-sm">
           <p class="text-gray-500">Henter...</p>
@@ -238,6 +246,32 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       document.getElementById('loading').classList.add('hidden');
       document.getElementById('error-text').textContent = 'Kunne ikke hente data: ' + err.message;
       document.getElementById('error').classList.remove('hidden');
+    });
+
+    document.getElementById('dashboard-publish-btn')?.addEventListener('click', function() {
+      var btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Starter...';
+      fetch(API + '/publish', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+      }).then(function(res) { return res.json().then(function(d) { return { ok: res.ok, data: d }; }); })
+        .then(function(r) {
+          if (r.ok) {
+            btn.textContent = '✓ Udrulning startet';
+            btn.classList.remove('bg-amber-600', 'hover:bg-amber-700');
+            btn.classList.add('bg-green-600');
+          } else {
+            throw new Error(r.data.error || 'Fejl');
+          }
+        })
+        .catch(function(err) {
+          alert('Fejl: ' + err.message);
+          btn.textContent = 'Publicer til live (~90 sek)';
+        })
+        .finally(function() {
+          btn.disabled = false;
+        });
     });
   })();
   </script>

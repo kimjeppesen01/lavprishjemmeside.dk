@@ -191,6 +191,14 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-3 rounded-lg transition-colors">
               Gem indstillinger
             </button>
+
+            <!-- Publish to live -->
+            <div class="mt-6 p-4 rounded-xl border-2 border-amber-200 bg-amber-50/50">
+              <p class="text-sm text-gray-700 mb-3">Ændringer kræver publicering for at vises på sitet.</p>
+              <button type="button" id="publish-btn" class="w-full px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition-colors text-sm">
+                Publicer til live (~90 sek)
+              </button>
+            </div>
           </form>
 
           <!-- Success/Error Message -->
@@ -636,9 +644,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
         document.getElementById('save-error-message')?.classList.add('hidden');
         document.getElementById('success-message')?.classList.remove('hidden');
+        const successEl = document.querySelector('#success-message p');
+        if (successEl) successEl.textContent = '✓ Indstillinger gemt. Klik "Publicer til live" for at vise på sitet.';
         setTimeout(() => {
           document.getElementById('success-message')?.classList.add('hidden');
-        }, 3000);
+          if (successEl) successEl.textContent = '✓ Indstillinger gemt';
+        }, 5000);
       } catch (err) {
         const errBox = document.getElementById('save-error-message');
         const errText = document.getElementById('save-error-text');
@@ -650,6 +661,32 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       }
     });
     }
+
+    // Publish button
+    document.getElementById('publish-btn')?.addEventListener('click', async function() {
+      const btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Starter...';
+      try {
+        const res = await fetch(API + '/publish', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          btn.textContent = '✓ Udrulning startet';
+          btn.classList.remove('bg-amber-600', 'hover:bg-amber-700');
+          btn.classList.add('bg-green-600');
+        } else {
+          throw new Error(data.error || res.status);
+        }
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+        btn.textContent = 'Publicer til live (~90 sek)';
+      } finally {
+        btn.disabled = false;
+      }
+    });
 
     // Load settings on page load
     loadSettings();

@@ -144,6 +144,15 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             Annuller
           </a>
         </div>
+
+        <!-- Publish to live -->
+        <section class="mt-8 p-6 rounded-2xl border-2 border-amber-200 bg-amber-50/50">
+          <h3 class="font-semibold text-gray-900 mb-1">Publicer til live</h3>
+          <p class="text-sm text-gray-600 mb-4">Ændringer er gemt i databasen, men kræver en genbuild for at vises på sitet. Klik for at starte udrulning.</p>
+          <button type="button" id="publish-btn" class="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-xl transition-colors">
+            Publicer til live nu (~90 sek)
+          </button>
+        </section>
       </form>
     </div>
 
@@ -376,11 +385,40 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         });
         if (!res.ok) throw new Error((await res.json()).error || 'Fejl');
         document.getElementById('success-toast').classList.remove('hidden');
-        setTimeout(() => document.getElementById('success-toast').classList.add('hidden'), 3000);
+        document.getElementById('success-toast').textContent = '✓ Indstillinger gemt. Klik "Publicer til live" for at vise på sitet.';
+        setTimeout(() => {
+          document.getElementById('success-toast').classList.add('hidden');
+          document.getElementById('success-toast').textContent = '✓ Indstillinger gemt';
+        }, 5000);
       } catch (err) {
         alert('Fejl: ' + err.message);
       } finally {
         if (btn) { btn.disabled = false; btn.textContent = 'Gem indstillinger'; }
+      }
+    });
+
+    document.getElementById('publish-btn').addEventListener('click', async function() {
+      const btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Starter...';
+      try {
+        const res = await fetch(API + '/publish', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          btn.textContent = '✓ Udrulning startet';
+          btn.classList.remove('bg-amber-600', 'hover:bg-amber-700');
+          btn.classList.add('bg-green-600');
+        } else {
+          throw new Error(data.error || res.status);
+        }
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+        btn.textContent = 'Publicer til live nu (~90 sek)';
+      } finally {
+        btn.disabled = false;
       }
     });
 
