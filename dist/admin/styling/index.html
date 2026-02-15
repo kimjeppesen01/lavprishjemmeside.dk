@@ -93,7 +93,7 @@ Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved 
     // Fetch current settings
     async function loadSettings() {
       try {
-        const res = await fetch(API + '/design-settings/1', {
+        const res = await fetch(API + '/design-settings/', {
           headers: { 'Authorization': 'Bearer ' + token }
         });
 
@@ -304,8 +304,8 @@ Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved 
       if (shadowStyle) formData.shadow_style = shadowStyle.value;
 
       try {
-        const res = await fetch(API + '/design-settings/1', {
-          method: 'PUT',
+        const res = await fetch(API + '/design-settings/update', {
+          method: 'POST',
           headers: {
             'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json'
