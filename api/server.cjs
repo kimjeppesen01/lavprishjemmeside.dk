@@ -8,6 +8,12 @@ const healthRoutes = require('./src/routes/health');
 const eventRoutes = require('./src/routes/events');
 const authRoutes = require('./src/routes/auth');
 const sessionRoutes = require('./src/routes/sessions');
+const designSettingsRoutes = require('./src/routes/design-settings');
+const themePresetsRoutes = require('./src/routes/theme-presets');
+const componentsRoutes = require('./src/routes/components');
+const pageComponentsRoutes = require('./src/routes/page-components');
+const aiContextRoutes = require('./src/routes/ai-context');
+const publishRoutes = require('./src/routes/publish');
 const { requestLogger } = require('./src/middleware/logger');
 
 const app = express();
@@ -26,6 +32,12 @@ app.use('/health', healthRoutes);
 app.use('/events', eventRoutes);
 app.use('/auth', authRoutes);
 app.use('/sessions', sessionRoutes);
+app.use('/design-settings', designSettingsRoutes);
+app.use('/theme-presets', themePresetsRoutes);
+app.use('/components', componentsRoutes);
+app.use('/page-components', pageComponentsRoutes);
+app.use('/ai', aiContextRoutes);
+app.use('/publish', publishRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

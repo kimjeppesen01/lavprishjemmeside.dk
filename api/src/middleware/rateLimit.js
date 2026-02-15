@@ -37,4 +37,21 @@ const passwordResetRateLimiter = rateLimit({
   }
 });
 
-module.exports = { loginRateLimiter, eventRateLimiter, passwordResetRateLimiter };
+// AI rate limiter (shared across Phase 6 & Phase 7)
+const aiRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // 10 AI operations per hour per user
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({ error: 'For mange AI-forespørgsler. Prøv igen om en time' });
+  },
+  keyGenerator: (req) => req.user?.id || req.ip
+});
+
+module.exports = {
+  loginRateLimiter,
+  eventRateLimiter,
+  passwordResetRateLimiter,
+  aiRateLimiter
+};
