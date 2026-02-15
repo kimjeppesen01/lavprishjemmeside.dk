@@ -1,0 +1,11 @@
+# Security headers (Future_implementations.md)
+# Requires mod_headers (enabled on cPanel/LiteSpeed by default)
+
+<IfModule mod_headers.c>
+  Header set X-Frame-Options "DENY"
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  # CSP: allow self, GA, Google Fonts, inline styles (Tailwind)
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.lavprishjemmeside.dk https://www.google-analytics.com"
+</IfModule>
