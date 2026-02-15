@@ -3,8 +3,8 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "generate-theme": "node --env-file=.env scripts/generate-theme.mjs",
-    "prebuild": "node --env-file=.env scripts/generate-theme.mjs",
+    "generate-theme": "node scripts/generate-theme.mjs",
+    "prebuild": "node scripts/generate-theme.mjs",
     "dev": "astro dev",
     "build": "npm run prebuild && astro build",
     "preview": "astro preview",
