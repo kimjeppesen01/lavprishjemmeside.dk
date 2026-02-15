@@ -2,11 +2,13 @@
 interface Props {
   stats: Array<{ value: string; label: string; icon?: string }>;
   backgroundColor?: 'default' | 'primary' | 'alt';
+  instanceId?: string | number;
 }
 
 const {
-  stats,
+  stats = [],
   backgroundColor = 'default',
+  instanceId = 'default',
 } = Astro.props;
 
 const bgClass =

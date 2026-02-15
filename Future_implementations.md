@@ -251,10 +251,11 @@ Header set Referrer-Policy "strict-origin-when-cross-origin"
 ## Summary
 
 **Focus NOW** (Tier 1 - Critical):
-1. ✅ Cloudflare CDN (optional - revisit if performance issues)
-2. ✅ Image optimization (Astro `<Image />` component)
-3. ✅ Schema.org + Open Graph tags (SEO fundamentals)
-4. ✅ Font optimization (preload, font-display)
+1. ⏸️ Cloudflare CDN (optional - revisit if performance issues)
+2. ⏸️ Image optimization (Astro Image; add remotePatterns when migrating — use `**.domain.com` syntax)
+3. ✅ Schema.org + Open Graph tags (Layout.astro: JSON-LD WebSite, og:title/description/url/image)
+4. ✅ Font optimization (preconnect, Inter with display=swap)
+5. ✅ Security headers (public/.htaccess — X-Frame-Options, CSP, HSTS, etc.)
 
 **Later** (Nice-to-Have - this file):
 5. Accessibility audit (AI will handle)

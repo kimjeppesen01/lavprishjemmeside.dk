@@ -4,13 +4,15 @@ interface Props {
   description?: string;
   features: Array<{ icon: string; title: string; description: string }>;
   columns?: 2 | 3 | 4;
+  instanceId?: string | number;
 }
 
 const {
-  headline,
+  headline = 'Funktioner',
   description,
-  features,
+  features = [],
   columns = 3,
+  instanceId = 'default',
 } = Astro.props;
 
 const colClass =
@@ -28,7 +30,7 @@ const colClass =
   <div class="mx-auto max-w-[var(--container-max-width)]">
     <div class="text-center">
       <h2
-        id={`features-heading-${Astro.props.instanceId ?? 'default'}`}
+        id={`features-heading-${instanceId}`}
         class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
         style="font-family: var(--font-heading)"
       >

@@ -2,9 +2,10 @@
 interface Props {
   headline: string;
   events: Array<{ year: string; title: string; description: string }>;
+  instanceId?: string | number;
 }
 
-const { headline, events } = Astro.props;
+const { headline = 'Tidslinje', events = [], instanceId = 'default' } = Astro.props;
 ---
 
 <section
@@ -13,7 +14,7 @@ const { headline, events } = Astro.props;
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
     <h2
-      id={`timeline-heading-${Astro.props.instanceId ?? 'default'}`}
+      id={`timeline-heading-${instanceId}`}
       class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
       style="font-family: var(--font-heading)"
     >

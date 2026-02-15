@@ -6,15 +6,17 @@ interface Props {
   secondaryCta?: { text: string; href: string };
   backgroundImage?: string;
   alignment?: 'left' | 'center';
+  instanceId?: string | number;
 }
 
 const {
-  headline,
-  description,
+  headline = '',
+  description = '',
   primaryCta,
   secondaryCta,
   backgroundImage,
   alignment = 'left',
+  instanceId = 'default',
 } = Astro.props;
 ---
 

@@ -811,44 +811,29 @@ npm run build  # Must succeed before git push
 
 ---
 
-### Current State (After Revert)
+### Current State (2026-02-15, Post Component Hardening)
 
 ✅ **Working:**
 - All admin pages functional
 - AI generator creates pages in database
 - Component library complete (18 components)
-- Delete page functionality added (`POST /page-components/delete-page`)
+- Dynamic page rendering from database (`[...slug].astro` restored)
+- `normalizeProps()` thin safety net + component safe defaults
+- AI prompt includes exact TypeScript schemas
+- Design settings save, Live Preview, styling dashboard
+- Delete page functionality (`POST /page-components/delete-page`)
 
-❌ **Not Working:**
-- Dynamic page rendering from database (removed)
-- `/priser` page exists in database but won't render (no `[...slug].astro`)
-
-❌ **Abandoned Features:**
-- `src/pages/[...slug].astro` - Removed due to prop mismatches
-- Public CORS endpoints - Reverted
-- Build-time page generation - Disabled
+❌ **Edge cases:**
+- Dynamic pages: 0 generated when API unreachable at build time (fetch fails)
 
 ---
 
-### Future Fix Options
+### Implemented Fix (2026-02-15)
 
-#### Option 1: Update Components to Match AI Output
-**Pros:** Simple, matches what AI naturally generates
-**Cons:** Requires changing 18 working components, risky
-
-#### Option 2: Fix AI Prompts with Exact Schemas
-**Pros:** AI generates correct data from start
-**Cons:** Prompts become very long, brittle to component changes
-
-#### Option 3: Add Prop Mapping Layer
-**Pros:** Decouples AI output from component requirements
-**Cons:** Extra complexity, needs maintenance
-
-#### Option 4: Add Default Props to Components
-**Pros:** Components won't crash on missing props
-**Cons:** Silent failures, harder to debug
-
-**Recommended:** Option 2 + Option 4 (correct AI prompts + safe defaults)
+**Option 2 + Option 4 applied:**
+- AI prompts now include exact TypeScript schemas from component docs (`api/src/services/anthropic.js`)
+- All components have safe defaults (`instanceId`, `[]` for arrays, fallback headlines)
+- `normalizeProps()` simplified to thin safety net (array checks + default headlines only)
 
 ---
 

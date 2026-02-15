@@ -60,6 +60,14 @@
 - **AI-assemble UI:** "Udløs udrulning nu" button to trigger GitHub Actions deploy after creating a page. Publish, edit, delete stay in /admin/pages only.
 - **Files:** `api/src/routes/ai-generate.js`, `api/src/routes/page-components.js`, `src/pages/admin/ai-assemble.astro`
 
+### Styling settings save + Live Preview
+- **Problem:** Saving design settings failed with "Fejl ved gemning" — form sent `color_neutral_400` and `color_neutral_500`, but DB table only has 50,100,200,300,600,700,800,900.
+- **Fix (API):** Whitelist of allowed columns in `design-settings/update`; unknown fields are ignored instead of causing SQL error.
+- **Problem:** Live Preview didn't reflect form changes — form uses `color_secondary` (underscore), CSS uses `--color-secondary` (hyphen); replace never matched.
+- **Fix (preview):** Added `toCssVar()` to convert underscore → hyphen; `border_radius`/`shadow_style` enums now map to valid CSS values.
+- **Fix (errors):** Save errors now surface the API's actual message (not generic "Fejl ved gemning"); in-page error box instead of alert.
+- **Files:** `api/src/routes/design-settings.js`, `src/pages/admin/styling.astro`
+
 ---
 
 ## 3. Code Quality Notes (Review Priorities)
@@ -200,6 +208,7 @@ gh run list --limit 5          # GitHub Actions status
 3. ~~**TestimonialsCarousel:** Empty content~~ — Fixed (`content`→`quote`, `avatar`→`photo`).
 4. **PROJECT_CONTEXT.md:** Section "Current State (After Revert)" is outdated; `[...slug].astro` is back and working.
 5. **Admin password:** Default may still be `change_me_immediately` — change on first login.
+6. **design_settings:** DB has `color_neutral_50,100,200,300,600,700,800,900` but not 400/500. The form collects 400/500; API whitelist ignores them. Add columns if those shades are needed.
 
 ---
 
@@ -209,6 +218,7 @@ gh run list --limit 5          # GitHub Actions status
 |------|-----------|
 | Dynamic pages | `src/pages/[...slug].astro` |
 | Admin pages | `src/pages/admin/pages.astro` |
+| Design / styling | `src/pages/admin/styling.astro`, `api/src/routes/design-settings.js` |
 | Page components API | `api/src/routes/page-components.js` |
 | Component library | `src/components/*.astro` (18 components) |
 | AI assembly | `src/pages/admin/ai-assemble.astro`, `api/src/routes/ai-generate.js` |

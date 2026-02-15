@@ -8,6 +8,19 @@ interface Props {
 }
 
 const { title, description = "Få en professionel hjemmeside til lav pris. Vi bygger moderne, hurtige og SEO-optimerede hjemmesider for danske virksomheder." } = Astro.props;
+
+const site = typeof Astro.site === 'string' ? Astro.site : 'https://lavprishjemmeside.dk';
+const canonicalUrl = new URL(Astro.url.pathname, site).href;
+const ogImage = new URL('/favicon.svg', site).href;
+
+const schemaOrg = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'lavprishjemmeside.dk',
+  url: site,
+  description: description,
+  inLanguage: 'da',
+};
 ---
 
 <!doctype html>
@@ -21,6 +34,23 @@ const { title, description = "Få en professionel hjemmeside til lav pris. Vi by
     <meta name="generator" content={Astro.generator} />
     <meta name="google-site-verification" content="d7dWCSM6V-nAjgcm2GJtBf13c_xq44QPs4AMMmHIaB8" />
     <title>{title}</title>
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:locale" content="da_DK" />
+    <meta property="og:site_name" content="lavprishjemmeside.dk" />
+
+    <!-- Font optimization: preconnect + Inter with font-display=swap -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json" set:html={JSON.stringify(schemaOrg)} />
     <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-GWCL1R11WP"></script>
     <script is:inline>
       window.dataLayer = window.dataLayer || [];

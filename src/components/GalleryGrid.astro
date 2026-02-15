@@ -3,9 +3,10 @@ interface Props {
   images: Array<{ url: string; alt: string; caption?: string }>;
   columns?: 2 | 3 | 4;
   lightbox?: boolean;
+  instanceId?: string | number;
 }
 
-const { images, columns = 3, lightbox = true } = Astro.props;
+const { images = [], columns = 3, lightbox = true, instanceId = 'default' } = Astro.props;
 
 const colClass =
   columns === 2

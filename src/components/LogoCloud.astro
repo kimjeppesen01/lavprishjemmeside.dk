@@ -3,9 +3,10 @@ interface Props {
   headline?: string;
   logos: Array<{ imageUrl: string; alt: string; link?: string }>;
   grayscale?: boolean;
+  instanceId?: string | number;
 }
 
-const { headline, logos, grayscale = true } = Astro.props;
+const { headline, logos = [], grayscale = true, instanceId = 'default' } = Astro.props;
 ---
 
 <section
@@ -15,7 +16,7 @@ const { headline, logos, grayscale = true } = Astro.props;
   <div class="mx-auto max-w-[var(--container-max-width)]">
     {headline && (
       <h2
-        id={`logo-heading-${Astro.props.instanceId ?? 'default'}`}
+        id={`logo-heading-${instanceId}`}
         class="text-center text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
         style="font-family: var(--font-heading)"
       >

@@ -9,9 +9,10 @@ interface Props {
     social?: Array<{ platform: string; url: string }>;
   }>;
   columns?: 2 | 3 | 4;
+  instanceId?: string | number;
 }
 
-const { headline, members, columns = 3 } = Astro.props;
+const { headline = 'Vores team', members = [], columns = 3, instanceId = 'default' } = Astro.props;
 
 const colClass =
   columns === 2
@@ -36,7 +37,7 @@ function socialLabel(platform: string, name: string): string {
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
     <h2
-      id={`team-heading-${Astro.props.instanceId ?? 'default'}`}
+      id={`team-heading-${instanceId}`}
       class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
       style="font-family: var(--font-heading)"
     >

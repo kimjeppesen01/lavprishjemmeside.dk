@@ -5,10 +5,11 @@ interface Props {
   placeholder?: string;
   buttonText?: string;
   privacyText?: string;
+  instanceId?: string | number;
 }
 
 const {
-  headline,
+  headline = 'Nyhedsbrev',
   description,
   placeholder = 'Din e-mail',
   buttonText = 'Tilmeld',

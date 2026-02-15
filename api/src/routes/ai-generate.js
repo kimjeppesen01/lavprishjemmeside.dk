@@ -108,9 +108,7 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
     console.error('Error generating page content:', error.message);
     console.error('Full error:', error);
     res.status(500).json({
-      error: 'Kunne ikke generere sideindhold',
-      debug: error.message,
-      stack: error.stack
+      error: 'Kunne ikke generere sideindhold'
     });
   }
 });

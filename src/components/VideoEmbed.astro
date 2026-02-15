@@ -5,9 +5,10 @@ interface Props {
   description?: string;
   thumbnail?: string;
   provider?: 'youtube' | 'vimeo';
+  instanceId?: string | number;
 }
 
-const { videoUrl, title, description, provider } = Astro.props;
+const { videoUrl = '', title, description, provider, instanceId = 'default' } = Astro.props;
 
 function extractVideoId(url: string, prov?: string): string | null {
   if (prov === 'youtube' || url.includes('youtube.com') || url.includes('youtu.be')) {
@@ -38,7 +39,7 @@ const embedUrl = videoId
   <div class="mx-auto max-w-[var(--container-max-width)]">
     {title && (
       <h2
-        id={`video-heading-${Astro.props.instanceId ?? 'default'}`}
+        id={`video-heading-${instanceId}`}
         class="mb-4 text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)]"
         style="font-family: var(--font-heading)"
       >

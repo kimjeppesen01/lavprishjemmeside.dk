@@ -9,9 +9,10 @@ interface Props {
     cta: { text: string; href: string };
     featured?: boolean;
   }>;
+  instanceId?: string | number;
 }
 
-const { headline, tiers } = Astro.props;
+const { headline = 'Priser', tiers = [], instanceId = 'default' } = Astro.props;
 ---
 
 <section
@@ -20,7 +21,7 @@ const { headline, tiers } = Astro.props;
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
     <h2
-      id={`pricing-heading-${Astro.props.instanceId ?? 'default'}`}
+      id={`pricing-heading-${instanceId}`}
       class="text-center text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
       style="font-family: var(--font-heading)"
     >
@@ -57,7 +58,7 @@ const { headline, tiers } = Astro.props;
             </span>
           </div>
           <ul class="mt-6 flex-1 space-y-2" role="list">
-            {tier.features.map((f) => (
+            {(tier.features || []).map((f) => (
               <li
                 class="flex items-center gap-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
                 style="font-family: var(--font-body)"
@@ -70,11 +71,11 @@ const { headline, tiers } = Astro.props;
             ))}
           </ul>
           <a
-            href={tier.cta.href}
+            href={tier.cta?.href || '#'}
             class="mt-6 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
             style="font-family: var(--font-body)"
           >
-            {tier.cta.text}
+            {tier.cta?.text || 'Læs mere'}
           </a>
         </article>
       ))}

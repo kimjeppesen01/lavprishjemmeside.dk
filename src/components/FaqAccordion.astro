@@ -6,7 +6,7 @@ interface Props {
   instanceId?: string | number;
 }
 
-const { headline, faqs, defaultOpen = 0, instanceId = 'default' } = Astro.props;
+const { headline = 'Ofte stillede spørgsmål', faqs = [], defaultOpen = 0, instanceId = 'default' } = Astro.props;
 const headingId = `faq-heading-${instanceId}`;
 ---
 

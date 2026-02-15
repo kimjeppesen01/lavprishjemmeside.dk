@@ -2,9 +2,10 @@
 interface Props {
   items: Array<{ label: string; href: string }>;
   separator?: string;
+  instanceId?: string | number;
 }
 
-const { items, separator = '>' } = Astro.props;
+const { items = [], separator = '>', instanceId = 'default' } = Astro.props;
 ---
 
 <nav

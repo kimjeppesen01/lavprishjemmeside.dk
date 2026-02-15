@@ -40,102 +40,22 @@ const componentMap = {
   'gallery-grid': GalleryGrid,
 };
 
-// Prop validation and normalization
+// Prop validation and normalization — thin safety net (AI prompt now includes exact schemas)
 function normalizeProps(slug: string, rawProps: any): any {
-  // Deep clone to avoid mutations
   const props = JSON.parse(JSON.stringify(rawProps));
 
-  // Fix common AI prop name mismatches
   switch (slug) {
     case 'faq-accordion':
-      // AI might use 'items' instead of 'faqs'
-      if (props.items && !props.faqs) {
-        props.faqs = props.items;
-        delete props.items;
-      }
-      // Ensure faqs is an array
-      if (!Array.isArray(props.faqs)) {
-        props.faqs = [];
-      }
-      // Ensure headline exists
-      if (!props.headline) {
-        props.headline = 'Ofte stillede spørgsmål';
-      }
+      if (!Array.isArray(props.faqs)) props.faqs = [];
+      if (!props.headline) props.headline = 'Ofte stillede spørgsmål';
       break;
 
     case 'pricing-table':
-      // AI might use 'plans' instead of 'tiers'
-      if (props.plans && !props.tiers) {
-        props.tiers = props.plans;
-        delete props.plans;
-      }
-      // Ensure tiers is an array
-      if (!Array.isArray(props.tiers)) {
-        props.tiers = [];
-      }
-      // Ensure headline exists
-      if (!props.headline) {
-        props.headline = 'Vælg den plan der passer dig';
-      }
-      // Normalize tier structure
-      props.tiers = props.tiers.map((tier: any) => ({
-        name: tier.name || '',
-        price: tier.price || '',
-        period: tier.period || '',
-        features: Array.isArray(tier.features) ? tier.features : [],
-        cta: tier.cta || { text: 'Læs mere', href: '#' },
-        featured: tier.featured || tier.popular || false,
-      }));
+      if (!Array.isArray(props.tiers)) props.tiers = [];
+      if (!props.headline) props.headline = 'Priser';
       break;
 
     case 'comparison-table':
-      // AI uses features: [{category, items: [{name, col1, col2, col3}]}] — convert to products/features/data
-      if (Array.isArray(props.features) && props.features[0]?.items) {
-        const columnKeys = Object.keys(props.features[0].items[0] || {}).filter((k) => k !== 'name');
-        const products = columnKeys.map((k) => k.charAt(0).toUpperCase() + k.slice(1));
-        const features: string[] = [];
-        const data: (string | boolean | null)[][] = [];
-
-        props.features.forEach((group: any) => {
-          (group.items || []).forEach((item: any) => {
-            features.push(item.name || '');
-            const rowData = columnKeys.map((key) => {
-              const val = item[key];
-              if (val === true || val === 'yes' || val === 'true') return true;
-              if (val === false || val === 'no' || val === 'false') return false;
-              return val != null ? String(val) : null;
-            });
-            data.push(rowData);
-          });
-        });
-
-        props.products = products;
-        props.features = features;
-        props.data = data;
-      } else if (props.columns && props.rows) {
-        const products = props.columns.map((col: any) => col.name || col.title || '');
-        const features: string[] = [];
-        const data: (string | boolean | null)[][] = [];
-        if (Array.isArray(props.rows)) {
-          props.rows.forEach((row: any) => {
-            if (row.feature || row.name) {
-              features.push(row.feature || row.name);
-              const rowData = props.columns.map((col: any, i: number) => {
-                const val = row.values?.[i] ?? row[col.key] ?? null;
-                if (val === 'yes' || val === 'true') return true;
-                if (val === 'no' || val === 'false') return false;
-                return val;
-              });
-              data.push(rowData);
-            }
-          });
-        }
-        props.products = products;
-        props.features = features;
-        props.data = data;
-        delete props.columns;
-        delete props.rows;
-      }
       if (!Array.isArray(props.products)) props.products = [];
       if (!Array.isArray(props.features)) props.features = [];
       if (!Array.isArray(props.data)) props.data = [];
@@ -143,48 +63,51 @@ function normalizeProps(slug: string, rawProps: any): any {
       break;
 
     case 'testimonials-carousel':
-      if (Array.isArray(props.testimonials)) {
-        props.testimonials = props.testimonials.map((t: any) => ({
-          quote: t.quote ?? t.content ?? '',
-          author: t.author ?? '',
-          role: t.role ?? '',
-          company: t.company ?? '',
-          photo: t.photo ?? t.avatar,
-          rating: t.rating,
-        }));
-      }
+      if (!Array.isArray(props.testimonials)) props.testimonials = [];
       if (!props.headline) props.headline = 'Anmeldelser';
       break;
 
     case 'stats-banner':
-      if (Array.isArray(props.stats)) {
-        props.stats = props.stats.map((s: any) => ({
-          value: s.value ?? s.number ?? '',
-          label: s.label ?? '',
-          icon: s.icon,
-        }));
-      }
+      if (!Array.isArray(props.stats)) props.stats = [];
       break;
 
     case 'features-grid':
+      if (!Array.isArray(props.features)) props.features = [];
+      if (!props.headline) props.headline = 'Funktioner';
+      break;
+
     case 'icon-cards':
-      // Ensure features is an array
-      if (!Array.isArray(props.features)) {
-        props.features = [];
-      }
-      if (!props.headline) {
-        props.headline = 'Funktioner';
-      }
+      if (!Array.isArray(props.cards)) props.cards = [];
+      if (!props.headline) props.headline = 'Kort';
+      break;
+
+    case 'team-grid':
+      if (!Array.isArray(props.members)) props.members = [];
+      if (!props.headline) props.headline = 'Vores team';
+      break;
+
+    case 'timeline':
+      if (!Array.isArray(props.events)) props.events = [];
+      if (!props.headline) props.headline = 'Tidslinje';
+      break;
+
+    case 'logo-cloud':
+      if (!Array.isArray(props.logos)) props.logos = [];
+      break;
+
+    case 'gallery-grid':
+      if (!Array.isArray(props.images)) props.images = [];
+      break;
+
+    case 'breadcrumbs':
+      if (!Array.isArray(props.items)) props.items = [];
       break;
 
     case 'hero-section':
-      if (!props.headline) {
-        props.headline = 'Velkommen';
-      }
+      if (!props.headline) props.headline = 'Velkommen';
       break;
 
     default:
-      // No special normalization needed
       break;
   }
 

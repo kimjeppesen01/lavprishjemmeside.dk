@@ -15,8 +15,8 @@ async function generatePageContent(userPrompt, context) {
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 4096,
-    temperature: 0.7,
+    max_tokens: 8192,
+    temperature: 0.3,
     system: systemPrompt,
     messages: [
       {
@@ -41,16 +41,26 @@ async function generatePageContent(userPrompt, context) {
 }
 
 /**
- * Build system prompt with component library context
+ * Build system prompt with component library context.
+ * Includes full component schemas so the AI generates correct prop structures.
  */
 function buildSystemPrompt(context) {
   const { designTokens, componentLibrary, cssVariableSyntax } = context;
+
+  // Build a concise but exact schema reference from the component docs
+  const componentSchemas = buildComponentSchemaReference(componentLibrary.components);
 
   return `Du er en professionel dansk hjemmeside-designer. Din opgave er at sammensætte sider ved hjælp af en komponentbibliotek.
 
 ## Tilgængelige Komponenter
 
 ${componentLibrary.index}
+
+## KRITISK: Eksakte Komponent-Schemas
+
+Du SKAL bruge præcis de prop-navne og strukturer der er defineret herunder. Brug IKKE alternative navne (f.eks. "items" i stedet for "faqs", eller "plans" i stedet for "tiers").
+
+${componentSchemas}
 
 ## Design Tokens (Aktuelle Farver & Stile)
 
@@ -80,7 +90,7 @@ Eksempler:
 
 ## Output Format
 
-Du skal returnere et JSON array med komponenter i denne rækkefølge:
+Returnér et JSON array. Hvert element har præcis denne struktur:
 
 \`\`\`json
 [
@@ -92,14 +102,6 @@ Du skal returnere et JSON array med komponenter i denne rækkefølge:
       "primaryCta": { "text": "...", "href": "..." }
     },
     "sort_order": 1
-  },
-  {
-    "component_slug": "features-grid",
-    "props_data": {
-      "headline": "...",
-      "features": [...]
-    },
-    "sort_order": 2
   }
 ]
 \`\`\`
@@ -107,13 +109,42 @@ Du skal returnere et JSON array med komponenter i denne rækkefølge:
 ## Regler
 
 1. **Kun brug komponenter fra biblioteket** (se index ovenfor)
-2. **Brug danske tekster** - professionel tone
-3. **Props skal matche komponentens schema** (se component docs)
-4. **Sorter komponenterne logisk** - start med hero, slut med CTA
-5. **Brug 4-8 komponenter** per side (ikke for meget, ikke for lidt)
-6. **Returnér KUN JSON** - ingen forklaring, kun arrayet
+2. **Props SKAL matche det eksakte schema** — brug præcis de prop-navne fra schemas ovenfor
+3. **Brug danske tekster** — professionel tone
+4. **Sorter komponenterne logisk** — start med hero, slut med CTA
+5. **Brug 4-8 komponenter** per side
+6. **Returnér KUN JSON** — ingen forklaring, kun arrayet
 
 Vær kreativ men professionel. Lav indhold der passer til brugerens beskrivelse.`;
+}
+
+/**
+ * Extract exact prop schemas from component docs into a concise reference.
+ * Each component doc has a Props Schema section with TypeScript interfaces.
+ */
+function buildComponentSchemaReference(componentDocs) {
+  if (!componentDocs || Object.keys(componentDocs).length === 0) {
+    return '(Komponent-dokumentation ikke tilgængelig)';
+  }
+
+  const schemas = [];
+
+  for (const [slug, docContent] of Object.entries(componentDocs)) {
+    // Extract the Props Schema code block
+    const schemaMatch = docContent.match(/## Props Schema[\s\S]*?```typescript\n([\s\S]*?)```/);
+    // Extract the Example Props Object code block
+    const exampleMatch = docContent.match(/### Example Props Object[\s\S]*?```json\n([\s\S]*?)```/);
+
+    if (schemaMatch) {
+      let entry = `### \`${slug}\`\n\`\`\`typescript\n${schemaMatch[1].trim()}\n\`\`\``;
+      if (exampleMatch) {
+        entry += `\n**Eksempel:**\n\`\`\`json\n${exampleMatch[1].trim()}\n\`\`\``;
+      }
+      schemas.push(entry);
+    }
+  }
+
+  return schemas.join('\n\n');
 }
 
 /**
