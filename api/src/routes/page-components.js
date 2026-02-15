@@ -392,4 +392,124 @@ router.post('/delete-page', requireAuth, async (req, res) => {
   }
 });
 
+// ── Page Meta (SEO) endpoints ──
+
+// GET /page-components/public-meta?page=all — Public: all page meta for build
+router.get('/public-meta', async (req, res) => {
+  try {
+    const { page } = req.query;
+
+    if (!page) {
+      return res.status(400).json({ error: 'page query parameter er påkrævet' });
+    }
+
+    let query, params;
+
+    if (page === 'all') {
+      query = 'SELECT page_path, meta_title, meta_description, og_image, schema_markup FROM page_meta';
+      params = [];
+    } else {
+      query = 'SELECT page_path, meta_title, meta_description, og_image, schema_markup FROM page_meta WHERE page_path = ?';
+      params = [page];
+    }
+
+    const [rows] = await pool.execute(query, params);
+
+    // Return as a map keyed by page_path
+    const result = {};
+    for (const row of rows) {
+      let schemaMarkup = row.schema_markup;
+      if (typeof schemaMarkup === 'string') {
+        try { schemaMarkup = JSON.parse(schemaMarkup); } catch (_) { schemaMarkup = null; }
+      }
+      result[row.page_path] = {
+        meta_title: row.meta_title,
+        meta_description: row.meta_description,
+        og_image: row.og_image,
+        schema_markup: schemaMarkup
+      };
+    }
+
+    res.json(result);
+  } catch (error) {
+    // Table may not exist yet — return empty
+    if (error.code === 'ER_NO_SUCH_TABLE') {
+      return res.json({});
+    }
+    console.error('Error fetching public page meta:', error.message);
+    res.status(500).json({ error: 'Fejl ved hentning af side-meta' });
+  }
+});
+
+// GET /page-components/page-meta?page=/priser — Admin: get meta for one page
+router.get('/page-meta', requireAuth, async (req, res) => {
+  try {
+    const { page } = req.query;
+
+    if (!page) {
+      return res.status(400).json({ error: 'page query parameter er påkrævet' });
+    }
+
+    const [rows] = await pool.execute(
+      'SELECT * FROM page_meta WHERE page_path = ?',
+      [page]
+    );
+
+    if (rows.length === 0) {
+      return res.json({ page_path: page, meta_title: null, meta_description: null, og_image: null, schema_markup: null });
+    }
+
+    const row = rows[0];
+    let schemaMarkup = row.schema_markup;
+    if (typeof schemaMarkup === 'string') {
+      try { schemaMarkup = JSON.parse(schemaMarkup); } catch (_) { schemaMarkup = null; }
+    }
+
+    res.json({
+      ...row,
+      schema_markup: schemaMarkup
+    });
+  } catch (error) {
+    if (error.code === 'ER_NO_SUCH_TABLE') {
+      return res.json({ page_path: req.query.page, meta_title: null, meta_description: null, og_image: null, schema_markup: null });
+    }
+    console.error('Error fetching page meta:', error.message);
+    res.status(500).json({ error: 'Fejl ved hentning af side-meta' });
+  }
+});
+
+// POST /page-components/page-meta/update — Admin: upsert page meta
+router.post('/page-meta/update', requireAuth, async (req, res) => {
+  try {
+    const { page_path, meta_title, meta_description, og_image, schema_markup } = req.body;
+
+    if (!page_path) {
+      return res.status(400).json({ error: 'page_path er påkrævet' });
+    }
+
+    const schemaJson = schema_markup ? JSON.stringify(schema_markup) : null;
+
+    await pool.execute(
+      `INSERT INTO page_meta (page_path, meta_title, meta_description, og_image, schema_markup, created_by)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         meta_title = VALUES(meta_title),
+         meta_description = VALUES(meta_description),
+         og_image = VALUES(og_image),
+         schema_markup = VALUES(schema_markup)`,
+      [page_path.trim(), meta_title || null, meta_description || null, og_image || null, schemaJson, req.user.id]
+    );
+
+    await pool.execute(
+      'INSERT INTO security_logs (action, ip_address, user_agent, user_id, details) VALUES (?, ?, ?, ?, ?)',
+      ['page_meta.update', req.ip, req.headers['user-agent'], req.user.id, JSON.stringify({ page_path })]
+    );
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Error updating page meta:', error.message);
+    res.status(500).json({ error: 'Fejl ved opdatering af side-meta' });
+  }
+});
+
 module.exports = router;

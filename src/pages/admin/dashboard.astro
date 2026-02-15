@@ -21,8 +21,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       </button>
     </div>
 
-    <!-- Settings overview: Pages + Global -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Settings overview: Pages + Global + Media & SEO -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-gray-900">Sider</h2>
@@ -42,6 +42,22 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         </div>
         <div id="settings-global" class="space-y-2 text-sm">
           <p class="text-gray-500">Henter...</p>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-gray-900">Indhold & SEO</h2>
+        </div>
+        <div class="space-y-3 text-sm">
+          <a href="/admin/media/" class="flex items-center gap-2 text-blue-600 hover:underline">
+            <span>🖼</span> Mediebibliotek
+          </a>
+          <a href="/admin/pages/" class="flex items-center gap-2 text-blue-600 hover:underline">
+            <span>🔍</span> SEO for sider
+          </a>
+          <a href="/admin/ai-assemble/" class="flex items-center gap-2 text-blue-600 hover:underline">
+            <span>⚡</span> AI Indholdsudvikler
+          </a>
         </div>
       </div>
     </div>

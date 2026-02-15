@@ -61,7 +61,16 @@ async function buildAiContext() {
     console.warn('ai_prompt_settings table not found or error:', err.message);
   }
 
-  // 5. Build dynamic context
+  // 5. Load available media for AI image selection
+  let availableMedia = [];
+  try {
+    const { getMediaForAi } = require('../routes/media');
+    availableMedia = await getMediaForAi();
+  } catch (err) {
+    console.warn('Could not load media for AI:', err.message);
+  }
+
+  // 6. Build dynamic context
   return {
     designTokens: {
       colors: {
@@ -103,7 +112,8 @@ async function buildAiContext() {
       shadow: 'shadow-[var(--shadow-card)]',
       critical: 'NEVER use hardcoded Tailwind classes like bg-blue-600. Always use CSS variables.'
     },
-    promptSettings
+    promptSettings,
+    availableMedia
   };
 }
 

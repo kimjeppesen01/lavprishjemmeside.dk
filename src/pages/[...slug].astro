@@ -18,6 +18,8 @@ import ContentImageSplit from '../components/ContentImageSplit.astro';
 import Timeline from '../components/Timeline.astro';
 import LogoCloud from '../components/LogoCloud.astro';
 import GalleryGrid from '../components/GalleryGrid.astro';
+import ProductCarousel from '../components/ProductCarousel.astro';
+import StickyColumnSection from '../components/StickyColumnSection.astro';
 
 // Map component slugs to Astro components
 const componentMap = {
@@ -38,6 +40,8 @@ const componentMap = {
   'timeline': Timeline,
   'logo-cloud': LogoCloud,
   'gallery-grid': GalleryGrid,
+  'product-carousel': ProductCarousel,
+  'sticky-column-section': StickyColumnSection,
 };
 
 // Prop validation and normalization — thin safety net (AI prompt now includes exact schemas)
@@ -103,6 +107,16 @@ function normalizeProps(slug: string, rawProps: any): any {
       if (!Array.isArray(props.items)) props.items = [];
       break;
 
+    case 'product-carousel':
+      if (!Array.isArray(props.slides)) props.slides = [];
+      if (!props.heading) props.heading = 'Udvalgte produkter';
+      break;
+
+    case 'sticky-column-section':
+      if (!Array.isArray(props.items)) props.items = [];
+      if (!props.heading) props.heading = 'Sektion';
+      break;
+
     case 'hero-section':
       if (!props.headline) props.headline = 'Velkommen';
       break;
@@ -127,6 +141,16 @@ export async function getStaticPaths() {
     }
 
     const allPageComponents = await response.json();
+
+    let pageMeta: Record<string, any> = {};
+    try {
+      const metaResponse = await fetch(`${API_URL}/page-components/public-meta?page=all`);
+      if (metaResponse.ok) {
+        pageMeta = await metaResponse.json();
+      }
+    } catch (e) {
+      console.warn('Could not fetch page meta:', (e as Error).message);
+    }
 
     // Group by page_path
     const pageGroups = new Map<string, any[]>();
@@ -159,6 +183,7 @@ export async function getStaticPaths() {
         props: {
           pagePath,
           pageComponents: components,
+          pageMeta: pageMeta[pagePath] || null,
         },
       });
     }
@@ -173,7 +198,7 @@ export async function getStaticPaths() {
 }
 
 const { slug } = Astro.params;
-const { pagePath, pageComponents } = Astro.props;
+const { pagePath, pageComponents, pageMeta } = Astro.props;
 
 // Build breadcrumbs from path
 const pathSegments = pagePath.split('/').filter(Boolean);
@@ -192,7 +217,12 @@ const pageTitle = pageComponents[0]?.content?.headline ||
                   'Side';
 ---
 
-<Layout title={pageTitle}>
+<Layout
+  title={pageMeta?.meta_title || pageTitle}
+  description={pageMeta?.meta_description}
+  schemaMarkup={pageMeta?.schema_markup || []}
+  ogImage={pageMeta?.og_image}
+>
   <Breadcrumbs items={breadcrumbItems} />
 
   {pageComponents.map((pc: any) => {

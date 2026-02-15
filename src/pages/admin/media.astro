@@ -1,0 +1,452 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Mediebibliotek">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Mediebibliotek</h1>
+      <p class="text-gray-600 mt-2">Upload og administrer billeder til dine sider</p>
+    </div>
+
+    <!-- Upload area -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Upload billeder</h2>
+      <div
+        id="drop-zone"
+        class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
+      >
+        <p class="text-gray-500 mb-2">Træk billeder hertil</p>
+        <p class="text-gray-400 text-sm mb-4">eller</p>
+        <label class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg cursor-pointer transition-colors">
+          Vælg filer
+          <input type="file" id="file-input" multiple accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml" class="hidden" />
+        </label>
+        <p class="text-xs text-gray-400 mt-3">JPEG, PNG, GIF, WebP, SVG — maks 5MB pr. fil</p>
+      </div>
+
+      <!-- Selected files preview -->
+      <div id="selected-files" class="hidden mt-4">
+        <div id="file-previews" class="flex flex-wrap gap-3 mb-4"></div>
+        <div class="flex items-end gap-3">
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Alt-tekst (beskrivelse af billederne)</label>
+            <input type="text" id="alt-text-input" placeholder="f.eks. 'Team foto af vores medarbejdere'" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <button id="upload-btn" onclick="uploadFiles()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-lg transition-colors whitespace-nowrap">
+            Upload
+          </button>
+        </div>
+        <div id="upload-progress" class="hidden mt-3">
+          <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div id="progress-bar" class="h-full bg-blue-600 transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <p id="upload-status" class="text-sm text-gray-500 mt-1">Uploader...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="mb-4">
+      <input type="text" id="search-input" placeholder="Søg i billeder (alt-tekst, filnavn)..." class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm bg-white shadow-sm" />
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading" class="text-center py-12 text-gray-500">Henter billeder...</div>
+
+    <!-- Error state -->
+    <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <p class="text-red-700 mb-2" id="error-text"></p>
+      <button onclick="window.location.reload()" class="text-red-600 underline text-sm">Prøv igen</button>
+    </div>
+
+    <!-- Image grid -->
+    <div id="media-grid" class="hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <!-- Populated dynamically -->
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="hidden text-center py-12">
+      <p class="text-gray-500 text-lg">Ingen billeder endnu</p>
+      <p class="text-gray-400 text-sm mt-1">Upload dine første billeder ovenfor</p>
+    </div>
+
+    <!-- Load more -->
+    <div id="load-more-container" class="hidden text-center mt-6">
+      <button id="load-more-btn" onclick="loadMore()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-6 py-2 rounded-lg transition-colors">
+        Indlæs flere
+      </button>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+      <div class="border-b border-gray-200 p-6 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-gray-900">Rediger billede</h3>
+        <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+      <div class="p-6">
+        <div class="mb-4">
+          <img id="edit-preview" src="" alt="" class="w-full max-h-64 object-contain rounded-lg bg-gray-100" />
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Alt-tekst</label>
+          <input type="text" id="edit-alt-text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Beskriv billedet..." />
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">URL</label>
+          <div class="flex gap-2">
+            <input type="text" id="edit-url" readonly class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50 font-mono" />
+            <button onclick="copyUrl()" class="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm transition-colors" title="Kopier URL">Kopier</button>
+          </div>
+        </div>
+        <div class="text-xs text-gray-500 space-y-1">
+          <p id="edit-meta-size"></p>
+          <p id="edit-meta-type"></p>
+          <p id="edit-meta-date"></p>
+        </div>
+      </div>
+      <div class="bg-gray-50 border-t border-gray-200 p-6 flex gap-3">
+        <button onclick="deleteMedia()" class="bg-red-100 hover:bg-red-200 border border-red-300 text-red-700 font-medium px-4 py-2 rounded-lg transition-colors">
+          Slet
+        </button>
+        <div class="flex-1"></div>
+        <button onclick="closeEditModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-lg transition-colors">
+          Annuller
+        </button>
+        <button onclick="saveAltText()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
+          Gem
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+  (function() {
+    const API = 'https://api.lavprishjemmeside.dk';
+    const token = localStorage.getItem('admin_token');
+
+    if (!token) {
+      window.location.href = '/admin/';
+      return;
+    }
+
+    let allMedia = [];
+    let currentOffset = 0;
+    let editingMedia = null;
+    let selectedFiles = [];
+    const LIMIT = 50;
+    let searchTimeout = null;
+
+    // Load media
+    async function loadMedia(search, append) {
+      try {
+        if (!append) {
+          currentOffset = 0;
+          allMedia = [];
+        }
+
+        const params = new URLSearchParams({ limit: LIMIT, offset: currentOffset });
+        if (search) params.set('search', search);
+
+        const res = await fetch(API + '/media?' + params.toString(), {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            localStorage.removeItem('admin_token');
+            window.location.href = '/admin/';
+            return;
+          }
+          throw new Error('HTTP ' + res.status);
+        }
+
+        const items = await res.json();
+
+        if (append) {
+          allMedia = allMedia.concat(items);
+        } else {
+          allMedia = items;
+        }
+
+        renderGrid();
+
+        // Show/hide load more
+        const loadMoreContainer = document.getElementById('load-more-container');
+        if (items.length >= LIMIT) {
+          loadMoreContainer.classList.remove('hidden');
+        } else {
+          loadMoreContainer.classList.add('hidden');
+        }
+      } catch (err) {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error-text').textContent = 'Fejl: ' + err.message;
+        document.getElementById('error').classList.remove('hidden');
+      }
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('media-grid');
+      const empty = document.getElementById('empty-state');
+      const loading = document.getElementById('loading');
+
+      loading.classList.add('hidden');
+
+      if (allMedia.length === 0) {
+        grid.classList.add('hidden');
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      empty.classList.add('hidden');
+      grid.classList.remove('hidden');
+      grid.innerHTML = '';
+
+      allMedia.forEach(function(item) {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow group';
+        card.innerHTML =
+          '<div class="aspect-square bg-gray-100 relative overflow-hidden">' +
+            '<img src="' + escapeAttr(item.url) + '" alt="' + escapeAttr(item.alt_text || item.original_name) + '" class="w-full h-full object-cover" loading="lazy" />' +
+            '<div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">' +
+              '<span class="text-white opacity-0 group-hover:opacity-100 font-medium text-sm transition-opacity">Rediger</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="p-3">' +
+            '<p class="text-sm font-medium text-gray-900 truncate">' + escapeHtml(item.alt_text || '(ingen alt-tekst)') + '</p>' +
+            '<p class="text-xs text-gray-500 truncate mt-1">' + escapeHtml(item.original_name) + '</p>' +
+          '</div>';
+        card.addEventListener('click', function() { openEditModal(item.id); });
+        grid.appendChild(card);
+      });
+    }
+
+    // Upload
+    window.uploadFiles = async function() {
+      if (selectedFiles.length === 0) return;
+
+      const btn = document.getElementById('upload-btn');
+      const progress = document.getElementById('upload-progress');
+      const progressBar = document.getElementById('progress-bar');
+      const statusText = document.getElementById('upload-status');
+
+      btn.disabled = true;
+      btn.textContent = 'Uploader...';
+      progress.classList.remove('hidden');
+      progressBar.style.width = '30%';
+
+      const formData = new FormData();
+      selectedFiles.forEach(function(f) { formData.append('files', f); });
+      formData.append('alt_text', document.getElementById('alt-text-input').value);
+
+      try {
+        const res = await fetch(API + '/media/upload', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: formData
+        });
+
+        progressBar.style.width = '90%';
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Upload fejlede');
+        }
+
+        const data = await res.json();
+        progressBar.style.width = '100%';
+        statusText.textContent = data.files.length + ' billede(r) uploadet';
+
+        // Reset form
+        selectedFiles = [];
+        document.getElementById('file-input').value = '';
+        document.getElementById('alt-text-input').value = '';
+        document.getElementById('file-previews').innerHTML = '';
+        document.getElementById('selected-files').classList.add('hidden');
+
+        setTimeout(function() {
+          progress.classList.add('hidden');
+          progressBar.style.width = '0%';
+        }, 2000);
+
+        // Reload grid
+        loadMedia(document.getElementById('search-input').value, false);
+      } catch (err) {
+        statusText.textContent = 'Fejl: ' + err.message;
+        statusText.classList.add('text-red-600');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Upload';
+      }
+    };
+
+    // File selection
+    function handleFiles(files) {
+      selectedFiles = Array.from(files).filter(function(f) {
+        return f.type.startsWith('image/') && f.size <= 5 * 1024 * 1024;
+      });
+
+      if (selectedFiles.length === 0) {
+        alert('Ingen gyldige billeder valgt (maks 5MB, kun billedformater)');
+        return;
+      }
+
+      const container = document.getElementById('selected-files');
+      const previews = document.getElementById('file-previews');
+      previews.innerHTML = '';
+
+      selectedFiles.forEach(function(file) {
+        const div = document.createElement('div');
+        div.className = 'w-16 h-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 relative';
+
+        const img = document.createElement('img');
+        img.className = 'w-full h-full object-cover';
+        img.src = URL.createObjectURL(file);
+
+        div.appendChild(img);
+        previews.appendChild(div);
+      });
+
+      container.classList.remove('hidden');
+    }
+
+    // File input change
+    document.getElementById('file-input').addEventListener('change', function(e) {
+      if (e.target.files.length > 0) handleFiles(e.target.files);
+    });
+
+    // Drag and drop
+    const dropZone = document.getElementById('drop-zone');
+
+    dropZone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      dropZone.classList.add('border-blue-400', 'bg-blue-50');
+    });
+
+    dropZone.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+      if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
+    });
+
+    // Search
+    document.getElementById('search-input').addEventListener('input', function(e) {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(function() {
+        loadMedia(e.target.value, false);
+      }, 300);
+    });
+
+    // Load more
+    window.loadMore = function() {
+      currentOffset += LIMIT;
+      loadMedia(document.getElementById('search-input').value, true);
+    };
+
+    // Edit modal
+    window.openEditModal = function(id) {
+      editingMedia = allMedia.find(function(m) { return m.id === id; });
+      if (!editingMedia) return;
+
+      document.getElementById('edit-preview').src = editingMedia.url;
+      document.getElementById('edit-preview').alt = editingMedia.alt_text || '';
+      document.getElementById('edit-alt-text').value = editingMedia.alt_text || '';
+      document.getElementById('edit-url').value = editingMedia.url;
+      document.getElementById('edit-meta-size').textContent = 'Størrelse: ' + formatBytes(editingMedia.file_size);
+      document.getElementById('edit-meta-type').textContent = 'Type: ' + editingMedia.mime_type;
+      document.getElementById('edit-meta-date').textContent = 'Uploadet: ' + new Date(editingMedia.created_at).toLocaleDateString('da-DK');
+
+      document.getElementById('edit-modal').classList.remove('hidden');
+    };
+
+    window.closeEditModal = function() {
+      document.getElementById('edit-modal').classList.add('hidden');
+      editingMedia = null;
+    };
+
+    window.copyUrl = function() {
+      var url = document.getElementById('edit-url').value;
+      navigator.clipboard.writeText(url).then(function() {
+        var btn = document.querySelector('#edit-modal button[onclick="copyUrl()"]');
+        if (btn) {
+          btn.textContent = 'Kopieret';
+          setTimeout(function() { btn.textContent = 'Kopier'; }, 1500);
+        }
+      });
+    };
+
+    window.saveAltText = async function() {
+      if (!editingMedia) return;
+
+      var newAlt = document.getElementById('edit-alt-text').value;
+
+      try {
+        var res = await fetch(API + '/media/update', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingMedia.id, alt_text: newAlt })
+        });
+
+        if (!res.ok) throw new Error('Fejl ved opdatering');
+
+        editingMedia.alt_text = newAlt;
+        renderGrid();
+        closeEditModal();
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+      }
+    };
+
+    window.deleteMedia = async function() {
+      if (!editingMedia) return;
+      if (!confirm('Slet dette billede permanent?')) return;
+
+      try {
+        var res = await fetch(API + '/media/delete', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingMedia.id })
+        });
+
+        if (!res.ok) throw new Error('Fejl ved sletning');
+
+        allMedia = allMedia.filter(function(m) { return m.id !== editingMedia.id; });
+        renderGrid();
+        closeEditModal();
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+      }
+    };
+
+    // Helpers
+    function escapeHtml(text) {
+      if (!text) return '';
+      var div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function escapeAttr(text) {
+      if (!text) return '';
+      return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // Init
+    loadMedia('', false);
+  })();
+  </script>
+</AdminLayout>

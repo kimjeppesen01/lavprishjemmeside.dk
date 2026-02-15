@@ -6,22 +6,52 @@ import designFeatures from '../data/design-features.json';
 interface Props {
   title: string;
   description?: string;
+  schemaMarkup?: any[];
+  ogImage?: string;
 }
 
-const { title, description = "Få en professionel hjemmeside til lav pris. Vi bygger moderne, hurtige og SEO-optimerede hjemmesider for danske virksomheder." } = Astro.props;
+const { title, description = "Få en professionel hjemmeside til lav pris. Vi bygger moderne, hurtige og SEO-optimerede hjemmesider for danske virksomheder.", schemaMarkup = [], ogImage } = Astro.props;
 
 const site = typeof Astro.site === 'string' ? Astro.site : 'https://lavprishjemmeside.dk';
 const canonicalUrl = new URL(Astro.url.pathname, site).href;
-const ogImage = new URL('/favicon.svg', site).href;
+const resolvedOgImage = ogImage || new URL('/favicon.svg', site).href;
 
-const schemaOrg = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'lavprishjemmeside.dk',
-  url: site,
-  description: description,
-  inLanguage: 'da',
-};
+const baseSchemas = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': site + '/#website',
+    name: 'lavprishjemmeside.dk',
+    url: site,
+    description: description,
+    inLanguage: 'da',
+  },
+  {
+    '@context': 'https://schema.org/',
+    '@type': 'Organization',
+    '@id': site + '/#organization',
+    name: 'Lavprishjemmeside.dk',
+    url: site,
+    description: 'Lavprishjemmeside.dk er et dansk webbureau beliggende i Fredericia. Vi specialiserer os i at levere professionelle, responsive og konverteringsoptimerede hjemmesider til overkommelige priser.',
+    foundingDate: '2026',
+    areaServed: { '@type': 'Country', name: 'Denmark' },
+    contactPoint: {
+      '@type': 'ContactPoint',
+      email: 'info@lavprishjemmeside.dk',
+      contactType: 'customer service',
+      availableLanguage: ['da', 'en']
+    },
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'Høgevej 4',
+      addressLocality: 'Fredericia',
+      postalCode: '7000',
+      addressCountry: 'DK'
+    }
+  }
+];
+
+const allSchemas = [...baseSchemas, ...schemaMarkup];
 ---
 
 <!doctype html>
@@ -41,7 +71,7 @@ const schemaOrg = {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalUrl} />
-    <meta property="og:image" content={ogImage} />
+    <meta property="og:image" content={resolvedOgImage} />
     <meta property="og:locale" content="da_DK" />
     <meta property="og:site_name" content="lavprishjemmeside.dk" />
 
@@ -51,7 +81,9 @@ const schemaOrg = {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
     <!-- Schema.org JSON-LD -->
-    <script type="application/ld+json" set:html={JSON.stringify(schemaOrg)} />
+    {allSchemas.map(schema => (
+      <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+    ))}
     <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-GWCL1R11WP"></script>
     <script is:inline>
       window.dataLayer = window.dataLayer || [];

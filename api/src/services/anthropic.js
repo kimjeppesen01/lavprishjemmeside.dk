@@ -28,10 +28,11 @@ async function generatePageContent(userPrompt, context) {
 
   // Extract JSON from response
   const response = message.content[0].text;
-  const components = parseComponentsFromResponse(response);
+  const parsed = parseComponentsFromResponse(response);
 
   return {
-    components,
+    components: parsed.components,
+    seo: parsed.seo,
     usage: {
       input_tokens: message.usage.input_tokens,
       output_tokens: message.usage.output_tokens,
@@ -45,7 +46,7 @@ async function generatePageContent(userPrompt, context) {
  * Includes full component schemas so the AI generates correct prop structures.
  */
 function buildSystemPrompt(context) {
-  const { designTokens, componentLibrary, cssVariableSyntax, promptSettings = {} } = context;
+  const { designTokens, componentLibrary, cssVariableSyntax, promptSettings = {}, availableMedia = [] } = context;
 
   // Build a concise but exact schema reference from the component docs
   const componentSchemas = buildComponentSchemaReference(componentLibrary.components);
@@ -118,22 +119,52 @@ Eksempler:
 - Radius: ${cssVariableSyntax.radius}
 - Shadow: ${cssVariableSyntax.shadow}
 
+${availableMedia.length > 0
+    ? `## Tilgængelige Billeder
+
+Brug disse billeder i stedet for placeholder-URLs. Vælg billeder baseret på alt-teksten og sidens indhold.
+
+${availableMedia.map(m => '- ' + m.url + ' — "' + m.alt + '"').join('\n')}
+
+Hvis intet billede passer, brug "https://placehold.co/800x600/e2e8f0/64748b?text=Billede" som fallback.`
+    : `## Billeder
+
+Ingen billeder er uploadet endnu. Brug "https://placehold.co/800x600/e2e8f0/64748b?text=Billede" som placeholder for alle billedfelter.`}
+
+## SEO Metadata
+
+Generer SEO-metadata til siden:
+- **meta_title**: Maks 60 tegn. Inkluder sidens emne + "| Lavprishjemmeside.dk". Eksempel: "Priser på hjemmesider | Lavprishjemmeside.dk"
+- **meta_description**: Maks 160 tegn. Kort, handlingsorienteret beskrivelse med CTA. Eksempel: "Se vores priser på professionelle hjemmesider. Fra 4.995 kr. Kontakt os i dag."
+- **schema_type**: Vælg baseret på sidens indhold:
+  - "FAQPage" — hvis siden har faq-accordion
+  - "Product" — hvis siden har pricing-table
+  - "AboutPage" — hvis siden har team-grid
+  - "WebPage" — standard for alle andre sider
+
 ## Output Format
 
-Returnér et JSON array. Hvert element har præcis denne struktur:
+Returnér et JSON **objekt** (IKKE et array). Strukturen er:
 
 \`\`\`json
-[
-  {
-    "component_slug": "hero-section",
-    "props_data": {
-      "headline": "...",
-      "description": "...",
-      "primaryCta": { "text": "...", "href": "..." }
-    },
-    "sort_order": 1
-  }
-]
+{
+  "seo": {
+    "meta_title": "Sidetitel | Lavprishjemmeside.dk",
+    "meta_description": "Kort SEO-beskrivelse med CTA...",
+    "schema_type": "WebPage"
+  },
+  "components": [
+    {
+      "component_slug": "hero-section",
+      "props_data": {
+        "headline": "...",
+        "description": "...",
+        "primaryCta": { "text": "...", "href": "..." }
+      },
+      "sort_order": 1
+    }
+  ]
+}
 \`\`\`
 
 ## Regler
@@ -143,7 +174,9 @@ Returnér et JSON array. Hvert element har præcis denne struktur:
 3. **Brug danske tekster** — professionel tone
 4. **Sorter komponenterne logisk** — start med hero, slut med CTA
 5. **Brug 4-8 komponenter** per side
-6. **Returnér KUN JSON** — ingen forklaring, kun arrayet
+6. **Returnér KUN JSON** — ingen forklaring, kun JSON-objektet
+7. **Brug uploadede billeder** — vælg fra listen ovenfor baseret på alt-tekst relevans. Brug placeholder kun som sidste udvej
+8. **SEO er påkrævet** — inkluder altid "seo" objektet med meta_title, meta_description og schema_type
 
 Vær kreativ men professionel. Lav indhold der passer til brugerens beskrivelse.`;
 }
@@ -178,12 +211,14 @@ function buildComponentSchemaReference(componentDocs) {
 }
 
 /**
- * Parse components JSON from Claude's response
+ * Parse components and SEO data from Claude's response.
+ * Supports both new object format { seo, components } and legacy array format.
  */
 function parseComponentsFromResponse(response) {
   // Extract JSON from markdown code blocks or raw JSON
   const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/) ||
                     response.match(/```\n([\s\S]*?)\n```/) ||
+                    response.match(/(\{[\s\S]*\})/) ||
                     response.match(/(\[[\s\S]*\])/);
 
   if (!jsonMatch) {
@@ -191,20 +226,30 @@ function parseComponentsFromResponse(response) {
   }
 
   const json = jsonMatch[1];
-  const components = JSON.parse(json);
+  const parsed = JSON.parse(json);
 
-  // Validate structure
-  if (!Array.isArray(components)) {
-    throw new Error('AI response is not an array');
+  let components;
+  let seo = null;
+
+  if (Array.isArray(parsed)) {
+    // Legacy format: flat array of components
+    components = parsed;
+  } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.components)) {
+    // New format: { seo: {...}, components: [...] }
+    components = parsed.components;
+    seo = parsed.seo || null;
+  } else {
+    throw new Error('AI response is not a valid format');
   }
 
+  // Validate components
   components.forEach((comp, index) => {
     if (!comp.component_slug || !comp.props_data) {
       throw new Error(`Invalid component at index ${index}`);
     }
   });
 
-  return components;
+  return { components, seo };
 }
 
 module.exports = { generatePageContent };

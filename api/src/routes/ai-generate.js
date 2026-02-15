@@ -23,7 +23,7 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
 
     // 2. Call Anthropic API
     console.log('Generating page content with AI...');
-    const { components, usage } = await generatePageContent(prompt, context);
+    const { components, seo, usage } = await generatePageContent(prompt, context);
     console.log(`✓ Generated ${components.length} components`);
 
     // 3. Save components to database
@@ -60,7 +60,32 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
       componentIds.push(result.insertId);
     }
 
-    // 4. Log AI usage
+    // 4. Save page meta (SEO) if AI provided it
+    if (seo) {
+      try {
+        const schemaMarkup = buildSchemaMarkup(page_path, seo, components);
+        await pool.execute(
+          `INSERT INTO page_meta (page_path, meta_title, meta_description, schema_markup, created_by)
+           VALUES (?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+             meta_title = VALUES(meta_title),
+             meta_description = VALUES(meta_description),
+             schema_markup = VALUES(schema_markup)`,
+          [
+            (page_path || '').trim(),
+            seo.meta_title || null,
+            seo.meta_description || null,
+            JSON.stringify(schemaMarkup),
+            req.user.id
+          ]
+        );
+        console.log('✓ Saved page meta (SEO)');
+      } catch (metaErr) {
+        console.warn('Could not save page meta:', metaErr.message);
+      }
+    }
+
+    // 5. Log AI usage
     const costPerToken = 0.000003; // $3 per 1M tokens (Sonnet pricing)
     const totalTokens = usage.input_tokens + usage.output_tokens;
     const cost = (totalTokens * costPerToken).toFixed(4);
@@ -112,5 +137,94 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
     });
   }
 });
+
+/**
+ * Build structured data (JSON-LD) for a page based on AI's schema_type hint and actual component data.
+ * Returns an array of schema.org objects.
+ */
+function buildSchemaMarkup(pagePath, seoData, components) {
+  const siteUrl = 'https://www.lavprishjemmeside.dk';
+  const schemas = [];
+
+  // 1. BreadcrumbList — always included
+  const segments = pagePath.replace(/^\//, '').replace(/\/$/, '').split('/').filter(Boolean);
+  const breadcrumbItems = [
+    { '@type': 'ListItem', position: 1, name: 'Forside', item: siteUrl + '/' }
+  ];
+  segments.forEach((seg, i) => {
+    breadcrumbItems.push({
+      '@type': 'ListItem',
+      position: i + 2,
+      name: seg.charAt(0).toUpperCase() + seg.slice(1),
+      item: siteUrl + '/' + segments.slice(0, i + 1).join('/')
+    });
+  });
+  schemas.push({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: breadcrumbItems
+  });
+
+  // 2. WebPage (base — always included)
+  const webPage = {
+    '@context': 'https://schema.org',
+    '@type': seoData.schema_type || 'WebPage',
+    '@id': siteUrl + pagePath + '#webpage',
+    name: seoData.meta_title || segments[segments.length - 1] || 'Side',
+    url: siteUrl + pagePath,
+    description: seoData.meta_description || '',
+    inLanguage: 'da-DK',
+    isPartOf: {
+      '@type': 'WebSite',
+      '@id': siteUrl + '/#website',
+      name: 'Lavprishjemmeside.dk',
+      url: siteUrl + '/'
+    },
+    publisher: { '@id': siteUrl + '/#organization' }
+  };
+  schemas.push(webPage);
+
+  // 3. FAQPage — if page has faq-accordion components
+  const faqComponent = components.find(c => c.component_slug === 'faq-accordion');
+  if (faqComponent && Array.isArray(faqComponent.props_data?.faqs)) {
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqComponent.props_data.faqs.map(faq => ({
+        '@type': 'Question',
+        name: faq.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: faq.answer
+        }
+      }))
+    });
+  }
+
+  // 4. Product — if page has pricing-table components
+  const pricingComponent = components.find(c => c.component_slug === 'pricing-table');
+  if (pricingComponent && Array.isArray(pricingComponent.props_data?.tiers)) {
+    pricingComponent.props_data.tiers.forEach(tier => {
+      if (!tier.price) return;
+      const priceNum = String(tier.price).replace(/[^0-9.,]/g, '').replace(',', '.');
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: tier.name || tier.title || 'Pakke',
+        description: tier.description || '',
+        brand: { '@type': 'Brand', name: 'Lavprishjemmeside.dk' },
+        offers: {
+          '@type': 'Offer',
+          priceCurrency: 'DKK',
+          price: priceNum,
+          availability: 'https://schema.org/InStock',
+          seller: { '@id': siteUrl + '/#organization' }
+        }
+      });
+    });
+  }
+
+  return schemas;
+}
 
 module.exports = router;
