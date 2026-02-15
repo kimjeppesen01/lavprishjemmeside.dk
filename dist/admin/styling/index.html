@@ -35,7 +35,7 @@ Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved 
 </p> </div> </div> </div> </div> </div> </div> </div> <script>
   (function() {
     const API = 'https://api.lavprishjemmeside.dk';
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('admin_token');
 
     if (!token) {
       window.location.href = '/admin/';
@@ -315,7 +315,7 @@ Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved 
 
         if (!res.ok) {
           if (res.status === 401) {
-            localStorage.removeItem('token');
+            localStorage.removeItem('admin_token');
             window.location.href = '/admin/';
             return;
           }

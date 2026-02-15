@@ -23,7 +23,7 @@ Luk
 </button> </div> </div> </div> <script>
   (function() {
     const API = 'https://api.lavprishjemmeside.dk';
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('admin_token');
 
     if (!token) {
       window.location.href = '/admin/';
@@ -41,7 +41,7 @@ Luk
 
         if (!res.ok) {
           if (res.status === 401) {
-            localStorage.removeItem('token');
+            localStorage.removeItem('admin_token');
             window.location.href = '/admin/';
             return;
           }
