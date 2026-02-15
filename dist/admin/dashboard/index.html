@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Oversigt — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.9bwreuk1.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Oversigt — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.CxO0QAL6.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -18,6 +18,8 @@ Oversigt
 Sider
 </a> <a href="/admin/styling/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm">
 Design &amp; styling
+</a> <a href="/admin/header-footer/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm">
+Header &amp; Footer
 </a> <a href="/admin/components/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm">
 Komponenter
 </a> <a href="/admin/ai-assemble/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm">
@@ -92,13 +94,18 @@ Log ud
       }
       document.getElementById('settings-pages').innerHTML = pagesHtml;
 
-      // Settings: Global (design)
+      // Settings: Global (design) + feature toggles
       var globalHtml = '';
       if (designSettings) {
         globalHtml = '<div class="flex items-center gap-2 py-1"><span class="w-4 h-4 rounded border border-gray-300" style="background:' + esc(designSettings.color_primary || '#2563EB') + '"></span><span>Primær: ' + esc(designSettings.color_primary || '—') + '</span></div>'
           + '<div class="py-1">Font: ' + esc(designSettings.font_heading || designSettings.font_body || '—') + '</div>'
           + '<div class="py-1">Kantradius: ' + esc(designSettings.border_radius || '—') + '</div>'
-          + '<div class="py-1">Skygge: ' + esc(designSettings.shadow_style || '—') + '</div>';
+          + '<div class="py-1">Skygge: ' + esc(designSettings.shadow_style || '—') + '</div>'
+          + '<div class="pt-2 mt-2 border-t border-gray-100 space-y-1"><span class="text-xs text-gray-500 uppercase tracking-wider">Funktioner</span>'
+          + '<div class="py-1">' + ((designSettings.feature_smooth_scroll ?? 1) !== 0 ? '<span class="text-green-600">●</span>' : '<span class="text-gray-400">○</span>') + ' Smooth scroll</div>'
+          + '<div class="py-1">' + ((designSettings.feature_grain_overlay ?? 1) !== 0 ? '<span class="text-green-600">●</span>' : '<span class="text-gray-400">○</span>') + ' Korn-overlay</div>'
+          + '<div class="py-1">' + ((designSettings.feature_page_loader ?? 1) !== 0 ? '<span class="text-green-600">●</span>' : '<span class="text-gray-400">○</span>') + ' Sideloader</div>'
+          + '<div class="py-1">' + ((designSettings.feature_sticky_header ?? 1) !== 0 ? '<span class="text-green-600">●</span>' : '<span class="text-gray-400">○</span>') + ' Klæbende header</div></div>';
       } else {
         globalHtml = '<p class="text-gray-500">Kunne ikke hente. <a href="/admin/styling/" class="text-blue-600 hover:underline">Åbn styling</a></p>';
       }
