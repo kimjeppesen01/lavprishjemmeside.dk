@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Page Builder — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.BG5ph3Zq.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Page Builder — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.Dv-UB8Fz.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -32,11 +32,15 @@ Log ud
 + Tilføj komponent
 </button> <button id="publish-btn" onclick="publishPage()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-3 rounded-lg transition-colors">
 Publicer side
-</button> </div> </div> </div> </div> </div> </div>  <div id="add-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"> <div class="bg-white rounded-lg shadow-xl max-w-md w-full"> <div class="border-b border-gray-200 p-6 flex justify-between items-center"> <h3 class="text-xl font-bold text-gray-900">Tilføj komponent</h3> <button onclick="closeAddComponentModal()" class="text-gray-500 hover:text-gray-700 text-2xl">×</button> </div> <div class="p-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Vælg komponent:</label> <select id="component-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4"> <option value="">-- Vælg en komponent --</option> </select> <label class="block text-sm font-medium text-gray-700 mb-2">Sorteringsrækkefølge:</label> <input type="number" id="sort-order-input" min="1" value="1" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4"> </div> <div class="bg-gray-50 border-t border-gray-200 p-6 flex gap-3"> <button onclick="closeAddComponentModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-lg transition-colors">
+</button> </div> <!-- SEO Section --> <div id="seo-section" class="hidden border-t border-gray-200 pt-6 mt-6"> <h3 class="text-lg font-semibold text-gray-900 mb-4">SEO & Meta</h3> <div class="space-y-4"> <div> <label class="block text-sm font-medium text-gray-700 mb-1">
+Meta titel <span id="seo-title-count" class="text-xs text-gray-400 ml-2">0/60</span> </label> <input type="text" id="seo-meta-title" maxlength="200" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Sidetitel | Lavprishjemmeside.dk"> </div> <div> <label class="block text-sm font-medium text-gray-700 mb-1">
+Meta beskrivelse <span id="seo-desc-count" class="text-xs text-gray-400 ml-2">0/160</span> </label> <textarea id="seo-meta-description" maxlength="320" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Kort beskrivelse af siden..."></textarea> </div> <div> <label class="block text-sm font-medium text-gray-700 mb-1">OG billede URL</label> <div class="flex gap-2"> <input type="text" id="seo-og-image" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="https://lavprishjemmeside.dk/uploads/..."> <button onclick="openMediaPickerForSeo()" class="px-3 py-2 bg-blue-100 hover:bg-blue-200 border border-blue-300 text-blue-700 rounded-lg text-sm">Vælg</button> </div> </div> <button onclick="saveSeoMeta()" class="bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
+Gem SEO
+</button> <span id="seo-save-status" class="text-sm text-green-600 ml-2 hidden">Gemt!</span> </div> </div> </div> </div> </div> </div> </div>  <div id="add-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"> <div class="bg-white rounded-lg shadow-xl max-w-md w-full"> <div class="border-b border-gray-200 p-6 flex justify-between items-center"> <h3 class="text-xl font-bold text-gray-900">Tilføj komponent</h3> <button onclick="closeAddComponentModal()" class="text-gray-500 hover:text-gray-700 text-2xl">×</button> </div> <div class="p-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Vælg komponent:</label> <select id="component-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4"> <option value="">-- Vælg en komponent --</option> </select> <label class="block text-sm font-medium text-gray-700 mb-2">Sorteringsrækkefølge:</label> <input type="number" id="sort-order-input" min="1" value="1" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4"> </div> <div class="bg-gray-50 border-t border-gray-200 p-6 flex gap-3"> <button onclick="closeAddComponentModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-lg transition-colors">
 Annuller
 </button> <button onclick="addComponentToPage()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
 Tilføj
-</button> </div> </div> </div>  <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"> <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"> <div class="border-b border-gray-200 p-6 flex justify-between items-center flex-shrink-0"> <div> <h3 class="text-xl font-bold text-gray-900">Rediger komponent</h3> <p id="edit-component-name" class="text-sm text-gray-500 mt-1"></p> </div> <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700 text-2xl">×</button> </div> <div class="p-6 flex-1 overflow-y-auto"> <label class="block text-sm font-medium text-gray-700 mb-2">
+</button> </div> </div> </div>  <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"> <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"> <div class="border-b border-gray-200 p-6 flex justify-between items-center flex-shrink-0"> <div> <h3 class="text-xl font-bold text-gray-900">Rediger komponent</h3> <p id="edit-component-name" class="text-sm text-gray-500 mt-1"></p> </div> <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700 text-2xl">×</button> </div> <div class="p-6 flex-1 overflow-y-auto"> <!-- Image fields (auto-detected) --> <div id="edit-image-fields" class="hidden mb-4 space-y-3"> <label class="block text-sm font-medium text-gray-700 mb-1">Billeder i komponenten:</label> </div> <label class="block text-sm font-medium text-gray-700 mb-2">
 Komponent indhold (JSON):
 <span class="text-xs text-gray-500 ml-2">Rediger props som JSON</span> </label> <textarea id="edit-content-json" rows="15" class="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm" spellcheck="false" placeholder="{&quot;headline&quot;: &quot;...&quot;, &quot;description&quot;: &quot;...&quot;}"></textarea> <div id="edit-json-error" class="hidden mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2"></div> <div class="mt-4 text-xs text-gray-600"> <strong>Tips:</strong> Brug formateret JSON (4 mellemrum indrykning) for bedre læsbarhed.
 <button onclick="formatEditJson()" class="ml-2 text-blue-600 hover:underline">
@@ -45,7 +49,7 @@ Formatér JSON
 Annuller
 </button> <button onclick="saveComponentEdit()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
 Gem ændringer
-</button> </div> </div> </div> <script>
+</button> </div> </div> </div>  <div id="media-picker-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4"> <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"> <div class="border-b border-gray-200 p-4 flex justify-between items-center flex-shrink-0"> <h3 class="text-lg font-bold text-gray-900">Vælg billede</h3> <button onclick="closeMediaPicker()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button> </div> <div class="p-4 border-b border-gray-200 flex-shrink-0"> <input type="text" id="media-picker-search" placeholder="Søg i billeder..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div id="media-picker-grid" class="p-4 flex-1 overflow-y-auto grid grid-cols-3 sm:grid-cols-4 gap-3"> <p class="col-span-full text-center text-gray-500 py-8">Henter billeder...</p> </div> </div> </div> <script>
   (function() {
     const API = 'https://api.lavprishjemmeside.dk';
     const token = localStorage.getItem('admin_token');
@@ -58,6 +62,7 @@ Gem ændringer
     let allPageComponents = [];
     let allComponents = [];
     let selectedPage = null;
+    let currentSeoMeta = null;
 
     // Fetch all data
     async function loadData() {
@@ -148,6 +153,7 @@ Gem ændringer
     function selectPage(page) {
       selectedPage = page;
       document.getElementById('selected-page').textContent = page || '/ (Startside)';
+      loadSeoMeta(page);
 
       const pageComponents = allPageComponents.filter(pc => pc.page_path === page);
       const componentsList = document.getElementById('components-list');
@@ -389,7 +395,8 @@ Gem ændringer
         // Re-render pages list
         renderPages();
 
-        alert(`✓ Side slettet: ${result.deleted_count} komponent(er) fjernet`);
+        // Show delete success with deploy prompt
+        showDeployNotice(pageName, result.deleted_count);
       } catch (err) {
         alert('Fejl: ' + err.message);
       }
@@ -418,6 +425,9 @@ Gem ændringer
 
       // Clear error
       document.getElementById('edit-json-error').classList.add('hidden');
+
+      // Detect and render image fields
+      renderImageFields(pc.content);
 
       // Show modal
       document.getElementById('edit-modal').classList.remove('hidden');
@@ -489,12 +499,286 @@ Gem ændringer
       }
     };
 
-    // Escape HTML
+    // Show deploy notice after page deletion
+    function showDeployNotice(pageName, deletedCount) {
+      // Remove any existing notice
+      const existing = document.getElementById('deploy-notice');
+      if (existing) existing.remove();
+
+      const notice = document.createElement('div');
+      notice.id = 'deploy-notice';
+      notice.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+      notice.innerHTML = `
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 text-xl flex-shrink-0">!</div>
+            <h3 class="text-lg font-bold text-gray-900">Side slettet fra databasen</h3>
+          </div>
+          <p class="text-gray-700 mb-2"><strong>${escapeHtml(pageName)}</strong> er slettet (${deletedCount} komponent(er) fjernet).</p>
+          <p class="text-gray-600 mb-4">Siden er stadig live indtil du udfører en ny udrulning. Tryk nedenfor for at fjerne den fra hjemmesiden.</p>
+          <div class="flex gap-3">
+            <button onclick="document.getElementById('deploy-notice').remove()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-3 rounded-lg transition-colors">
+              Luk
+            </button>
+            <button id="deploy-notice-btn" onclick="triggerDeployFromNotice()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-3 rounded-lg transition-colors">
+              Udrulning nu
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(notice);
+    }
+
+    // Trigger GitHub Actions deploy
+    window.triggerDeployFromNotice = async function() {
+      const btn = document.getElementById('deploy-notice-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Starter udrulning...';
+      }
+      try {
+        const res = await fetch(API + '/publish', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (btn) {
+            btn.textContent = 'Udrulning startet';
+            btn.className = 'flex-1 bg-green-600 text-white font-medium px-4 py-3 rounded-lg';
+          }
+          setTimeout(() => {
+            const notice = document.getElementById('deploy-notice');
+            if (notice) notice.remove();
+          }, 3000);
+        } else {
+          alert('Fejl: ' + (data.error || res.status));
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Udrulning nu';
+          }
+        }
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Udrulning nu';
+        }
+      }
+    };
+
+    // ── SEO meta ──
+
+    async function loadSeoMeta(page) {
+      try {
+        const res = await fetch(API + '/page-components/page-meta?page=' + encodeURIComponent(page), {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) return;
+        const meta = await res.json();
+        currentSeoMeta = meta;
+        document.getElementById('seo-meta-title').value = meta.meta_title || '';
+        document.getElementById('seo-meta-description').value = meta.meta_description || '';
+        document.getElementById('seo-og-image').value = meta.og_image || '';
+        updateSeoCounters();
+        document.getElementById('seo-section').classList.remove('hidden');
+      } catch (e) {
+        console.warn('Could not load SEO meta:', e.message);
+        currentSeoMeta = null;
+        document.getElementById('seo-section').classList.add('hidden');
+      }
+    }
+
+    function updateSeoCounters() {
+      var title = document.getElementById('seo-meta-title').value;
+      var desc = document.getElementById('seo-meta-description').value;
+      var titleCount = document.getElementById('seo-title-count');
+      var descCount = document.getElementById('seo-desc-count');
+      titleCount.textContent = title.length + '/60';
+      titleCount.className = 'text-xs ml-2 ' + (title.length > 60 ? 'text-red-500' : 'text-gray-400');
+      descCount.textContent = desc.length + '/160';
+      descCount.className = 'text-xs ml-2 ' + (desc.length > 160 ? 'text-red-500' : 'text-gray-400');
+    }
+
+    document.getElementById('seo-meta-title').addEventListener('input', updateSeoCounters);
+    document.getElementById('seo-meta-description').addEventListener('input', updateSeoCounters);
+
+    window.saveSeoMeta = async function() {
+      try {
+        var res = await fetch(API + '/page-components/page-meta/update', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            page_path: selectedPage,
+            meta_title: document.getElementById('seo-meta-title').value || null,
+            meta_description: document.getElementById('seo-meta-description').value || null,
+            og_image: document.getElementById('seo-og-image').value || null,
+            schema_markup: currentSeoMeta?.schema_markup || null
+          })
+        });
+        if (!res.ok) throw new Error('Fejl ved gemning');
+        currentSeoMeta = { ...currentSeoMeta, meta_title: document.getElementById('seo-meta-title').value, meta_description: document.getElementById('seo-meta-description').value, og_image: document.getElementById('seo-og-image').value };
+        var status = document.getElementById('seo-save-status');
+        status.classList.remove('hidden');
+        setTimeout(function() { status.classList.add('hidden'); }, 2000);
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+      }
+    };
+
+    window.openMediaPickerForSeo = function() {
+      openMediaPicker(function(url) {
+        document.getElementById('seo-og-image').value = url;
+      });
+    };
+
+    // ── Image field detection and media picker ──
+
+    function isImageUrl(value) {
+      if (typeof value !== 'string') return false;
+      return /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(value) ||
+        value.startsWith('https://placehold') ||
+        value.includes('/uploads/') ||
+        value.includes('unsplash.com');
+    }
+
+    function renderImageFields(content) {
+      const container = document.getElementById('edit-image-fields');
+      // Clear previous (keep the label)
+      while (container.children.length > 1) container.removeChild(container.lastChild);
+      let hasImages = false;
+
+      // Top-level string fields
+      for (const [key, value] of Object.entries(content || {})) {
+        if (typeof value === 'string' && isImageUrl(value)) {
+          hasImages = true;
+          container.appendChild(createImageControl(key, value, null, null));
+        }
+        // Array fields with image sub-props
+        if (Array.isArray(value)) {
+          value.forEach(function(item, idx) {
+            if (typeof item !== 'object' || item === null) return;
+            for (const [subKey, subVal] of Object.entries(item)) {
+              if (typeof subVal === 'string' && isImageUrl(subVal)) {
+                hasImages = true;
+                container.appendChild(createImageControl(subKey, subVal, key, idx));
+              }
+            }
+          });
+        }
+      }
+
+      container.classList.toggle('hidden', !hasImages);
+    }
+
+    function createImageControl(fieldName, currentUrl, arrayKey, arrayIndex) {
+      const pathLabel = arrayKey !== null ? arrayKey + '[' + arrayIndex + '].' + fieldName : fieldName;
+
+      const row = document.createElement('div');
+      row.className = 'flex items-center gap-3 bg-gray-50 rounded-lg p-2 border border-gray-200';
+      row.innerHTML =
+        '<img src="' + escapeAttr(currentUrl) + '" class="w-12 h-12 rounded object-cover bg-gray-200 flex-shrink-0" onerror="this.src=\'https://placehold.co/48x48/e2e8f0/94a3b8?text=?\'" />' +
+        '<div class="flex-1 min-w-0">' +
+          '<p class="text-xs font-mono text-gray-500">' + escapeHtml(pathLabel) + '</p>' +
+          '<p class="text-xs text-gray-400 truncate">' + escapeHtml(currentUrl) + '</p>' +
+        '</div>' +
+        '<button class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 border border-blue-300 text-blue-700 rounded text-xs font-medium transition-colors whitespace-nowrap">Skift billede</button>';
+
+      row.querySelector('button').addEventListener('click', function() {
+        openMediaPicker(function(selectedUrl) {
+          // Update the live content
+          var content = JSON.parse(document.getElementById('edit-content-json').value);
+          if (arrayKey !== null) {
+            content[arrayKey][arrayIndex][fieldName] = selectedUrl;
+          } else {
+            content[fieldName] = selectedUrl;
+          }
+          document.getElementById('edit-content-json').value = JSON.stringify(content, null, 2);
+          renderImageFields(content);
+        });
+      });
+
+      return row;
+    }
+
+    // ── Media picker modal ──
+
+    let mediaPickerCallback = null;
+    let mediaPickerSearchTimeout = null;
+
+    window.openMediaPicker = function(callback) {
+      mediaPickerCallback = callback;
+      loadMediaForPicker('');
+      document.getElementById('media-picker-modal').classList.remove('hidden');
+    };
+
+    window.closeMediaPicker = function() {
+      document.getElementById('media-picker-modal').classList.add('hidden');
+      mediaPickerCallback = null;
+    };
+
+    async function loadMediaForPicker(search) {
+      var grid = document.getElementById('media-picker-grid');
+      grid.innerHTML = '<p class="col-span-full text-center text-gray-500 py-8">Henter billeder...</p>';
+
+      try {
+        var params = search ? '?search=' + encodeURIComponent(search) : '';
+        var res = await fetch(API + '/media' + params, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var items = await res.json();
+
+        grid.innerHTML = '';
+
+        if (items.length === 0) {
+          grid.innerHTML = '<p class="col-span-full text-center text-gray-500 py-8">Ingen billeder fundet. Upload billeder i <a href="/admin/media/" class="text-blue-600 underline">Mediebiblioteket</a>.</p>';
+          return;
+        }
+
+        items.forEach(function(item) {
+          var card = document.createElement('div');
+          card.className = 'aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all relative group';
+          card.innerHTML =
+            '<img src="' + escapeAttr(item.url) + '" alt="' + escapeAttr(item.alt_text || '') + '" class="w-full h-full object-cover" loading="lazy" />' +
+            '<div class="absolute inset-x-0 bottom-0 bg-black bg-opacity-60 px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">' +
+              '<p class="text-white text-xs truncate">' + escapeHtml(item.alt_text || item.original_name) + '</p>' +
+            '</div>';
+          card.addEventListener('click', function() {
+            if (mediaPickerCallback) {
+              mediaPickerCallback(item.url);
+              mediaPickerCallback = null;
+            }
+            closeMediaPicker();
+          });
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        grid.innerHTML = '<p class="col-span-full text-center text-red-500 py-8">Fejl: ' + escapeHtml(err.message) + '</p>';
+      }
+    }
+
+    // Media picker search
+    document.getElementById('media-picker-search').addEventListener('input', function(e) {
+      clearTimeout(mediaPickerSearchTimeout);
+      mediaPickerSearchTimeout = setTimeout(function() {
+        loadMediaForPicker(e.target.value);
+      }, 300);
+    });
+
+    // ── Helpers ──
+
     function escapeHtml(text) {
       if (!text) return '';
-      const div = document.createElement('div');
+      var div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    function escapeAttr(text) {
+      if (!text) return '';
+      return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
     // Load data on page load
