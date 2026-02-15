@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Oversigt — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.Dv-UB8Fz.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Oversigt — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.BcDM3_uo.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -65,14 +65,18 @@ Publicer til live (~90 sek)
     }
 
     Promise.all([
-      authFetch(API + '/events/summary'),
-      authFetch(API + '/sessions/summary'),
+      authFetch(API + '/events/summary').catch(function() {
+        return { total: 0, today: 0, top_events: [], recent: [] };
+      }),
+      authFetch(API + '/sessions/summary').catch(function() {
+        return { total: 0, today: 0, avg_pages: 0, top_pages: [], recent: [] };
+      }),
       authFetch(API + '/design-settings/').catch(function() { return null; }),
       authFetch(API + '/page-components?page=all').catch(function() { return []; })
     ])
     .then(function(results) {
-      var events = results[0];
-      var sessions = results[1];
+      var events = results[0] || { total: 0, today: 0, top_events: [], recent: [] };
+      var sessions = results[1] || { total: 0, today: 0, avg_pages: 0, top_pages: [], recent: [] };
       var designSettings = results[2];
       var pageComponents = results[3] || [];
 
@@ -117,14 +121,14 @@ Publicer til live (~90 sek)
       document.getElementById('settings-global').innerHTML = globalHtml;
 
       // Metric cards
-      document.getElementById('stat-events-total').textContent = events.total.toLocaleString('da-DK');
-      document.getElementById('stat-events-today').textContent = events.today.toLocaleString('da-DK');
-      document.getElementById('stat-sessions-total').textContent = sessions.total.toLocaleString('da-DK');
-      document.getElementById('stat-avg-pages').textContent = sessions.avg_pages;
+      document.getElementById('stat-events-total').textContent = (events.total || 0).toLocaleString('da-DK');
+      document.getElementById('stat-events-today').textContent = (events.today || 0).toLocaleString('da-DK');
+      document.getElementById('stat-sessions-total').textContent = (sessions.total || 0).toLocaleString('da-DK');
+      document.getElementById('stat-avg-pages').textContent = sessions.avg_pages != null ? sessions.avg_pages : '—';
 
       // Top events
       var html = '';
-      events.top_events.forEach(function(ev) {
+      (events.top_events || []).forEach(function(ev) {
         html += '<tr class="border-b border-gray-100">'
           + '<td class="py-2">' + esc(ev.event_name) + '</td>'
           + '<td class="py-2"><span class="inline-block px-2 py-0.5 rounded text-xs bg-gray-100">' + esc(ev.event_type) + '</span></td>'
@@ -135,7 +139,7 @@ Publicer til live (~90 sek)
 
       // Top landing pages
       html = '';
-      sessions.top_pages.forEach(function(p) {
+      (sessions.top_pages || []).forEach(function(p) {
         html += '<tr class="border-b border-gray-100">'
           + '<td class="py-2 font-mono text-xs">' + esc(p.first_page) + '</td>'
           + '<td class="py-2 text-right font-medium">' + p.count + '</td>'
@@ -145,7 +149,7 @@ Publicer til live (~90 sek)
 
       // Recent events
       html = '';
-      events.recent.forEach(function(ev) {
+      (events.recent || []).forEach(function(ev) {
         html += '<tr class="border-b border-gray-100">'
           + '<td class="py-2"><span class="inline-block px-2 py-0.5 rounded text-xs bg-gray-100">' + esc(ev.event_type) + '</span></td>'
           + '<td class="py-2">' + esc(ev.event_name) + '</td>'
