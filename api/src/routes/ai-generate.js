@@ -47,9 +47,9 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
       const [result] = await pool.execute(
         `INSERT INTO page_components
          (page_path, component_id, content, sort_order, is_published, created_by)
-         VALUES (?, ?, ?, ?, 0, ?)`,
+         VALUES (?, ?, ?, ?, 1, ?)`,
         [
-          page_path,
+          (page_path || '').trim(),
           component_id,
           JSON.stringify(comp.props_data),
           comp.sort_order || 0,

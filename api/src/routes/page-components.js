@@ -273,7 +273,39 @@ router.post('/delete', requireAuth, async (req, res) => {
   }
 });
 
-// POST /page-components/publish — Toggle published status
+// POST /page-components/publish-page — Publish all components for a page (by path)
+router.post('/publish-page', requireAuth, async (req, res) => {
+  try {
+    const page_path = (req.body.page_path || '').trim();
+    if (!page_path) {
+      return res.status(400).json({ error: 'page_path er påkrævet' });
+    }
+
+    const [result] = await pool.execute(
+      `UPDATE page_components SET is_published = 1 
+       WHERE TRIM(page_path) = ?`,
+      [page_path]
+    );
+
+    await pool.execute(
+      'INSERT INTO security_logs (action, ip_address, user_agent, user_id, details) VALUES (?, ?, ?, ?, ?)',
+      [
+        'page.publish',
+        req.ip,
+        req.headers['user-agent'],
+        req.user.id,
+        JSON.stringify({ page_path, count: result.affectedRows })
+      ]
+    );
+
+    res.json({ ok: true, count: result.affectedRows });
+  } catch (error) {
+    console.error('Error publishing page:', error.message);
+    res.status(500).json({ error: 'Kunne ikke publicere side' });
+  }
+});
+
+// POST /page-components/publish — Toggle published status (single component)
 router.post('/publish', requireAuth, async (req, res) => {
   try {
     const { id, is_published } = req.body;
