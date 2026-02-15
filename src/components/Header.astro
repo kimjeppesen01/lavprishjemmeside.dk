@@ -1,6 +1,7 @@
 ---
 import designFeatures from '../data/design-features.json';
 import headerFooter from '../data/header-footer.json';
+import MegaMenu from './MegaMenu.astro';
 
 const stickyClass = designFeatures.stickyHeader ? 'sticky top-0 z-40' : '';
 const layout = headerFooter.header_layout || 'regular';
@@ -9,9 +10,19 @@ const logoText = headerFooter.header_logo_text || 'lavprishjemmeside.dk';
 const menu1 = Array.isArray(headerFooter.header_menu_1) ? headerFooter.header_menu_1 : [];
 const menu2 = Array.isArray(headerFooter.header_menu_2) ? headerFooter.header_menu_2 : [];
 const megaHtml = headerFooter.header_mega_html;
+const megaMenu = headerFooter.header_mega_menu;
 ---
 
-{layout === 'mega' && megaHtml ? (
+{layout === 'modern-mega' ? (
+  <header id="main-header" class={stickyClass}>
+    <MegaMenu
+      menu={Array.isArray(megaMenu) && megaMenu.length > 0 ? megaMenu : undefined}
+      logoUrl={logoUrl}
+      logoText={logoText}
+      ctaLinks={menu2}
+    />
+  </header>
+) : layout === 'mega' && megaHtml ? (
   <header id="main-header" class={`${stickyClass} bg-white border-b border-gray-200`}>
     <div class="mega-nav-wrapper" set:html={megaHtml} />
   </header>

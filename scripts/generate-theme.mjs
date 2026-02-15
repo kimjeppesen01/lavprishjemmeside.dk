@@ -17,6 +17,7 @@ const DEFAULT_HEADER_FOOTER = {
   header_menu_1: [{ href: '/', label: 'Forside' }, { href: '/priser', label: 'Priser' }, { href: '/om-os', label: 'Om os' }, { href: '/kontakt', label: 'Kontakt' }],
   header_menu_2: [{ href: '/kontakt', label: 'Få et tilbud' }],
   header_mega_html: null,
+  header_mega_menu: null,
   footer_columns: [
     { title: 'lavprishjemmeside.dk', text: 'Professionelle hjemmesider til lav pris for danske virksomheder.' },
     { title: 'Sider', links: [{ href: '/', label: 'Forside' }, { href: '/priser', label: 'Priser' }, { href: '/om-os', label: 'Om os' }, { href: '/kontakt', label: 'Kontakt' }] },

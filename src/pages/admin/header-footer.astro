@@ -23,7 +23,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <h2 class="text-lg font-semibold text-gray-900">Header-layout</h2>
             <p class="text-sm text-gray-600 mt-1">Vælg hvordan headeren vises på dit websted</p>
           </div>
-          <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <label class="relative cursor-pointer group">
               <input type="radio" name="header_layout" value="regular" class="peer sr-only">
               <div class="rounded-xl border-2 border-gray-200 p-5 transition-all peer-checked:border-blue-600 peer-checked:ring-2 peer-checked:ring-blue-600/20 hover:border-gray-300">
@@ -60,6 +60,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
                 <div class="grid grid-cols-3 gap-1 h-12 bg-gray-50 rounded"></div>
                 <p class="font-medium text-gray-900">Mega</p>
                 <p class="text-sm text-gray-500 mt-1">Brugertilpasset HTML-struktur</p>
+              </div>
+            </label>
+            <label class="relative cursor-pointer group">
+              <input type="radio" name="header_layout" value="modern-mega" class="peer sr-only">
+              <div class="rounded-xl border-2 border-gray-200 p-5 transition-all peer-checked:border-blue-600 peer-checked:ring-2 peer-checked:ring-blue-600/20 hover:border-gray-300">
+                <div class="flex gap-1 mb-3">
+                  <span class="flex-1 h-2 bg-blue-400 rounded"></span>
+                  <span class="flex-1 h-2 bg-blue-200 rounded"></span>
+                  <span class="flex-1 h-2 bg-blue-200 rounded"></span>
+                </div>
+                <div class="grid grid-cols-2 gap-1 h-10 bg-blue-50 rounded"></div>
+                <p class="font-medium text-gray-900">Modern Mega</p>
+                <p class="text-sm text-gray-500 mt-1">Stripe-style morphing dropdown</p>
               </div>
             </label>
           </div>
@@ -105,6 +118,18 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             </div>
           </section>
         </div>
+
+        <!-- Modern Mega Menu (structured) -->
+        <section id="modern-mega-section" class="hidden bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 bg-blue-50/50">
+            <h2 class="text-lg font-semibold text-gray-900">Modern Mega Menu</h2>
+            <p class="text-sm text-gray-600 mt-1">Stripe-style morphing dropdown. Tilføj kategorier med underafdelinger og links.</p>
+          </div>
+          <div class="p-6">
+            <div id="mega-menu-categories" class="space-y-6"></div>
+            <button type="button" id="add-mega-category" class="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium">+ Tilføj kategori</button>
+          </div>
+        </section>
 
         <!-- Mega HTML -->
         <section id="mega-section" class="hidden bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -241,6 +266,87 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       return html;
     }
 
+    function renderMegaMenuCategories() {
+      const container = document.getElementById('mega-menu-categories');
+      if (!container) return;
+      const defaultItems = [
+        { id: 'ydelser', title: 'Ydelser', sections: [{ heading: 'Tjenester', links: [{ href: '/ydelser', label: 'Ydelser' }, { href: '/priser', label: 'Priser' }] }] },
+        { id: 'sider', title: 'Sider', sections: [{ heading: 'Sider', links: [{ href: '/', label: 'Forside' }, { href: '/om-os', label: 'Om os' }, { href: '/kontakt', label: 'Kontakt' }] }] },
+      ];
+      if (!data.header_mega_menu || !Array.isArray(data.header_mega_menu) || !data.header_mega_menu.length) {
+        data.header_mega_menu = JSON.parse(JSON.stringify(defaultItems));
+      }
+      const items = data.header_mega_menu;
+      container.innerHTML = items.map((cat, ci) => {
+        let html = '<div class="border border-gray-200 rounded-xl p-4" data-mega-category data-cat-idx="' + ci + '">';
+        html += '<div class="flex justify-between items-center mb-3">';
+        html += '<input type="text" placeholder="Kategori-titel (f.eks. Ydelser)" value="' + esc(cat.title) + '" class="mega-cat-title border border-gray-300 rounded px-2 py-1.5 text-sm font-medium flex-1 mr-2">';
+        html += '<input type="text" placeholder="ID (slug)" value="' + esc(cat.id) + '" class="mega-cat-id border border-gray-300 rounded px-2 py-1.5 text-xs w-24">';
+        html += '<button type="button" class="mega-cat-remove text-red-500 hover:text-red-700 ml-2">×</button></div>';
+        html += '<div class="mega-sections space-y-3">';
+        (cat.sections || []).forEach((sec, si) => {
+          html += '<div class="border-l-2 border-gray-200 pl-3" data-mega-section data-sec-idx="' + si + '">';
+          html += '<input type="text" placeholder="Sektionsoverskrift" value="' + esc(sec.heading) + '" class="mega-sec-heading border border-gray-300 rounded px-2 py-1 text-sm w-full mb-2">';
+          html += '<div class="mega-links space-y-1">';
+          (sec.links || []).forEach((link, li) => {
+            html += '<div class="flex gap-2" data-mega-link data-link-idx="' + li + '">';
+            html += '<input type="text" placeholder="URL" value="' + esc(link.href) + '" class="mega-link-href flex-1 border rounded px-2 py-1 text-xs">';
+            html += '<input type="text" placeholder="Tekst" value="' + esc(link.label) + '" class="mega-link-label flex-1 border rounded px-2 py-1 text-xs">';
+            html += '<button type="button" class="mega-link-remove text-red-500 text-xs">×</button></div>';
+          });
+          html += '</div><button type="button" class="mega-sec-add-link mt-1 text-xs text-blue-600">+ Link</button>';
+          html += '</div>';
+        });
+        html += '</div><button type="button" class="mega-sec-add mt-2 text-xs text-blue-600">+ Sektion</button></div>';
+        return html;
+      }).join('');
+
+      container.querySelectorAll('.mega-cat-remove').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const idx = parseInt(btn.closest('[data-mega-category]').getAttribute('data-cat-idx'), 10);
+          data.header_mega_menu = data.header_mega_menu || [];
+          data.header_mega_menu.splice(idx, 1);
+          renderMegaMenuCategories();
+        });
+      });
+      container.querySelectorAll('.mega-link-remove').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const secEl = btn.closest('[data-mega-section]');
+          const catEl = btn.closest('[data-mega-category]');
+          const catIdx = parseInt(catEl.getAttribute('data-cat-idx'), 10);
+          const secIdx = parseInt(secEl.getAttribute('data-sec-idx'), 10);
+          const linkIdx = parseInt(btn.closest('[data-mega-link]').getAttribute('data-link-idx'), 10);
+          data.header_mega_menu[catIdx].sections[secIdx].links.splice(linkIdx, 1);
+          renderMegaMenuCategories();
+        });
+      });
+      container.querySelectorAll('.mega-sec-add-link').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const secEl = btn.closest('[data-mega-section]');
+          const catEl = btn.closest('[data-mega-category]');
+          const catIdx = parseInt(catEl.getAttribute('data-cat-idx'), 10);
+          const secIdx = parseInt(secEl.getAttribute('data-sec-idx'), 10);
+          if (!data.header_mega_menu[catIdx].sections[secIdx].links) data.header_mega_menu[catIdx].sections[secIdx].links = [];
+          data.header_mega_menu[catIdx].sections[secIdx].links.push({ href: '/', label: 'Nyt link' });
+          renderMegaMenuCategories();
+        });
+      });
+      container.querySelectorAll('.mega-sec-add').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const catIdx = parseInt(btn.closest('[data-mega-category]').getAttribute('data-cat-idx'), 10);
+          if (!data.header_mega_menu[catIdx].sections) data.header_mega_menu[catIdx].sections = [];
+          data.header_mega_menu[catIdx].sections.push({ heading: 'Ny sektion', links: [{ href: '/', label: 'Link' }] });
+          renderMegaMenuCategories();
+        });
+      });
+      document.getElementById('add-mega-category')?.replaceWith(document.getElementById('add-mega-category')?.cloneNode(true));
+      document.getElementById('add-mega-category')?.addEventListener('click', () => {
+        data.header_mega_menu = data.header_mega_menu || [];
+        data.header_mega_menu.push({ id: 'kategori-' + data.header_mega_menu.length, title: 'Ny kategori', sections: [{ heading: 'Sektion', links: [{ href: '/', label: 'Link' }] }] });
+        renderMegaMenuCategories();
+      });
+    }
+
     function renderFooterColumns() {
       const container = document.getElementById('footer-columns');
       if (!container) return;
@@ -309,6 +415,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         else footerColumns.push({ title, links: [{ href: '/', label: 'Link' }] });
       });
 
+      const megaMenu = collectMegaMenu();
       return {
         header_layout: layout,
         header_logo_url: document.getElementById('header_logo_url')?.value?.trim() || '/favicon.svg',
@@ -316,18 +423,45 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         header_menu_1: menu1.length ? menu1 : [{ href: '/', label: 'Forside' }],
         header_menu_2: menu2.length ? menu2 : [],
         header_mega_html: document.getElementById('header_mega_html')?.value?.trim() || null,
+        header_mega_menu: (layout === 'modern-mega' && megaMenu.length) ? megaMenu : null,
         footer_columns: footerColumns.length ? footerColumns : data.footer_columns || [],
         footer_copyright: document.getElementById('footer_copyright')?.value?.trim() || null,
       };
+    }
+
+    function collectMegaMenu() {
+      const out = [];
+      document.querySelectorAll('[data-mega-category]').forEach(catEl => {
+        const title = catEl.querySelector('.mega-cat-title')?.value?.trim();
+        const id = (catEl.querySelector('.mega-cat-id')?.value?.trim() || (title || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')) || 'cat-' + out.length;
+        if (!title) return;
+        const sections = [];
+        catEl.querySelectorAll('[data-mega-section]').forEach(secEl => {
+          const heading = secEl.querySelector('.mega-sec-heading')?.value?.trim();
+          if (!heading) return;
+          const links = [];
+          secEl.querySelectorAll('[data-mega-link]').forEach(linkEl => {
+            const href = linkEl.querySelector('.mega-link-href')?.value?.trim();
+            const label = linkEl.querySelector('.mega-link-label')?.value?.trim();
+            if (href && label) links.push({ href, label });
+          });
+          sections.push({ heading, links: links.length ? links : [{ href: '/', label: 'Link' }] });
+        });
+        if (sections.length) out.push({ id, title, sections });
+        else out.push({ id, title, sections: [{ heading: 'Sektion', links: [{ href: '/', label: 'Link' }] }] });
+      });
+      return out;
     }
 
     function toggleLayoutSections(layout) {
       const menus = document.getElementById('menus-section');
       const menu2 = document.getElementById('menu2-section');
       const mega = document.getElementById('mega-section');
-      if (menus) menus.classList.toggle('hidden', layout === 'mega');
+      const modernMega = document.getElementById('modern-mega-section');
+      if (menus) menus.classList.toggle('hidden', layout === 'mega' || layout === 'modern-mega');
       if (menu2) menu2.classList.toggle('hidden', layout === 'modern');
       if (mega) mega.classList.toggle('hidden', layout !== 'mega');
+      if (modernMega) modernMega.classList.toggle('hidden', layout !== 'modern-mega');
     }
 
     async function load() {
@@ -350,6 +484,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
       renderMenu('menu1-items', Array.isArray(data.header_menu_1) ? [...data.header_menu_1] : [{ href: '/', label: 'Forside' }], 'add-menu1');
       renderMenu('menu2-items', Array.isArray(data.header_menu_2) ? [...data.header_menu_2] : [], 'add-menu2');
+      if (!data.header_mega_menu || !Array.isArray(data.header_mega_menu)) data.header_mega_menu = [];
+      renderMegaMenuCategories();
       if (!data.footer_columns || !data.footer_columns.length) {
         data.footer_columns = [{ title: 'Kolonnetitel', text: 'Beskrivelse' }, { title: 'Links', links: [{ href: '/', label: 'Forside' }] }];
       }
