@@ -215,7 +215,12 @@ const menuItems = Array.isArray(menu) && menu.length > 0
       const panel = panels[index];
       if (!panel || !bg || !wrapper) return;
 
-      // Measure panel content
+      // Hide all panels first so they don't stack
+      panels.forEach((p) => {
+        p.classList.add('opacity-0', 'pointer-events-none');
+        p.classList.remove('opacity-100');
+      });
+      // Show only the active panel
       panel.classList.remove('opacity-0', 'pointer-events-none');
       panel.classList.add('opacity-100');
       const rect = panel.getBoundingClientRect();

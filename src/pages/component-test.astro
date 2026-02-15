@@ -18,6 +18,8 @@ import FaqAccordion from '../components/FaqAccordion.astro';
 import NewsletterSignup from '../components/NewsletterSignup.astro';
 import GalleryGrid from '../components/GalleryGrid.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
+import ProductCarousel from '../components/ProductCarousel.astro';
+import StickyColumnSection from '../components/StickyColumnSection.astro';
 
 const heroData = {
   headline: 'Test Overskrift',
@@ -223,6 +225,27 @@ const breadcrumbData = {
   ],
   separator: '>',
 };
+
+const productCarouselData = {
+  heading: 'Udvalgte produkter',
+  slides: [
+    { img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800', alt: 'Hjemmeside design' },
+    { img: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800', alt: 'SEO & marketing' },
+    { img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800', alt: 'E-handel' },
+  ],
+};
+
+const stickyColumnData = {
+  tagline: 'Kompatibilitet',
+  heading: 'Vi integrerer med dine værktøjer',
+  description: 'Vores løsninger fungerer sammen med de mest populære platforme og plugins. Uanset om du bruger analyseværktøjer, e-mail marketing eller betalingsløsninger, sikrer vi problemfri integration.',
+  items: [
+    { img: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=64', title: 'Responsiv design', desc: 'Hjemmesider der fungerer perfekt på mobil, tablet og desktop.' },
+    { img: 'https://images.unsplash.com/photo-1553877522-56169ac2460a?w=64', title: 'Hurtig hosting', desc: 'Optimerede hjemmesider med hurtig indlæsningstid.' },
+    { img: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=64', title: 'SEO-venlig', desc: 'Bygget for søgemaskiner, så kunder finder dig.' },
+    { img: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=64', title: 'Support', desc: 'Vi hjælper dig med opdateringer og tekniske spørgsmål.' },
+  ],
+};
 ---
 
 <Layout title="Component Test | lavprishjemmeside.dk">
@@ -232,6 +255,8 @@ const breadcrumbData = {
     <section id="preview-features-grid" class="scroll-mt-24"><FeaturesGrid {...featuresData} /></section>
     <section id="preview-icon-cards" class="scroll-mt-24"><IconCards {...iconCardsData} /></section>
     <section id="preview-content-image-split" class="scroll-mt-24"><ContentImageSplit {...contentImageData} /></section>
+    <section id="preview-product-carousel" class="scroll-mt-24"><ProductCarousel {...productCarouselData} /></section>
+    <section id="preview-sticky-column" class="scroll-mt-24"><StickyColumnSection {...stickyColumnData} /></section>
     <section id="preview-stats-banner" class="scroll-mt-24"><StatsBanner {...statsData} /></section>
     <section id="preview-video-embed" class="scroll-mt-24"><VideoEmbed {...videoData} /></section>
     <section id="preview-timeline" class="scroll-mt-24"><Timeline {...timelineData} /></section>

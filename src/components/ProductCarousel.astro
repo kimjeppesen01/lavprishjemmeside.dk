@@ -1,0 +1,111 @@
+---
+/**
+ * Scroll-pinned horizontal product carousel.
+ * Section stays fixed while slides move horizontally on vertical scroll.
+ * Uses GSAP ScrollTrigger. Requires client:load for GSAP.
+ *
+ * Props:
+ *   slides: array of { img, alt?, caption? }
+ *   heading?: sr-only or visible heading
+ */
+interface Props {
+  slides: Array<{
+    img: string;
+    alt?: string;
+    caption?: string;
+  }>;
+  heading?: string;
+}
+
+const { slides = [], heading = 'Udvalgte produkter' } = Astro.props;
+
+const defaultSlides = slides.length > 0 ? slides : [
+  { img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800', alt: 'Produkt 1' },
+  { img: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800', alt: 'Produkt 2' },
+  { img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800', alt: 'Produkt 3' },
+  { img: 'https://images.unsplash.com/photo-1556742044-3c52e6e84cbd?w=800', alt: 'Produkt 4' },
+];
+---
+
+<section
+  id="product-carousel"
+  aria-labelledby="product-carousel-heading"
+  class="relative w-full h-[500px] md:h-[600px] my-16 overflow-hidden"
+>
+  <h2 id="product-carousel-heading" class="sr-only">
+    {heading}
+  </h2>
+  <div class="overflow-hidden h-full">
+    <ul id="product-carousel-wrapper" class="flex h-full gap-8 md:gap-12 pl-4 md:pl-8">
+      {defaultSlides.map((slide) => (
+        <li class="product-carousel-slide flex-none w-[75vw] md:w-[60vw] h-full shrink-0 transition-transform duration-300">
+          <figure class="w-full h-full overflow-hidden rounded-[var(--radius-card)] shadow-[var(--shadow-card)]">
+            <img
+              src={slide.img}
+              alt={slide.alt ?? slide.caption ?? 'Produkt'}
+              class="w-full h-full object-cover transition-transform duration-300"
+              loading="lazy"
+              decoding="async"
+            />
+            {slide.caption && (
+              <figcaption class="sr-only">{slide.caption}</figcaption>
+            )}
+          </figure>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  function initProductCarousel() {
+    const wrapper = document.getElementById('product-carousel-wrapper');
+    if (!wrapper) return;
+
+    const slides = Array.from(wrapper.children);
+    if (slides.length === 0) return;
+
+    const totalWidth = wrapper.scrollWidth - window.innerWidth;
+    if (totalWidth <= 0) return;
+
+    const scrollTween = gsap.to(wrapper, {
+      x: -totalWidth,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '#product-carousel',
+        start: 'top top',
+        end: () => `+=${totalWidth}`,
+        scrub: true,
+        pin: true,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+      },
+    });
+
+    slides.forEach((slide) => {
+      ScrollTrigger.create({
+        trigger: slide,
+        containerAnimation: scrollTween,
+        start: 'center center',
+        end: '+=200',
+        onEnter: () => slide.classList.add('scale-[1.03]'),
+        onLeaveBack: () => slide.classList.remove('scale-[1.03]'),
+        onLeave: () => slide.classList.remove('scale-[1.03]'),
+        onEnterBack: () => slide.classList.add('scale-[1.03]'),
+      });
+    });
+  }
+
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initProductCarousel);
+    } else {
+      initProductCarousel();
+    }
+  }
+</script>
