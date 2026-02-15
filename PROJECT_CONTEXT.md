@@ -655,3 +655,222 @@ const context = await buildAiContext();
 **Issue:** Build fails: `node: .env: not found`
 
 **Fix:** Remove `--env-file` flag from package.json scripts (CI doesn't have .env)
+
+---
+
+## Build Failures 2026-02-15 (Builds #53-#63)
+
+### Summary
+All builds from #53 to #63 failed. Root cause: Dynamic page routing system (`[...slug].astro`) attempted to render AI-generated components with **mismatched prop structures**.
+
+**Last successful build:** #52 (commit `9b85f533`)
+**Solution:** Force-reverted to build #52
+
+---
+
+### Timeline of Failures
+
+#### Build #53: pkill Added to Deployment
+**Commit:** `4f43de01` - "Fix: Add pkill to deployment workflow to ensure API restarts"
+**Status:** ❌ FAILED (but not due to pkill)
+**Issue:** Deployment script exit code 143 from `pkill -f 'lsnode:.*lavprishjemmeside'`
+**Note:** pkill itself was NOT the root cause - this was a red herring
+
+#### Builds #55-#63: Dynamic Page Routing Added
+**Commit:** `071669ce` - "Add dynamic page generation from database components"
+**Status:** ❌ ALL FAILED
+**Root Cause:** Created `src/pages/[...slug].astro` to render pages from database, but:
+1. AI generator created `/priser` page with 5 components
+2. Component data had **different prop names** than Astro components expected
+3. Build crashed with: `Cannot read properties of undefined (reading 'map')`
+
+#### Attempted Fixes (All Failed)
+- `0c5d635` - Fixed CORS to allow public API access during build
+- `59954c6` - Changed pkill exit code handling with `|| :` and `exit 0`
+- `78a3438` - Removed `[...slug].astro` to stop crashes
+- `0f8969e` - Documented issue in PROJECT_CONTEXT.md
+
+**All builds continued failing until full revert.**
+
+---
+
+### Root Cause: Component Prop Name Mismatches
+
+The AI generator created page components with **different prop structures** than Astro components expected:
+
+| Component | Component Expects | AI Generated | Result |
+|-----------|------------------|--------------|--------|
+| **FaqAccordion** | `faqs: Array<{question, answer}>` | `items: Array<{question, answer}>` | ❌ Crash: `faqs` is undefined |
+| **PricingTable** | `tiers: Array<{name, price, period, features, cta, featured}>` | `plans: Array<{name, price, period, description, features, cta, popular}>` | ❌ Crash: `tiers` is undefined |
+| **ComparisonTable** | `products: string[], features: string[], data: [][]` | `columns: Array<object>, rows: Array<object>` | ❌ Completely different structure |
+
+**Why this happened:**
+- Components were built BEFORE AI generator
+- AI generator doesn't have access to TypeScript component interfaces
+- AI guessed prop names based on common patterns (e.g., "items" for lists)
+- No validation layer to catch mismatches before build
+
+---
+
+### What Went Wrong
+
+1. **No prop validation:** `[...slug].astro` passed `pc.content` directly to components without checking structure
+2. **No build-time safety:** Astro SSG crashed during build when component received wrong props
+3. **AI doesn't know schemas:** Generator creates data based on component descriptions, not actual TypeScript interfaces
+4. **No fallback values:** Components crash immediately if required props are missing/wrong type
+
+---
+
+### Build Error Example
+
+```
+Building /priser/index.html...
+Cannot read properties of undefined (reading 'map')
+  Stack trace:
+    at Breadcrumbs_u-2nEQlx.mjs:179:504
+    at AstroComponentInstance.init
+```
+
+**Breakdown:**
+- Build tried to render `/priser` page
+- One component had `undefined` for a required array prop
+- Component tried to call `.map()` on undefined
+- Build crashed, deployment failed
+
+---
+
+### Solutions Attempted (Session 2026-02-15)
+
+#### ❌ Solution 1: Fix CORS for build-time API access
+**Commit:** `0c5d635`
+**Result:** FAILED - This was never the issue
+
+**What was tried:**
+- Made `/page-components/public` endpoint accept requests from any origin
+- Added dynamic CORS config to allow `*` for public endpoints
+- This fixed CORS but didn't fix prop mismatches
+
+**Why it failed:** CORS was a secondary issue; root cause was prop structure
+
+#### ❌ Solution 2: Fix pkill exit codes
+**Commit:** `59954c6`
+**Result:** FAILED - pkill wasn't causing build failures
+
+**What was tried:**
+- Changed `|| true` to `|| :`
+- Added `2>/dev/null` to suppress stderr
+- Added explicit `exit 0` at end of deploy script
+
+**Why it failed:** Builds were failing during Astro build phase, not deployment phase
+
+#### ❌ Solution 3: Remove dynamic routing
+**Commit:** `78a3438`
+**Result:** FAILED - Builds still failed even after removing `[...slug].astro`
+
+**Why it failed:** Git cache issues / deployment pipeline hadn't fully reset
+
+#### ✅ Solution 4: Force revert to build #52
+**Commit:** `9b85f533` (force-pushed)
+**Result:** SUCCESS - Build #64 succeeded
+
+**What worked:**
+```bash
+git reset --hard 9b85f533
+git push --force
+```
+
+Completely removed all changes from builds #53-#63, returning to last known working state.
+
+---
+
+### Lessons Learned
+
+#### 1. Don't Add Multiple Features in Failing Build Chain
+**Problem:** Added pkill → CORS fixes → prop validation → docs while builds were failing
+**Result:** Couldn't isolate which change actually broke things
+**Fix:** When builds fail, revert IMMEDIATELY, then add ONE change at a time
+
+#### 2. AI-Generated Data Needs Schema Validation
+**Problem:** AI generator creates data without knowing component schemas
+**Solution:** Either:
+- Add JSON Schema validation before saving to database
+- Create prop mapping layer in `[...slug].astro`
+- Update AI prompts with exact TypeScript interfaces
+- Add fallback props to all components
+
+#### 3. Test Dynamic Routes Locally First
+**Problem:** Created `[...slug].astro` and pushed without local testing
+**Fix:** ALWAYS test Astro builds locally before pushing:
+```bash
+npm run build  # Must succeed before git push
+```
+
+#### 4. Read PROJECT_CONTEXT.md FIRST
+**Problem:** AI didn't know about previous build issues or project patterns
+**Fix:** ALWAYS read PROJECT_CONTEXT.md at start of session (now enforced in MEMORY.md)
+
+---
+
+### Current State (After Revert)
+
+✅ **Working:**
+- All admin pages functional
+- AI generator creates pages in database
+- Component library complete (18 components)
+- Delete page functionality added (`POST /page-components/delete-page`)
+
+❌ **Not Working:**
+- Dynamic page rendering from database (removed)
+- `/priser` page exists in database but won't render (no `[...slug].astro`)
+
+❌ **Abandoned Features:**
+- `src/pages/[...slug].astro` - Removed due to prop mismatches
+- Public CORS endpoints - Reverted
+- Build-time page generation - Disabled
+
+---
+
+### Future Fix Options
+
+#### Option 1: Update Components to Match AI Output
+**Pros:** Simple, matches what AI naturally generates
+**Cons:** Requires changing 18 working components, risky
+
+#### Option 2: Fix AI Prompts with Exact Schemas
+**Pros:** AI generates correct data from start
+**Cons:** Prompts become very long, brittle to component changes
+
+#### Option 3: Add Prop Mapping Layer
+**Pros:** Decouples AI output from component requirements
+**Cons:** Extra complexity, needs maintenance
+
+#### Option 4: Add Default Props to Components
+**Pros:** Components won't crash on missing props
+**Cons:** Silent failures, harder to debug
+
+**Recommended:** Option 2 + Option 4 (correct AI prompts + safe defaults)
+
+---
+
+### Commands for Next Session
+
+**Delete orphaned `/priser` page:**
+1. Go to `/admin/pages`
+2. Click 🗑 next to `/priser`
+3. Confirm deletion
+
+**Check build status:**
+```bash
+gh run list --limit 5
+```
+
+**Test local build before pushing:**
+```bash
+npm run build  # Must succeed
+```
+
+**Revert if builds fail:**
+```bash
+git reset --hard <last-working-commit>
+git push --force
+```
