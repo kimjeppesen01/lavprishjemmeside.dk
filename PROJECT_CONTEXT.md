@@ -515,3 +515,154 @@ script: |
 - **Dashboard pages**: Security logs, content management, user management, session detail view
 - **Public pages**: Priser, Om os, Kontakt
 - **SEO content optimization**
+
+---
+
+## Future Phases (Product Vision)
+
+### Phase 6: Component Library & Styling Dashboard
+
+**Vision**: Transform this into a white-label product for clients. Admin dashboard becomes a full CMS where clients can customize styling and build pages with pre-made components.
+
+**Architecture**: Hybrid approach (database-driven with static generation)
+- Store design settings and page content in database
+- Preview changes dynamically in admin dashboard
+- Publish button triggers GitHub Actions rebuild → static site deployed
+- Production sites remain fast, static, SEO-friendly
+
+**Database Schema** (4 new tables):
+1. **design_settings** - Store color palettes, typography, theme identity, shapes
+   - Colors: primary, secondary, accent, neutral shades
+   - Typography: font families, size scales
+   - Theme identity: Business, Vibrant, Minimalistic presets
+   - Shapes: border radius, shadows
+
+2. **components** - Component template library
+   - Component types: Hero, Features, Pricing, Contact, etc.
+   - Template paths (Astro files)
+   - Schema (JSON field definitions)
+   - Flexible: allows adding custom components
+
+3. **page_components** - Page content instances
+   - Maps components to pages (/, /priser, /om-os, etc.)
+   - Stores actual content for each component instance
+   - Sort order, publish status
+
+4. **theme_presets** - Pre-configured design themes
+   - Business, Vibrant, Minimalistic presets
+   - Complete styling configurations in JSON
+
+**Admin Dashboard Structure**:
+- `/admin/styling/` - Color pickers, theme selector, shape controls, live preview
+- `/admin/components/` - Component library management
+- `/admin/pages/` - Page builder (add/edit/reorder components)
+
+**Client Workflow**:
+1. Login → Select theme preset (Business/Vibrant/Minimalistic)
+2. Customize colors via color picker
+3. Build pages by adding components (Hero, Features, etc.)
+4. Fill in content (titles, text, images)
+5. Preview changes → Publish → Site rebuilds in ~30 seconds
+
+**Key Features**:
+- Reusable Astro component library (`src/components/sections/`)
+- CSS variables for theming (no hardcoded colors)
+- Drag-and-drop component ordering (or up/down arrows for MVP)
+- GitHub Actions integration for automated rebuilds
+- **Flexible component system**: Supports adding custom components beyond initial library
+
+---
+
+### Phase 7: AI Building Block Generator (Premium Feature)
+
+**Feature**: AI-powered component generator using OpenAI Vision API to convert design mockups into production-ready Tailwind HTML.
+
+**Location**: `/admin/byggeklodser` (Danish for "building blocks") - protected admin area
+
+**How it works**:
+1. Upload reference image (design mockup, screenshot, wireframe)
+2. Optionally provide unstyled HTML structure
+3. AI analyzes image + site's existing styling context
+4. Generates brand-aligned HTML using site's Tailwind utilities
+5. Copy code or save as new component template
+
+**Technical Architecture**:
+
+**Backend** (`api/src/routes/ai-generator.cjs`):
+```javascript
+// Dependencies: openai, multer (file uploads)
+POST /ai/generate-component
+- Accept image upload + optional HTML
+- Load Context Library (site's colors, components, patterns)
+- Call OpenAI Vision API (gpt-4o)
+- Return generated HTML
+```
+
+**Context Library** (`api/src/ai-context/`):
+```
+ai-context/
+├── colors-typography.md  # Tailwind v4 custom colors/fonts
+├── buttons.html          # Standard button examples
+├── cards.html            # Standard card examples
+└── ...                   # Other component examples
+```
+
+**Frontend** (`src/pages/admin/byggeklodser.astro`):
+- Image upload dropzone
+- Optional HTML input field
+- "Generate" button → calls API
+- Preview generated HTML
+- "Save as Component" → stores in components table
+- "Copy Code" → clipboard
+
+**AI Prompt Structure**:
+```
+You are a Tailwind CSS expert. Generate HTML for this design mockup.
+
+CONSTRAINTS:
+- Use ONLY these colors: {site colors from context}
+- Use ONLY these fonts: {site fonts from context}
+- Match this button style: {button examples from context}
+- Follow these patterns: {card examples from context}
+- Use Tailwind v4 utilities (NOT @apply directives)
+- Mobile-first responsive design
+- Semantic HTML
+
+REFERENCE IMAGE: [uploaded image]
+OPTIONAL HTML STRUCTURE: [user-provided HTML]
+
+OUTPUT: Production-ready HTML
+```
+
+**Monetization**:
+- **Free tier**: 5 generations/month
+- **Premium**: Unlimited generations ($X/month)
+- API usage billed separately (OpenAI costs pass-through)
+
+**File Additions**:
+```
+api/
+├── package.json                 # Add: openai, multer
+├── src/
+│   ├── ai-context/              # NEW: Context library
+│   │   ├── colors-typography.md
+│   │   ├── buttons.html
+│   │   └── cards.html
+│   └── routes/
+│       └── ai-generator.cjs     # NEW: OpenAI integration
+src/pages/admin/
+└── byggeklodser.astro           # NEW: Generator UI
+```
+
+**Security Considerations**:
+- Rate limit: 10 requests/hour per user
+- File upload limits: 5MB max, images only (jpg, png, webp)
+- Sanitize generated HTML before saving
+- Store OpenAI API key in environment variables
+- Log all generations to security_logs table
+
+**Future Enhancements**:
+- Multi-image upload (generate full page from multiple mockups)
+- Style transfer (apply one component's style to another)
+- A/B testing variants (generate 3 variations of same design)
+- Export to Figma/Sketch (reverse direction)
