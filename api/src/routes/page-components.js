@@ -268,4 +268,54 @@ router.post('/publish', requireAuth, async (req, res) => {
   }
 });
 
+// POST /page-components/delete-page — Delete entire page (all components)
+router.post('/delete-page', requireAuth, async (req, res) => {
+  try {
+    const { page_path } = req.body;
+
+    if (!page_path) {
+      return res.status(400).json({ error: 'page_path er påkrævet' });
+    }
+
+    // Get count before deletion for logging
+    const [countResult] = await pool.execute(
+      'SELECT COUNT(*) as count FROM page_components WHERE page_path = ?',
+      [page_path]
+    );
+
+    const componentCount = countResult[0].count;
+
+    if (componentCount === 0) {
+      return res.status(404).json({ error: 'Ingen komponenter fundet for denne side' });
+    }
+
+    // Delete all components for this page
+    const [result] = await pool.execute(
+      'DELETE FROM page_components WHERE page_path = ?',
+      [page_path]
+    );
+
+    // Log to security_logs
+    await pool.execute(
+      'INSERT INTO security_logs (action, ip_address, user_agent, user_id, details) VALUES (?, ?, ?, ?, ?)',
+      [
+        'page.delete',
+        req.ip,
+        req.headers['user-agent'],
+        req.user.id,
+        JSON.stringify({ page_path, components_deleted: result.affectedRows })
+      ]
+    );
+
+    res.json({
+      ok: true,
+      message: `Deleted ${result.affectedRows} component(s) from page ${page_path}`,
+      deleted_count: result.affectedRows
+    });
+  } catch (error) {
+    console.error('Error deleting page:', error.message);
+    res.status(500).json({ error: 'Kunne ikke slette siden' });
+  }
+});
+
 module.exports = router;
