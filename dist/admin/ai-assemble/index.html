@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>AI Content Developer — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.DJ2NXZ6b.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>AI Indholdsudvikler — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.Cu9oLy0p.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -28,12 +28,25 @@ AI-assembler
 Log ud
 </button> </div> </aside> <!-- Main content --> <div class="flex-1 flex flex-col"> <!-- Top bar --> <header id="admin-header" class="hidden bg-white border-b border-gray-200 px-6 py-3 items-center justify-between"> <button id="mobile-menu-btn" class="lg:hidden text-gray-600 text-sm">
 &#9776; Menu
-</button> <div class="flex-1"></div> <span id="admin-email" class="text-sm text-gray-500"></span> </header> <!-- Page content --> <main class="flex-1 p-6">  <div class="max-w-4xl mx-auto"> <!-- Header --> <div class="mb-8"> <h1 class="text-3xl font-bold text-gray-900">AI Indholdsudvikler</h1> <p class="text-gray-600 mt-2">Generer sideindhold ved hjælp af kunstig intelligens</p> </div> <!-- Loading state --> <div id="loading" class="text-center py-12 text-gray-500">Henter data...</div> <!-- Error state --> <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6"> <p class="text-red-700 mb-2" id="error-text"></p> <button onclick="window.location.reload()" class="text-red-600 underline text-sm">Prøv igen</button> </div> <!-- Main content --> <div id="content" class="hidden"> <!-- Prompt settings (collapsible) --> <details class="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"> <summary class="px-6 py-4 cursor-pointer hover:bg-gray-50 font-medium text-gray-900 flex items-center gap-2"> <span>⚙️</span> Prompt-indstillinger (Emne, kundesegment, personlighed, intention, format)
-</summary> <div class="px-6 pb-6 pt-2 border-t border-gray-100 space-y-4"> <p class="text-sm text-gray-600">Disse indstillinger påvirker AI'ens tone og stil for al genereret sideindhold. Gem før generering.</p> <div class="grid grid-cols-1 md:grid-cols-2 gap-4"> <div> <label for="prompt_emne" class="block text-sm font-medium text-gray-700 mb-1">Emne</label> <input type="text" id="prompt_emne" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Forretningsudvikling for kreative og tidsstyring" maxlength="500"> </div> <div> <label for="prompt_kundesegment" class="block text-sm font-medium text-gray-700 mb-1">Kundesegment</label> <input type="text" id="prompt_kundesegment" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Freelance grafiske designere, der kæmper med at finde kunder." maxlength="500"> </div> <div> <label for="prompt_personlighed" class="block text-sm font-medium text-gray-700 mb-1">Personlighed</label> <input type="text" id="prompt_personlighed" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Vittig, samtalende og let sarkastisk, som en troværdig mentor." maxlength="500"> </div> <div> <label for="prompt_intention" class="block text-sm font-medium text-gray-700 mb-1">Intention</label> <input type="text" id="prompt_intention" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Uddan læseren om vores software og få dem til at klikke på 'Book en demo'." maxlength="500"> </div> <div class="md:col-span-2"> <label for="prompt_format" class="block text-sm font-medium text-gray-700 mb-1">Format</label> <input type="text" id="prompt_format" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Et LinkedIn-opslag på 300 ord. Brug korte afsnit. Undgå AI-klichéer som 'dykke ned i', 'tapet', 'vidnesbyrd'." maxlength="500"> </div> </div> <button type="button" id="save-prompt-settings" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg text-sm">Gem prompt-indstillinger</button> <span id="prompt-saved-toast" class="ml-3 text-sm text-green-600 hidden">✓ Gemt</span> </div> </details> <!-- Avanceret personlighed (markdown) --> <details class="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"> <summary class="px-6 py-4 cursor-pointer hover:bg-gray-50 font-medium text-gray-900 flex items-center gap-2"> <span>📄</span> Avanceret personlighed (regler fra .md-fil)
+</button> <div class="flex-1"></div> <span id="admin-email" class="text-sm text-gray-500"></span> </header> <!-- Page content --> <main class="flex-1 p-6">  <div class="max-w-4xl mx-auto"> <!-- Header --> <div class="mb-8"> <h1 class="text-3xl font-bold text-gray-900">AI Indholdsudvikler</h1> <p class="text-gray-600 mt-2">Vælg model og generer sideindhold</p> </div> <!-- Model selector --> <div class="mb-6 flex gap-2"> <button type="button" id="mode-standard" class="mode-btn flex-1 px-6 py-4 rounded-xl border-2 font-medium transition-colors bg-white border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-800"> <span class="block text-lg">⚡ Standard</span> <span class="block text-sm font-normal text-gray-500 mt-1">AI skriver alt — hurtig oprettelse for mange brugere</span> </button> <button type="button" id="mode-advanced" class="mode-btn flex-1 px-6 py-4 rounded-xl border-2 font-medium transition-colors bg-white border-gray-200 hover:border-amber-400 hover:bg-amber-50 text-gray-800"> <span class="block text-lg">🏆 Advanced <span class="inline-block px-1.5 py-0.5 text-xs font-bold bg-amber-200 text-amber-800 rounded">PRO</span></span> <span class="block text-sm font-normal text-gray-500 mt-1">Du skriver indholdet — AI sammensætter til perfekt side</span> </button> </div> <!-- Loading state --> <div id="loading" class="text-center py-12 text-gray-500">Henter data...</div> <!-- Error state --> <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6"> <p class="text-red-700 mb-2" id="error-text"></p> <button onclick="window.location.reload()" class="text-red-600 underline text-sm">Prøv igen</button> </div> <!-- Main content --> <div id="content" class="hidden"> <!-- Prompt settings (collapsible) - Standard mode only --> <details id="prompt-settings-section" class="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"> <summary class="px-6 py-4 cursor-pointer hover:bg-gray-50 font-medium text-gray-900 flex items-center gap-2"> <span>⚙️</span> Prompt-indstillinger (Standard model) — Emne, kundesegment, personlighed, intention, format
+</summary> <div class="px-6 pb-6 pt-2 border-t border-gray-100 space-y-4"> <p class="text-sm text-gray-600">Disse indstillinger påvirker AI'ens tone og stil for al genereret sideindhold. Gem før generering.</p> <div class="grid grid-cols-1 md:grid-cols-2 gap-4"> <div> <label for="prompt_emne" class="block text-sm font-medium text-gray-700 mb-1">Emne</label> <input type="text" id="prompt_emne" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Forretningsudvikling for kreative og tidsstyring" maxlength="500"> </div> <div> <label for="prompt_kundesegment" class="block text-sm font-medium text-gray-700 mb-1">Kundesegment</label> <input type="text" id="prompt_kundesegment" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Freelance grafiske designere, der kæmper med at finde kunder." maxlength="500"> </div> <div> <label for="prompt_personlighed" class="block text-sm font-medium text-gray-700 mb-1">Personlighed</label> <input type="text" id="prompt_personlighed" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Vittig, samtalende og let sarkastisk, som en troværdig mentor." maxlength="500"> </div> <div> <label for="prompt_intention" class="block text-sm font-medium text-gray-700 mb-1">Intention</label> <input type="text" id="prompt_intention" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Uddan læseren om vores software og få dem til at klikke på 'Book en demo'." maxlength="500"> </div> <div class="md:col-span-2"> <label for="prompt_format" class="block text-sm font-medium text-gray-700 mb-1">Format</label> <input type="text" id="prompt_format" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Et LinkedIn-opslag på 300 ord. Brug korte afsnit. Undgå AI-klichéer som 'dykke ned i', 'tapet', 'vidnesbyrd'." maxlength="500"> </div> </div> <button type="button" id="save-prompt-settings" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg text-sm">Gem prompt-indstillinger</button> <span id="prompt-saved-toast" class="ml-3 text-sm text-green-600 hidden">✓ Gemt</span> </div> </details> <!-- Avanceret personlighed (markdown) - Standard mode only --> <details id="avanceret-section" class="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"> <summary class="px-6 py-4 cursor-pointer hover:bg-gray-50 font-medium text-gray-900 flex items-center gap-2"> <span>📄</span> Avanceret personlighed (Standard model) — regler for tone og språgbrug
 </summary> <div class="px-6 pb-6 pt-2 border-t border-gray-100 space-y-4"> <p class="text-sm text-gray-600">Tilføj detaljerede regler i Markdown. AI'en læser indholdet som bindende instruktioner for tone og språgbrug. Brug overskrifter (##), bullet-lister og fed for at strukturere reglerne.</p> <div class="flex gap-2 mb-2"> <button type="button" id="load-default-avanceret" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg">Indlæs fra standardfil</button> <label class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg cursor-pointer">
 Vælg .md-fil
-<input type="file" id="avanceret-file-input" accept=".md,text/markdown" class="hidden"> </label> </div> <textarea id="prompt_avanceret_personlighed" rows="16" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono" placeholder="Indsæt eller indlæs Markdown med regler for personlighed, forbudte ord, anbefalede formuleringer osv."></textarea> <button type="button" id="save-avanceret" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg text-sm">Gem avanceret personlighed</button> <span id="avanceret-saved-toast" class="ml-3 text-sm text-green-600 hidden">✓ Gemt</span> </div> </details> <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"> <!-- Input Form (Left) --> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"> <form id="generate-form" onsubmit="generateContent(event)"> <div class="mb-6"> <label for="page_path" class="block text-sm font-medium text-gray-700 mb-2">Sidesti:</label> <input type="text" id="page_path" placeholder="f.eks. /priser" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" required> <p class="text-xs text-gray-500 mt-1">Stien hvor siden skal gemmes (f.eks. /priser, /omoss, /kontakt)</p> </div> <div class="mb-6"> <label for="prompt" class="block text-sm font-medium text-gray-700 mb-2">Prompt (Dansk):</label> <textarea id="prompt" placeholder="Beskrive hvad siden skal indeholde. Eksempel: Lav en priser-side med 3 pakker, hero-sektion og CTA." rows="8" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono text-sm" required></textarea> <p class="text-xs text-gray-500 mt-1">Vær specifik om hvilket indhold der skal genereres</p> </div> <button type="submit" id="generate-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2"> <span>⚡ Generer side med AI</span> </button> </form> <!-- Info box --> <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4"> <p class="text-sm text-blue-800"> <strong>Bemærk:</strong> AI-generering kan tage op til 30 sekunder. Vent venligst på resultatet.
-</p> </div> </div> <!-- Result Panel (Right) --> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"> <h2 class="text-lg font-semibold mb-6 text-gray-900">Resultat</h2> <!-- Loading spinner (hidden by default) --> <div id="result-loading" class="hidden text-center py-8"> <div class="inline-block"> <div class="w-8 h-8 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div> </div> <p class="text-gray-600 mt-4">Genererer indhold med AI...</p> </div> <!-- Result content (hidden by default) --> <div id="result-content" class="hidden space-y-6"> <div class="bg-green-50 border border-green-200 rounded-lg p-4"> <p class="text-green-700 font-medium mb-3" id="result-title">✓ Siden blev genereret</p> <div class="space-y-3 text-sm text-green-700"> <div class="flex justify-between"> <span>Komponenter genereret:</span> <span class="font-medium" id="result-count">0</span> </div> <div class="flex justify-between"> <span>API-tokens brugt:</span> <span class="font-mono" id="result-tokens">0</span> </div> <div class="flex justify-between"> <span>Estimeret omkostning:</span> <span class="font-mono" id="result-cost">$0.00</span> </div> </div> </div> <p class="text-sm text-green-700 mb-3">Siden er oprettet og publiceret. Udløs en udrulning for at gøre den synlig på sitet.</p> <div class="flex gap-3"> <button onclick="triggerDeploy()" id="deploy-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-3 rounded-lg transition-colors">
+<input type="file" id="avanceret-file-input" accept=".md,text/markdown" class="hidden"> </label> </div> <textarea id="prompt_avanceret_personlighed" rows="16" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono" placeholder="Indsæt eller indlæs Markdown med regler for personlighed, forbudte ord, anbefalede formuleringer osv."></textarea> <button type="button" id="save-avanceret" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg text-sm">Gem avanceret personlighed</button> <span id="avanceret-saved-toast" class="ml-3 text-sm text-green-600 hidden">✓ Gemt</span> </div> </details> <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"> <!-- Input Form (Left) --> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"> <!-- Standard form --> <form id="generate-form-standard" class="standard-form" onsubmit="generateContentStandard(event)"> <div class="mb-6"> <label for="page_path" class="block text-sm font-medium text-gray-700 mb-2">Sidesti:</label> <input type="text" id="page_path" placeholder="f.eks. /priser" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" required> <p class="text-xs text-gray-500 mt-1">Stien hvor siden skal gemmes</p> </div> <div class="mb-6"> <label for="prompt" class="block text-sm font-medium text-gray-700 mb-2">Beskrivelse (Dansk):</label> <textarea id="prompt" rows="8" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="Beskriv hvad siden skal indeholde. AI skriver alt: tekster, overskrifter, CTA'er." required></textarea> <p class="text-xs text-gray-500 mt-1">AI genererer indhold ud fra din beskrivelse</p> </div> <button type="submit" id="generate-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2"> <span>⚡ Generer side (Standard)</span> </button> </form> <!-- Advanced form --> <form id="generate-form-advanced" class="advanced-form hidden" onsubmit="generateContentAdvanced(event)"> <div class="mb-6"> <label for="page_path_adv" class="block text-sm font-medium text-gray-700 mb-2">Sidesti:</label> <input type="text" id="page_path_adv" placeholder="f.eks. /priser" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500" required> <p class="text-xs text-gray-500 mt-1">Stien hvor siden skal gemmes</p> </div> <div class="mb-6"> <label for="content_markdown" class="block text-sm font-medium text-gray-700 mb-2">
+Færdigt indhold (Markdown)
+<span class="text-amber-600 font-normal">— Du skriver, AI sammensætter</span> </label> <textarea id="content_markdown" rows="16" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 font-mono text-sm" placeholder="# Overskrift
+
+Intro-tekst...
+
+## Features
+- Punkt 1
+- Punkt 2
+
+## FAQ
+**Q:** Spørgsmål?
+**A:** Svar..."></textarea> <p class="text-xs text-gray-500 mt-1">Indsæt dit færdige indhold i Markdown. AI transformerer det til komponenter og vælger billeder fra mediebiblioteket.</p> <div class="mt-2 flex gap-2"> <label class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm rounded-lg cursor-pointer">
+Vælg .md-fil
+<input type="file" id="advanced-md-input" accept=".md,text/markdown" class="hidden"> </label> </div> </div> <button type="submit" id="generate-btn-advanced" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2"> <span>🏆 Transformér til side (Advanced PRO)</span> </button> </form> <!-- Info box --> <div id="info-standard" class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4"> <p class="text-sm text-blue-800"><strong>Standard:</strong> AI skriver indhold, meta, og vælger komponenter. Hurtig og nem.</p> </div> <div id="info-advanced" class="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4 hidden"> <p class="text-sm text-amber-800"><strong>Advanced PRO:</strong> Du leverer færdigt indhold. AI fokuserer kun på at mappe det til komponenter og vælge billeder fra mediebiblioteket.</p> </div> </div> <!-- Result Panel (Right) --> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"> <h2 class="text-lg font-semibold mb-6 text-gray-900">Resultat</h2> <!-- Loading spinner (hidden by default) --> <div id="result-loading" class="hidden text-center py-8"> <div class="inline-block"> <div class="w-8 h-8 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div> </div> <p class="text-gray-600 mt-4">Genererer indhold med AI...</p> </div> <!-- Result content (hidden by default) --> <div id="result-content" class="hidden space-y-6"> <div class="bg-green-50 border border-green-200 rounded-lg p-4"> <p class="text-green-700 font-medium mb-3" id="result-title">✓ Siden blev genereret</p> <div class="space-y-3 text-sm text-green-700"> <div class="flex justify-between"> <span>Komponenter genereret:</span> <span class="font-medium" id="result-count">0</span> </div> <div class="flex justify-between"> <span>API-tokens brugt:</span> <span class="font-mono" id="result-tokens">0</span> </div> <div class="flex justify-between"> <span>Estimeret omkostning:</span> <span class="font-mono" id="result-cost">$0.00</span> </div> </div> </div> <p class="text-sm text-green-700 mb-3">Siden er oprettet og publiceret. Udløs en udrulning for at gøre den synlig på sitet.</p> <div class="flex gap-3"> <button onclick="triggerDeploy()" id="deploy-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-3 rounded-lg transition-colors">
 Udløs udrulning nu
 </button> <button onclick="goToPageBuilder()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-3 rounded-lg transition-colors">
 Gå til Sidestyring
@@ -127,7 +140,42 @@ Gå til Sidestyring
       savePromptSettings(this, 'avanceret-saved-toast');
     });
 
-    window.generateContent = async function(event) {
+    // Mode switching
+    let currentMode = 'standard';
+    document.getElementById('mode-standard').addEventListener('click', function() {
+      currentMode = 'standard';
+      document.querySelectorAll('.mode-btn').forEach(b => { b.classList.remove('border-blue-600', 'bg-blue-100', 'border-amber-600', 'bg-amber-100'); b.classList.add('border-gray-200'); });
+      this.classList.remove('border-gray-200'); this.classList.add('border-blue-600', 'bg-blue-100');
+      document.getElementById('generate-form-standard').classList.remove('hidden');
+      document.getElementById('generate-form-advanced').classList.add('hidden');
+      document.getElementById('prompt-settings-section').classList.remove('hidden');
+      document.getElementById('avanceret-section').classList.remove('hidden');
+      document.getElementById('info-standard').classList.remove('hidden');
+      document.getElementById('info-advanced').classList.add('hidden');
+    });
+    document.getElementById('mode-advanced').addEventListener('click', function() {
+      currentMode = 'advanced';
+      document.querySelectorAll('.mode-btn').forEach(b => { b.classList.remove('border-blue-600', 'bg-blue-100', 'border-amber-600', 'bg-amber-100'); b.classList.add('border-gray-200'); });
+      this.classList.remove('border-gray-200'); this.classList.add('border-amber-600', 'bg-amber-100');
+      document.getElementById('generate-form-standard').classList.add('hidden');
+      document.getElementById('generate-form-advanced').classList.remove('hidden');
+      document.getElementById('prompt-settings-section').classList.add('hidden');
+      document.getElementById('avanceret-section').classList.add('hidden');
+      document.getElementById('info-standard').classList.add('hidden');
+      document.getElementById('info-advanced').classList.remove('hidden');
+    });
+    document.getElementById('mode-standard').click();
+
+    document.getElementById('advanced-md-input').addEventListener('change', function(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function() { document.getElementById('content_markdown').value = reader.result || ''; };
+      reader.readAsText(file, 'UTF-8');
+      e.target.value = '';
+    });
+
+    window.generateContentStandard = async function(event) {
       event.preventDefault();
 
       const pagePath = document.getElementById('page_path').value;
@@ -149,30 +197,63 @@ Gå til Sidestyring
       try {
         const res = await fetch(API + '/ai-generate/page', {
           method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            page_path: pagePath,
-            prompt: prompt
-          })
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_path: pagePath, prompt: prompt })
         });
-
         const data = await res.json();
-
         document.getElementById('result-loading').classList.add('hidden');
-
         if (!res.ok) {
-          // Error
           document.getElementById('error-message').textContent = data.error || 'Ukendt fejl';
           document.getElementById('result-error').classList.remove('hidden');
         } else {
-          // Success
-          document.getElementById('result-count').textContent = data.count || 0;
-          document.getElementById('result-tokens').textContent = (data.usage?.tokens || 0).toLocaleString('da-DK');
-          document.getElementById('result-cost').textContent = '$' + ((data.usage?.cost_usd || 0).toFixed(4));
-          document.getElementById('result-content').classList.remove('hidden');
+          showResult(data);
+        }
+      } catch (err) {
+        document.getElementById('result-loading').classList.add('hidden');
+        document.getElementById('error-message').textContent = err.message;
+        document.getElementById('result-error').classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    function showResult(data) {
+      document.getElementById('result-count').textContent = data.count || 0;
+      document.getElementById('result-tokens').textContent = (data.usage?.tokens || 0).toLocaleString('da-DK');
+      document.getElementById('result-cost').textContent = '$' + ((data.usage?.cost_usd || 0).toFixed(4));
+      document.getElementById('result-content').classList.remove('hidden');
+    }
+
+    window.generateContentAdvanced = async function(event) {
+      event.preventDefault();
+      const pagePath = document.getElementById('page_path_adv').value;
+      const contentMarkdown = document.getElementById('content_markdown').value;
+      const btn = document.getElementById('generate-btn-advanced');
+
+      if (!pagePath || !contentMarkdown.trim()) {
+        alert('Udfyld sidesti og indhold');
+        return;
+      }
+
+      btn.disabled = true;
+      document.getElementById('result-empty').classList.add('hidden');
+      document.getElementById('result-content').classList.add('hidden');
+      document.getElementById('result-error').classList.add('hidden');
+      document.getElementById('result-loading').classList.remove('hidden');
+
+      try {
+        const res = await fetch(API + '/ai-generate/page-advanced', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_path: pagePath, content_markdown: contentMarkdown.trim() })
+        });
+        const data = await res.json();
+        document.getElementById('result-loading').classList.add('hidden');
+        if (!res.ok) {
+          document.getElementById('error-message').textContent = data.error || 'Ukendt fejl';
+          document.getElementById('result-error').classList.remove('hidden');
+        } else {
+          showResult(data);
         }
       } catch (err) {
         document.getElementById('result-loading').classList.add('hidden');
