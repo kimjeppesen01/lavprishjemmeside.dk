@@ -31,10 +31,11 @@ const passwordResetRateLimiter = rateLimit({
   handler: (req, res) => {
     res.status(429).json({ error: 'For mange anmodninger. Prøv igen om 15 minutter' });
   },
-  // Key by email from request body (not IP, to prevent per-email abuse)
+  // Key by email from request body (prevents per-email abuse)
   keyGenerator: (req) => {
-    return req.body.email || req.ip;
-  }
+    return req.body.email || 'anonymous';
+  },
+  skip: (req) => !req.body.email // Skip rate limit if no email provided
 });
 
 // AI rate limiter (shared across Phase 6 & Phase 7)
@@ -46,7 +47,10 @@ const aiRateLimiter = rateLimit({
   handler: (req, res) => {
     res.status(429).json({ error: 'For mange AI-forespørgsler. Prøv igen om en time' });
   },
-  keyGenerator: (req) => req.user?.id || req.ip
+  keyGenerator: (req) => {
+    return req.user?.id ? `user:${req.user.id}` : 'anonymous';
+  },
+  skip: (req) => !req.user?.id // Skip rate limit if not authenticated
 });
 
 module.exports = {
