@@ -127,12 +127,21 @@ router.post('/update', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Ugyldig shadow_style værdi' });
     }
 
-    // Build dynamic UPDATE query with only provided fields
+    // Whitelist of columns that exist in design_settings (DB has no color_neutral_400/500)
+    const allowedColumns = new Set([
+      'color_primary', 'color_primary_hover', 'color_primary_light',
+      'color_secondary', 'color_secondary_hover', 'color_secondary_light',
+      'color_accent', 'color_accent_hover',
+      'color_neutral_50', 'color_neutral_100', 'color_neutral_200', 'color_neutral_300',
+      'color_neutral_600', 'color_neutral_700', 'color_neutral_800', 'color_neutral_900',
+      'font_heading', 'font_body', 'font_size_base', 'border_radius', 'shadow_style'
+    ]);
+
     const updates = [];
     const values = [];
 
     Object.entries(req.body).forEach(([key, value]) => {
-      if (value !== undefined && key !== 'site_id' && key !== 'id') {
+      if (value !== undefined && key !== 'site_id' && key !== 'id' && allowedColumns.has(key)) {
         updates.push(`${key} = ?`);
         values.push(value);
       }
