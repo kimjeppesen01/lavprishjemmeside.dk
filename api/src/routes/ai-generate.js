@@ -11,9 +11,10 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
   try {
     const { prompt, page_path } = req.body;
 
-    if (!prompt || !page_path) {
+    const pathForDb = (page_path || '').trim() || '/';
+    if (!prompt) {
       return res.status(400).json({
-        error: 'prompt og page_path er påkrævet'
+        error: 'prompt er påkrævet'
       });
     }
 
@@ -26,7 +27,16 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
     const { components, seo, usage } = await generatePageContent(prompt, context, req.user.id);
     console.log(`✓ Generated ${components.length} components`);
 
-    // 3. Save components to database
+    // 3. Delete existing components for this page (overwrite)
+    const [delResult] = await pool.execute(
+      'DELETE FROM page_components WHERE page_path = ? OR (TRIM(COALESCE(page_path, "")) = "" AND ? = "/")',
+      [pathForDb, pathForDb]
+    );
+    if (delResult.affectedRows > 0) {
+      console.log(`✓ Replaced ${delResult.affectedRows} existing component(s)`);
+    }
+
+    // 4. Save new components to database
     const componentIds = [];
 
     for (const comp of components) {
@@ -49,7 +59,7 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
          (page_path, component_id, content, sort_order, is_published, created_by)
          VALUES (?, ?, ?, ?, 1, ?)`,
         [
-          (page_path || '').trim(),
+          pathForDb,
           component_id,
           JSON.stringify(comp.props_data),
           comp.sort_order || 0,
@@ -63,7 +73,7 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
     // 4. Save page meta (SEO) if AI provided it
     if (seo) {
       try {
-        const schemaMarkup = buildSchemaMarkup(page_path, seo, components);
+        const schemaMarkup = buildSchemaMarkup(pathForDb, seo, components);
         await pool.execute(
           `INSERT INTO page_meta (page_path, meta_title, meta_description, schema_markup, created_by)
            VALUES (?, ?, ?, ?, ?)
@@ -72,7 +82,7 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
              meta_description = VALUES(meta_description),
              schema_markup = VALUES(schema_markup)`,
           [
-            (page_path || '').trim(),
+            pathForDb,
             seo.meta_title || null,
             seo.meta_description || null,
             JSON.stringify(schemaMarkup),
@@ -148,9 +158,10 @@ router.post('/page-advanced', requireAuth, aiRateLimiter, async (req, res) => {
   try {
     const { page_path, content_markdown } = req.body;
 
-    if (!page_path || !content_markdown) {
+    const pathForDb = (page_path || '').trim() || '/';
+    if (!content_markdown) {
       return res.status(400).json({
-        error: 'page_path og content_markdown er påkrævet'
+        error: 'content_markdown er påkrævet'
       });
     }
 
@@ -165,6 +176,15 @@ router.post('/page-advanced', requireAuth, aiRateLimiter, async (req, res) => {
     );
     console.log(`✓ Advanced: Generated ${components.length} components`);
 
+    // Delete existing components for this page (overwrite)
+    const [delResult] = await pool.execute(
+      'DELETE FROM page_components WHERE page_path = ? OR (TRIM(COALESCE(page_path, "")) = "" AND ? = "/")',
+      [pathForDb, pathForDb]
+    );
+    if (delResult.affectedRows > 0) {
+      console.log(`✓ Replaced ${delResult.affectedRows} existing component(s)`);
+    }
+
     const componentIds = [];
     for (const comp of components) {
       const [componentRows] = await pool.execute(
@@ -178,19 +198,19 @@ router.post('/page-advanced', requireAuth, aiRateLimiter, async (req, res) => {
       const [result] = await pool.execute(
         `INSERT INTO page_components (page_path, component_id, content, sort_order, is_published, created_by)
          VALUES (?, ?, ?, ?, 1, ?)`,
-        [(page_path || '').trim(), componentRows[0].id, JSON.stringify(comp.props_data), comp.sort_order || 0, req.user.id]
+        [pathForDb, componentRows[0].id, JSON.stringify(comp.props_data), comp.sort_order || 0, req.user.id]
       );
       componentIds.push(result.insertId);
     }
 
     if (seo) {
       try {
-        const schemaMarkup = buildSchemaMarkup(page_path, seo, components);
+        const schemaMarkup = buildSchemaMarkup(pathForDb, seo, components);
         await pool.execute(
           `INSERT INTO page_meta (page_path, meta_title, meta_description, schema_markup, created_by)
            VALUES (?, ?, ?, ?, ?)
            ON DUPLICATE KEY UPDATE meta_title = VALUES(meta_title), meta_description = VALUES(meta_description), schema_markup = VALUES(schema_markup)`,
-          [(page_path || '').trim(), seo.meta_title || null, seo.meta_description || null, JSON.stringify(schemaMarkup), req.user.id]
+          [pathForDb, seo.meta_title || null, seo.meta_description || null, JSON.stringify(schemaMarkup), req.user.id]
         );
       } catch (metaErr) {
         console.warn('Could not save page meta:', metaErr.message);

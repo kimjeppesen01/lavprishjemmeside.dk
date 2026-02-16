@@ -75,12 +75,23 @@ router.get('/public', async (req, res) => {
       params = [];
     } else {
       // Return published components for specific page
-      query = `SELECT pc.*, c.slug, c.name_da, c.category
-               FROM page_components pc
-               JOIN components c ON pc.component_id = c.id
-               WHERE pc.page_path = ? AND pc.is_published = 1
-               ORDER BY pc.sort_order ASC`;
-      params = [page];
+      // For front page (/), also match empty page_path (legacy)
+      const isFrontPage = page === '/' || page === '';
+      if (isFrontPage) {
+        query = `SELECT pc.*, c.slug, c.name_da, c.category
+                 FROM page_components pc
+                 JOIN components c ON pc.component_id = c.id
+                 WHERE (pc.page_path = '/' OR TRIM(COALESCE(pc.page_path, '')) = '') AND pc.is_published = 1
+                 ORDER BY pc.sort_order ASC`;
+        params = [];
+      } else {
+        query = `SELECT pc.*, c.slug, c.name_da, c.category
+                 FROM page_components pc
+                 JOIN components c ON pc.component_id = c.id
+                 WHERE pc.page_path = ? AND pc.is_published = 1
+                 ORDER BY pc.sort_order ASC`;
+        params = [page];
+      }
     }
 
     const [rows] = await pool.execute(query, params);
@@ -407,6 +418,10 @@ router.get('/public-meta', async (req, res) => {
 
     if (page === 'all') {
       query = 'SELECT page_path, meta_title, meta_description, og_image, schema_markup FROM page_meta';
+      params = [];
+    } else if (page === '/' || page === '') {
+      query = `SELECT page_path, meta_title, meta_description, og_image, schema_markup FROM page_meta
+               WHERE page_path = '/' OR TRIM(COALESCE(page_path, '')) = '' LIMIT 1`;
       params = [];
     } else {
       query = 'SELECT page_path, meta_title, meta_description, og_image, schema_markup FROM page_meta WHERE page_path = ?';
