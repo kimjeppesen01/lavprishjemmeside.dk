@@ -5,6 +5,7 @@ const fs = require('fs');
 const multer = require('multer');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const pexels = require('../services/pexels.cjs');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(require('os').homedir(), 'lavprishjemmeside.dk', 'uploads');
 const UPLOAD_URL_BASE = process.env.UPLOAD_URL_BASE || 'https://lavprishjemmeside.dk/uploads';
@@ -178,18 +179,133 @@ router.post('/delete', requireAuth, async (req, res) => {
   }
 });
 
-// Helper for AI context — returns available images with alt text
+// POST /media/pexels/search — Search Pexels (admin-only)
+router.post('/pexels/search', requireAuth, async (req, res) => {
+  try {
+    const { query, orientation, per_page = 15 } = req.body || {};
+    const result = await pexels.searchPhotos({
+      query: query || 'professional',
+      orientation,
+      per_page: Math.min(parseInt(per_page, 10) || 15, 80),
+    });
+
+    // Check which photos are already in library
+    const ids = (result.photos || []).map((p) => p.id).filter(Boolean);
+    const existingSet = new Set();
+    if (ids.length > 0) {
+      try {
+        const placeholders = ids.map(() => '?').join(',');
+        const [rows] = await pool.execute(
+          `SELECT pexels_photo_id FROM media WHERE pexels_photo_id IN (${placeholders})`,
+          ids
+        );
+        for (const r of rows) existingSet.add(r.pexels_photo_id);
+      } catch {
+        // ignore
+      }
+    }
+
+    const photosWithLibrary = (result.photos || []).map((p) => ({
+      pexels_id: p.id,
+      url: (p.src && (p.src.large2x || p.src.large || p.src.original)) || '',
+      alt: p.alt || '',
+      photographer: p.photographer || '',
+      width: p.width,
+      height: p.height,
+      already_in_library: existingSet.has(p.id),
+    }));
+
+    res.json({
+      photos: photosWithLibrary,
+      rate_limit: result.rate_limit || {},
+    });
+  } catch (err) {
+    console.error('Pexels search error:', err.message);
+    res.status(err.message && err.message.includes('rate limit') ? 429 : 500).json({
+      error: err.message || 'Fejl ved Pexels-søgning',
+    });
+  }
+});
+
+// POST /media/pexels/download — Download Pexels photo and register (admin-only)
+router.post('/pexels/download', requireAuth, async (req, res) => {
+  try {
+    const { pexels_photo_id, keyword } = req.body || {};
+    if (!pexels_photo_id) {
+      return res.status(400).json({ error: 'pexels_photo_id er påkrævet' });
+    }
+
+    const photo = await pexels.getPhotoById(pexels_photo_id);
+    const media = await pexels.downloadAndRegister({
+      photo,
+      keyword: keyword || 'pexels',
+      uploadedBy: req.user?.id,
+    });
+
+    await pool.execute(
+      'INSERT INTO security_logs (action, ip_address, user_agent, user_id, details) VALUES (?, ?, ?, ?, ?)',
+      [
+        'pexels.download',
+        req.ip,
+        req.headers['user-agent'] || '',
+        req.user?.id,
+        JSON.stringify({ pexels_photo_id, media_id: media.media_id }),
+      ]
+    );
+
+    res.json({
+      ok: true,
+      media: {
+        id: media.media_id,
+        filename: media.filename,
+        url: media.url,
+        alt_text: media.alt_text,
+        width: media.width,
+        height: media.height,
+      },
+    });
+  } catch (err) {
+    console.error('Pexels download error:', err.message);
+    res.status(500).json({
+      error: err.message || 'Fejl ved download fra Pexels',
+    });
+  }
+});
+
+// Helper for AI context — returns available images with alt text, dimensions, tags
 async function getMediaForAi() {
   try {
     const [rows] = await pool.execute(
-      "SELECT id, filename, alt_text FROM media WHERE alt_text != '' AND alt_text IS NOT NULL ORDER BY created_at DESC LIMIT 100"
+      `SELECT id, filename, alt_text, width, height, source, tags
+       FROM media
+       WHERE alt_text != '' AND alt_text IS NOT NULL
+       ORDER BY created_at DESC LIMIT 100`
     );
-    return rows.map(row => ({
+    return rows.map((row) => ({
       url: UPLOAD_URL_BASE + '/' + row.filename,
-      alt: row.alt_text
+      alt: row.alt_text,
+      width: row.width,
+      height: row.height,
+      source: row.source || 'upload',
+      tags: row.tags || '',
     }));
   } catch (err) {
-    console.warn('getMediaForAi error:', err.message);
+    if (err.code === 'ER_BAD_FIELD_ERROR' || err.message?.includes('Unknown column')) {
+      // Fallback if schema_media_v2 migration not yet run
+      try {
+        const [rows] = await pool.execute(
+          "SELECT id, filename, alt_text FROM media WHERE alt_text != '' AND alt_text IS NOT NULL ORDER BY created_at DESC LIMIT 100"
+        );
+        return rows.map((row) => ({
+          url: UPLOAD_URL_BASE + '/' + row.filename,
+          alt: row.alt_text,
+        }));
+      } catch (e) {
+        console.warn('getMediaForAi fallback error:', e.message);
+      }
+    } else {
+      console.warn('getMediaForAi error:', err.message);
+    }
     return [];
   }
 }
