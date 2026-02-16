@@ -23,7 +23,7 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
 
     // 2. Call Anthropic API
     console.log('Generating page content with AI...');
-    const { components, seo, usage } = await generatePageContent(prompt, context);
+    const { components, seo, usage } = await generatePageContent(prompt, context, req.user.id);
     console.log(`✓ Generated ${components.length} components`);
 
     // 3. Save components to database
@@ -102,7 +102,12 @@ router.post('/page', requireAuth, aiRateLimiter, async (req, res) => {
         usage.output_tokens,
         totalTokens,
         cost,
-        JSON.stringify({ page_path, component_count: components.length })
+        JSON.stringify({
+          page_path,
+          component_count: components.length,
+          tool_calls: usage.tool_calls ?? 0,
+          tools_used: usage.tools_used ?? [],
+        }),
       ]
     );
 
@@ -155,7 +160,8 @@ router.post('/page-advanced', requireAuth, aiRateLimiter, async (req, res) => {
     console.log('Generating page with Advanced (transformation) model...');
     const { components, seo, usage } = await generatePageContentAdvanced(
       String(content_markdown).trim(),
-      context
+      context,
+      req.user.id
     );
     console.log(`✓ Advanced: Generated ${components.length} components`);
 
@@ -196,7 +202,21 @@ router.post('/page-advanced', requireAuth, aiRateLimiter, async (req, res) => {
     await pool.execute(
       `INSERT INTO ai_usage (user_id, operation, model, prompt_tokens, completion_tokens, total_tokens, cost_usd, output_metadata)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [req.user.id, 'page_assembly_advanced', usage.model, usage.input_tokens, usage.output_tokens, totalTokens, cost, JSON.stringify({ page_path, component_count: components.length })]
+      [
+        req.user.id,
+        'page_assembly_advanced',
+        usage.model,
+        usage.input_tokens,
+        usage.output_tokens,
+        totalTokens,
+        cost,
+        JSON.stringify({
+          page_path,
+          component_count: components.length,
+          tool_calls: usage.tool_calls ?? 0,
+          tools_used: usage.tools_used ?? [],
+        }),
+      ]
     );
 
     await pool.execute(

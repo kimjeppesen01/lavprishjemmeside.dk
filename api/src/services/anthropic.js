@@ -1,44 +1,127 @@
 const Anthropic = require('@anthropic-ai/sdk');
+const pexels = require('./pexels.cjs');
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+const SEARCH_PEXELS_TOOL = {
+  name: 'search_pexels',
+  description: 'Search Pexels for a royalty-free image and download it to the media library. Returns a URL you can use directly in component props. Use this when you need an image for a component and no existing media library image is a good match. Search in Danish or English — Pexels handles both.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'Search keyword(s). Be specific: "dansk webdesigner arbejder ved skrivebord" is better than "webdesign"',
+      },
+      orientation: {
+        type: 'string',
+        enum: ['landscape', 'portrait', 'square'],
+        description: 'Image orientation. Use "landscape" for hero sections and content-image-split, "portrait" for team photos, "square" for gallery grids',
+      },
+      size: {
+        type: 'string',
+        enum: ['large', 'medium', 'small'],
+        description: 'Image size. Default "large" for hero/full-width, "medium" for cards and splits',
+      },
+    },
+    required: ['query'],
+  },
+};
+
+const PEXELS_MAX_PER_GENERATION = parseInt(process.env.PEXELS_MAX_PER_GENERATION, 10) || 6;
+
 /**
- * Generate page content using Claude Sonnet
+ * Generate page content using Claude Sonnet (with Pexels tool-use loop)
  * @param {string} userPrompt - User's page description
  * @param {object} context - Dynamic context from /ai/context endpoint
- * @returns {Promise<object>} - { components: [...], usage: {...} }
+ * @param {number} [uploadedBy] - User ID for media attribution
+ * @returns {Promise<object>} - { components: [...], seo, usage: {...} }
  */
-async function generatePageContent(userPrompt, context) {
+async function generatePageContent(userPrompt, context, uploadedBy = null) {
   const systemPrompt = buildSystemPrompt(context);
+  const messages = [{ role: 'user', content: userPrompt }];
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let toolCallCount = 0;
+  const toolCallsUsed = [];
 
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 8192,
-    temperature: 0.3,
-    system: systemPrompt,
-    messages: [
-      {
-        role: 'user',
-        content: userPrompt,
-      },
-    ],
-  });
-
-  // Extract JSON from response
-  const response = message.content[0].text;
-  const parsed = parseComponentsFromResponse(response);
-
-  return {
-    components: parsed.components,
-    seo: parsed.seo,
-    usage: {
-      input_tokens: message.usage.input_tokens,
-      output_tokens: message.usage.output_tokens,
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const message = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
-    },
-  };
+      max_tokens: 8192,
+      temperature: 0.3,
+      system: systemPrompt,
+      tools: [SEARCH_PEXELS_TOOL],
+      tool_choice: { type: 'auto' },
+      messages,
+    });
+
+    totalInputTokens += message.usage?.input_tokens ?? 0;
+    totalOutputTokens += message.usage?.output_tokens ?? 0;
+
+    const toolUseBlocks = (message.content || []).filter((b) => b.type === 'tool_use');
+    const textBlocks = (message.content || []).filter((b) => b.type === 'text');
+
+    if (message.stop_reason === 'end_turn' && toolUseBlocks.length === 0) {
+      const response = textBlocks.map((b) => b.text).join('\n') || '';
+      const parsed = parseComponentsFromResponse(response);
+      return {
+        components: parsed.components,
+        seo: parsed.seo,
+        usage: {
+          input_tokens: totalInputTokens,
+          output_tokens: totalOutputTokens,
+          model: 'claude-sonnet-4-20250514',
+          tool_calls: toolCallCount,
+          tools_used: toolCallsUsed,
+        },
+      };
+    }
+
+    if (toolUseBlocks.length === 0) break;
+
+    const toolResults = [];
+    for (const block of toolUseBlocks) {
+      if (block.name !== 'search_pexels') continue;
+      toolCallCount += 1;
+      if (toolCallCount > PEXELS_MAX_PER_GENERATION) {
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: block.id,
+          content: 'Pexels-grænse nået for denne generation. Brug et billede fra mediebiblioteket eller en placeholder.',
+        });
+        continue;
+      }
+      toolCallsUsed.push('search_pexels');
+      try {
+        const result = await pexels.handleSearchPexelsTool(block.input || {}, uploadedBy);
+        const content = result.error
+          ? JSON.stringify({ error: result.error })
+          : JSON.stringify({
+              url: result.url,
+              alt_text: result.alt_text,
+              width: result.width,
+              height: result.height,
+              media_id: result.media_id,
+            });
+        toolResults.push({ type: 'tool_result', tool_use_id: block.id, content });
+      } catch (err) {
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: block.id,
+          content: JSON.stringify({ error: err.message || 'Pexels-fejl' }),
+        });
+      }
+    }
+
+    messages.push({ role: 'assistant', content: message.content });
+    messages.push({ role: 'user', content: toolResults });
+  }
+
+  throw new Error('AI response ended without valid JSON output');
 }
 
 /**
@@ -120,16 +203,35 @@ Eksempler:
 - Shadow: ${cssVariableSyntax.shadow}
 
 ${availableMedia.length > 0
-    ? `## Tilgængelige Billeder
+    ? `## Tilgængelige Billeder (mediebibliotek)
 
 Brug disse billeder i stedet for placeholder-URLs. Vælg billeder baseret på alt-teksten og sidens indhold.
 
-${availableMedia.map(m => '- ' + m.url + ' — "' + m.alt + '"').join('\n')}
+${availableMedia.map((m) => {
+      const dims = m.width && m.height ? ` (${m.width}x${m.height})` : '';
+      const tags = m.tags ? ` [${m.tags}]` : '';
+      return `- ${m.url} — "${m.alt}"${dims}${tags}`;
+    }).join('\n')}
 
-Hvis intet billede passer, brug "https://placehold.co/800x600/e2e8f0/64748b?text=Billede" som fallback.`
+Hvis intet billede passer, kald \`search_pexels\` (se nedenfor). Brug ALDRIG placehold.co.
+`
     : `## Billeder
 
-Ingen billeder er uploadet endnu. Brug "https://placehold.co/800x600/e2e8f0/64748b?text=Billede" som placeholder for alle billedfelter.`}
+Ingen billeder i mediebiblioteket endnu. Brug \`search_pexels\` til at hente billeder fra Pexels for alle billedfelter.`}
+
+## Billedsøgning med Pexels
+
+Du har adgang til værktøjet \`search_pexels\` som søger i Pexels' billedbibliotek og downloader billedet direkte til vores mediebibliotek.
+
+### Regler for billedvalg:
+1. **Tjek mediebiblioteket først** — brug eksisterende billeder hvis de passer
+2. **Kald search_pexels** for hvert billedfelt hvor intet eksisterende billede passer
+3. **Søg specifikt** — "kvinde der arbejder ved laptop i lyst kontor" er bedre end "kontor"
+4. **Vælg korrekt orientation** — landscape til hero/splits, portrait til team, square til gallerier
+5. **Maks 6 søgninger per side** — prioriter de vigtigste billedfelter (hero, splits)
+6. **Brug URL'en præcist** som den returneres — ændr ikke URL'en
+
+Brug ALDRIG placeholder-URLs (placehold.co). Alle sider skal have ægte billeder.
 
 ## SEO Metadata
 
@@ -175,7 +277,7 @@ Returnér et JSON **objekt** (IKKE et array). Strukturen er:
 4. **Sorter komponenterne logisk** — start med hero, slut med CTA
 5. **Brug 4-8 komponenter** per side
 6. **Returnér KUN JSON** — ingen forklaring, kun JSON-objektet
-7. **Brug uploadede billeder** — vælg fra listen ovenfor baseret på alt-tekst relevans. Brug placeholder kun som sidste udvej
+7. **Brug mediebiblioteket eller search_pexels** — vælg fra listen baseret på alt-tekst relevans, eller kald search_pexels for nye billeder. Aldrig placeholders
 8. **SEO er påkrævet** — inkluder altid "seo" objektet med meta_title, meta_description og schema_type
 9. **Sektionsbaggrunde** — alternerer automatisk (hvid/grå). Brug kun \`backgroundColor: "primary"\` på CTA eller stats-bannere. Lad andre komponenter arve baggrunden (undlad backgroundColor eller brug default).
 
@@ -258,41 +360,98 @@ function parseComponentsFromResponse(response) {
  * Content is PROVIDED — the model does NOT write content. It ONLY:
  * - Maps content sections to the right components
  * - Populates component props from the markdown
- * - Selects images from the media library
+ * - Selects images from the media library or search_pexels
  * - Extracts/generates SEO metadata from content structure
  *
  * @param {string} contentMarkdown - Human-written markdown (tone, topics, intent already set)
  * @param {object} context - designTokens, componentLibrary, availableMedia, etc.
+ * @param {number} [uploadedBy] - User ID for media attribution
  * @returns {Promise<object>} - { components, seo, usage }
  */
-async function generatePageContentAdvanced(contentMarkdown, context) {
+async function generatePageContentAdvanced(contentMarkdown, context, uploadedBy = null) {
   const systemPrompt = buildAdvancedSystemPrompt(context);
+  const userContent = `Her er det færdige indhold der skal transformeres til vores komponentbibliotek:\n\n---\n\n${contentMarkdown}\n\n---\n\nTransformér ovenstående indhold til JSON med komponenter. Brug KUN tekster fra indholdet — skriv ikke nyt. Vælg det bedste billede fra mediebiblioteket eller brug search_pexels til hvert billedfelt.`;
+  const messages = [{ role: 'user', content: userContent }];
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let toolCallCount = 0;
+  const toolCallsUsed = [];
 
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 8192,
-    temperature: 0.2,
-    system: systemPrompt,
-    messages: [
-      {
-        role: 'user',
-        content: `Her er det færdige indhold der skal transformeres til vores komponentbibliotek:\n\n---\n\n${contentMarkdown}\n\n---\n\nTransformér ovenstående indhold til JSON med komponenter. Brug KUN tekster fra indholdet — skriv ikke nyt. Vælg det bedste billede fra mediebiblioteket til hvert billedfelt.`,
-      },
-    ],
-  });
-
-  const response = message.content[0].text;
-  const parsed = parseComponentsFromResponse(response);
-
-  return {
-    components: parsed.components,
-    seo: parsed.seo,
-    usage: {
-      input_tokens: message.usage.input_tokens,
-      output_tokens: message.usage.output_tokens,
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const message = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
-    },
-  };
+      max_tokens: 8192,
+      temperature: 0.2,
+      system: systemPrompt,
+      tools: [SEARCH_PEXELS_TOOL],
+      tool_choice: { type: 'auto' },
+      messages,
+    });
+
+    totalInputTokens += message.usage?.input_tokens ?? 0;
+    totalOutputTokens += message.usage?.output_tokens ?? 0;
+
+    const toolUseBlocks = (message.content || []).filter((b) => b.type === 'tool_use');
+    const textBlocks = (message.content || []).filter((b) => b.type === 'text');
+
+    if (message.stop_reason === 'end_turn' && toolUseBlocks.length === 0) {
+      const response = textBlocks.map((b) => b.text).join('\n') || '';
+      const parsed = parseComponentsFromResponse(response);
+      return {
+        components: parsed.components,
+        seo: parsed.seo,
+        usage: {
+          input_tokens: totalInputTokens,
+          output_tokens: totalOutputTokens,
+          model: 'claude-sonnet-4-20250514',
+          tool_calls: toolCallCount,
+          tools_used: toolCallsUsed,
+        },
+      };
+    }
+
+    if (toolUseBlocks.length === 0) break;
+
+    const toolResults = [];
+    for (const block of toolUseBlocks) {
+      if (block.name !== 'search_pexels') continue;
+      toolCallCount += 1;
+      if (toolCallCount > PEXELS_MAX_PER_GENERATION) {
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: block.id,
+          content: 'Pexels-grænse nået for denne generation. Brug et billede fra mediebiblioteket.',
+        });
+        continue;
+      }
+      toolCallsUsed.push('search_pexels');
+      try {
+        const result = await pexels.handleSearchPexelsTool(block.input || {}, uploadedBy);
+        const content = result.error
+          ? JSON.stringify({ error: result.error })
+          : JSON.stringify({
+              url: result.url,
+              alt_text: result.alt_text,
+              width: result.width,
+              height: result.height,
+              media_id: result.media_id,
+            });
+        toolResults.push({ type: 'tool_result', tool_use_id: block.id, content });
+      } catch (err) {
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: block.id,
+          content: JSON.stringify({ error: err.message || 'Pexels-fejl' }),
+        });
+      }
+    }
+
+    messages.push({ role: 'assistant', content: message.content });
+    messages.push({ role: 'user', content: toolResults });
+  }
+
+  throw new Error('AI response ended without valid JSON output');
 }
 
 /**
@@ -306,14 +465,25 @@ function buildAdvancedSystemPrompt(context) {
   const mediaSection = availableMedia.length > 0
     ? `## Mediebibliotek — BRUG DISSE BILLEDER
 
-Du SKAL vælge billeder fra denne liste. Vælg det billede hvis alt-tekst bedst matcher konteksten. Brug KUN disse URL'er — ingen placeholders.
+Vælg billeder fra denne liste når alt-tekst matcher konteksten. Eller kald \`search_pexels\` for nye billeder.
 
-${availableMedia.map(m => `- **${m.url}** — Alt: "${m.alt}"`).join('\n')}
+${availableMedia.map((m) => {
+      const dims = m.width && m.height ? ` (${m.width}x${m.height})` : '';
+      return `- **${m.url}** — Alt: "${m.alt}"${dims}`;
+    }).join('\n')}
 
-Hvis intet billede passer perfekt, vælg det nærmeste match. Brug ALDRIG https://placehold.co eller andre eksterne URLs.`
+Hvis intet billede passer, brug \`search_pexels\` (se nedenfor). Brug ALDRIG placehold.co.`
     : `## Mediebibliotek
 
-Ingen billeder er uploadet endnu. Brug tom streng "" eller udelad billedfelter for komponenter der har valgfrie billeder.`;
+Ingen billeder er uploadet endnu. Brug \`search_pexels\` til at hente billeder til hvert billedfelt.`;
+
+  const pexelsSection = `
+## Billedsøgning med Pexels
+
+Du har adgang til \`search_pexels\`. Kald det når du har brug for et billede og intet i mediebiblioteket passer.
+- Søg specifikt: "webdesigner samarbejder med kunde" er bedre end "kontor"
+- orientation: landscape til hero/splits, portrait til team, square til gallerier
+- Maks 6 kald per side. Brug URL'en præcist som den returneres.`;
 
   return `Du er en ekspert i at transformere menneskeskrevet indhold til et specifikt komponentbibliotek. Din OPGAVE er IKKE at skrive indhold — det er allerede skrevet og leveret. Din opgave er udelukkende at:
 
@@ -361,6 +531,7 @@ ${componentSchemas}
 ## CSS: Brug ${cssVariableSyntax.critical}
 
 ${mediaSection}
+${pexelsSection}
 
 ## SEO
 

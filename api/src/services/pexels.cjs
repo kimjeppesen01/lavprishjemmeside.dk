@@ -219,6 +219,46 @@ async function scoreAndSelectPhoto(photos, orientation, uploadedBy = null) {
   return best;
 }
 
+/** Return photos sorted by score (best first). For CLI batch ingestion. */
+async function scoreAndRankPhotos(photos, orientation, uploadedBy = null) {
+  if (!photos || photos.length === 0) return [];
+  const existingIds = new Map();
+  try {
+    const ids = photos.map((p) => p.id).filter(Boolean);
+    if (ids.length) {
+      const placeholders = ids.map(() => '?').join(',');
+      const [rows] = await pool.execute(
+        `SELECT pexels_photo_id FROM media WHERE pexels_photo_id IN (${placeholders})`,
+        ids
+      );
+      for (const r of rows) {
+        if (r.pexels_photo_id) existingIds.set(r.pexels_photo_id, true);
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  const scored = photos.map((photo) => {
+    const w = photo.width || 0;
+    const h = photo.height || 0;
+    const resolution = w * h;
+    let score = (resolution > 0 ? Math.min(3, Math.log10(resolution) / 6) : 0) * 3;
+    if (photo.alt && String(photo.alt).trim()) score += 2;
+    const isLandscape = w >= h * 1.2;
+    const isPortrait = h >= w * 1.2;
+    const isSquare = Math.abs(w - h) / Math.max(w, h, 1) < 0.2;
+    if (orientation === 'landscape' && isLandscape) score += 2;
+    else if (orientation === 'portrait' && isPortrait) score += 2;
+    else if (orientation === 'square' && isSquare) score += 2;
+    if (!existingIds.has(photo.id)) score += 1;
+    return { photo, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.map((s) => s.photo);
+}
+
 // --- downloadAndRegister ---
 
 async function downloadAndRegister(opts) {
@@ -360,6 +400,7 @@ module.exports = {
   downloadAndRegister,
   slugify,
   scoreAndSelectPhoto,
+  scoreAndRankPhotos,
   handleSearchPexelsTool,
   getRateBudget,
 };
