@@ -34,17 +34,20 @@ const labelClass =
   aria-label="Nøgletal"
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
-    <div class="grid grid-cols-2 gap-8 md:grid-cols-3 lg:grid-cols-4">
-      {stats.map((stat) => (
-        <div class="text-center">
+    <div
+      class="grid grid-cols-2 gap-6 sm:gap-8 sm:grid-cols-[repeat(auto-fit,minmax(140px,1fr))]"
+      role="list"
+    >
+      {stats.map((stat, i) => (
+        <div class="text-center" role="listitem">
           {stat.icon && (
             <div class="mb-2 text-2xl" aria-hidden="true">
               {stat.icon}
             </div>
           )}
           <div
-            class={`text-[var(--font-size-4xl)] font-bold md:text-[var(--font-size-5xl)] ${valueClass}`}
-            style="font-family: var(--font-heading)"
+            class={`stat-number stat-number--hover inline-block text-[var(--font-size-4xl)] font-bold tabular-nums md:text-[var(--font-size-5xl)] ${valueClass}`}
+            style={`font-family: var(--font-heading); animation-delay: ${i * 0.1}s`}
           >
             {stat.value}
           </div>

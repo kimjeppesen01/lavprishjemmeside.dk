@@ -11,16 +11,11 @@ const {
   headline = 'Funktioner',
   description,
   features = [],
-  columns = 3,
   instanceId = 'default',
 } = Astro.props;
 
-const colClass =
-  columns === 2
-    ? 'md:grid-cols-2'
-    : columns === 4
-      ? 'md:grid-cols-2 lg:grid-cols-4'
-      : 'md:grid-cols-2 lg:grid-cols-3';
+// Flexible grid: auto-fit avoids orphaned single items (e.g. 5 items in 4-col = no empty slot)
+// Min 260px per card, fills available space. Works for 3, 4, 5, 6+ items.
 ---
 
 <section
@@ -45,7 +40,7 @@ const colClass =
         </p>
       )}
     </div>
-    <div class={`mt-12 grid grid-cols-1 gap-6 ${colClass}`}>
+    <div class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
       {features.map((feature) => (
         <article
           class="rounded-[var(--radius-card)] bg-[var(--color-bg-page)] p-[var(--card-padding-lg)] shadow-[var(--shadow-card)]"

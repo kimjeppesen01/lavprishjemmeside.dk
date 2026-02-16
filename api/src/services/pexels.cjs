@@ -308,8 +308,8 @@ async function downloadAndRegister(opts) {
   const ext = ct.includes('png') ? '.png' : ct.includes('webp') ? '.webp' : '.jpg';
   const w = photo.width || 0;
   const h = photo.height || 0;
-  const slug = slugify(keyword || 'pexels').slice(0, 50);
-  const filename = `${slug}--pexels-${photo.id}--${w}x${h}${ext}`;
+  const slug = slugify(keyword || 'image').slice(0, 50);
+  const filename = `${slug}--${photo.id}--${w}x${h}${ext}`;
 
   const filePath = path.join(UPLOAD_DIR, filename);
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
