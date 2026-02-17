@@ -1,8 +1,14 @@
 -- ============================================================
--- Overlap Module — AlternatingFeatureList + OverlapImageSection
--- Uses JSON_OBJECT() to avoid constraint #4025 on schema_fields.
+-- seed_components_incremental.sql — HERE AND NOW
 --
--- Run after schema_phase6.sql. Safe to run multiple times (upsert).
+-- Run this when seed_components_v2.sql has ALREADY been run,
+-- and you need to apply the latest component changes only.
+--
+-- Current scope: overlap-image-section, alternating-feature-list
+-- (zigzag removed, overlap module updates)
+--
+-- Uses JSON_OBJECT() to satisfy schema_fields CHECK constraint.
+-- Safe to run multiple times (upsert).
 -- ============================================================
 
 INSERT INTO components (

@@ -43,7 +43,7 @@ const items = features.slice(0, 4);
     const theme = index % 2 === 0 ? firstTheme : firstTheme === 'teal' ? 'white' : 'teal';
     const nextTheme = isLast ? null : index % 2 === 0 ? (firstTheme === 'teal' ? 'white' : 'teal') : firstTheme;
     const bottomDivider =
-      isLast ? 'none' : theme !== nextTheme ? 'zigzag' : 'straight';
+      isLast ? 'none' : theme !== nextTheme ? 'straight' : 'none';
 
     return (
       <OverlapImageSection

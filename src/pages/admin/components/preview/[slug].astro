@@ -175,6 +175,7 @@ function normalizeProps(slug: string, rawProps: any): any {
       else props.theme = props.theme || 'white';
       delete props.backgroundColor;
       if (!props.bottomDivider) props.bottomDivider = 'none';
+      if (props.bottomDivider === 'zigzag') props.bottomDivider = 'none';
       break;
     case 'overlap-cards-section':
       if (!Array.isArray(props.cards)) props.cards = [];

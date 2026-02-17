@@ -6,7 +6,7 @@
 
 ## Description
 
-A composite component that renders 2–4 `OverlapImageSection` blocks as one coherent module. Themes alternate (teal/white/teal), image placement alternates (left/right), and images overlap strongly into the next section. No spacers between items—seamless blending. Zigzag dividers appear when transitioning between themes.
+A composite component that renders 2–4 `OverlapImageSection` blocks as one coherent module. Themes alternate (teal/white/teal), image placement alternates (left/right), and images overlap strongly into the next section. No spacers between items—seamless blending. Thin dividers appear when transitioning between themes; otherwise sections blend seamlessly.
 
 **Common use cases:**
 - Multiple product features in a flowing visual block
@@ -76,13 +76,12 @@ interface Props {
 │ [Text]              [Image ▄▄▄]     │
 │                      ▄▄▄▄▄▄▄▄▄▄▄▄▄  │ ← overlap 80px
 └────────────────────────────────────┘
-  ▄▄▄▄▄▄▄▄▄▄▄▄  zigzag
+  ───────────────────────────────────  (straight or none)
 ┌─────────────────────────────────────┐
 │ Section 2: white, image left        │
 │ ▄▄▄▄▄▄▄▄▄▄▄▄  [Image]    [Text]     │
 │ ▄▄▄                                 │ ← overlap 80px
 └────────────────────────────────────┘
-  zigzag
 ┌─────────────────────────────────────┐
 │ Section 3: teal, image right (last) │
 │ [Text]              [Image]         │ ← no overlap

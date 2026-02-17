@@ -504,7 +504,7 @@ Du SKAL omskrive og tilpasse indholdet — ikke blot kopiere det 1:1. Hver kompo
 - **faqs** (faq-accordion): Udled spørgsmål og svar fra indholdet — formulér som konkrete Q&A.
 - **tabs** (tabs-section): Hvis indholdet har flere underemner, brug tabs — ét tab per emne med label + content.
 - **bento-grid**: For løsninger/ydelser — varier size (small/medium/large) for visuel interesse.
-- **overlap-image-section**: Ideel til "sådan fungerer det" eller produktfeatures. Brug \`introText\` for centreret intro (iMac-style), eller lad headline stå i kolonnen. Props: headline, introText?, content?, bulletPoints, imageUrl, theme (teal/white), bottomDivider (none/zigzag/straight), cta med evt. icon (chevron-down/arrow-right).
+- **overlap-image-section**: Ideel til "sådan fungerer det" eller produktfeatures. Brug \`introText\` for centreret intro (iMac-style), eller lad headline stå i kolonnen. Props: headline, introText?, content?, bulletPoints, imageUrl, theme (teal/white), bottomDivider (none/straight), cta med evt. icon (chevron-down/arrow-right).
 - **alternating-feature-list**: Foretræk denne når indholdet har 2–4 overlapping tekst/billede-blokke der skal flyde sammen. Brug i stedet for flere separate overlap-image-section. Props: features (array med headline, introText?, content?, bulletPoints, imageUrl, imageAlt?, cta?), firstTheme (teal/white), overlapAmount.
 - **overlap-cards-section**: Perfekt til 2–3 relaterede features eller trin — kort, skarpe tekster per kort.
 - **content-image-split**: Klassisk tekst + billede — alternér imagePosition (left/right) mellem sektioner for rytme.
@@ -579,7 +579,7 @@ Returnér KUN dette JSON-objekt (ingen forklaring):
 5. **Billeder** — mediebibliotek eller search_pexels, aldrig placeholders
 6. **Logisk rækkefølge** — hero først, CTA til sidst
 7. **Dansk** — behold sproget
-8. **overlap-image-section**: \`theme: "teal"\` eller \`theme: "white"\` — content-image-split bruger \`backgroundColor: "default"\``;
+8. **overlap-image-section**: \`theme: "teal"\` eller \`theme: "white"\`, \`bottomDivider: "none"\` eller \`"straight"\` — content-image-split bruger \`backgroundColor: "default"\``;
 }
 
 module.exports = { generatePageContent, generatePageContentAdvanced };

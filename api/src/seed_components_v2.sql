@@ -1,6 +1,8 @@
 -- ============================================================
 -- seed_components_v2.sql
--- Corrected component seed for schema_phase6 table structure.
+-- Full component seed for schema_phase6 table structure.
+--
+-- For incremental updates (DB already seeded): run seed_components_incremental.sql
 --
 -- Fixes vs seed_components.sql:
 --   - Uses schema_fields      (was: props_schema)
@@ -164,10 +166,10 @@ VALUES
 ('overlap-image-section',
  'Overlap Billede Sektion',
  'content',
- 'Visuel sektion med overlap og zigzag-divider. Understøtter introText (centreret) eller kolonne-layout.',
+ 'Visuel sektion med overlap. Understøtter introText (centreret) eller kolonne-layout.',
  1,
- '{"headline":{"type":"string","required":true},"introText":{"type":"string","required":false},"content":{"type":"string","required":false},"bulletPoints":{"type":"array","required":false,"items":{"type":"string"}},"imageUrl":{"type":"string","format":"image","required":true},"imageAlt":{"type":"string","required":false},"imagePlacement":{"type":"string","enum":["left","right","center"],"default":"right"},"overlapAmount":{"type":"number","default":80},"theme":{"type":"string","enum":["teal","white"],"default":"white"},"bottomDivider":{"type":"string","enum":["none","zigzag","straight"],"default":"none"},"cta":{"type":"object","required":false,"properties":{"text":"string","href":"string","icon":{"type":"string","enum":["chevron-down","arrow-right"]}}}}',
- '{"headline":"Produktionshistorik","introText":"Se hvordan systemet giver dig overblik.","content":"<p>Med vores platform har du altid fingeren på pulsen.</p>","imageUrl":"","imagePlacement":"right","overlapAmount":80,"theme":"teal","bottomDivider":"zigzag","bulletPoints":["Sikker adgang","Sporbarhed online"],"cta":{"text":"Se specifikationer","href":"/specs","icon":"arrow-right"}}',
+ '{"headline":{"type":"string","required":true},"introText":{"type":"string","required":false},"content":{"type":"string","required":false},"bulletPoints":{"type":"array","required":false,"items":{"type":"string"}},"imageUrl":{"type":"string","format":"image","required":true},"imageAlt":{"type":"string","required":false},"imagePlacement":{"type":"string","enum":["left","right","center"],"default":"right"},"overlapAmount":{"type":"number","default":80},"theme":{"type":"string","enum":["teal","white"],"default":"white"},"bottomDivider":{"type":"string","enum":["none","straight"],"default":"none"},"cta":{"type":"object","required":false,"properties":{"text":"string","href":"string","icon":{"type":"string","enum":["chevron-down","arrow-right"]}}}}',
+ '{"headline":"Produktionshistorik","introText":"Se hvordan systemet giver dig overblik.","content":"<p>Med vores platform har du altid fingeren på pulsen.</p>","imageUrl":"","imagePlacement":"right","overlapAmount":80,"theme":"teal","bottomDivider":"none","bulletPoints":["Sikker adgang","Sporbarhed online"],"cta":{"text":"Se specifikationer","href":"/specs","icon":"arrow-right"}}',
  'overlap-image-section.md',
  1, 51),
 

@@ -152,6 +152,7 @@ function normalizeProps(slug: string, rawProps: any): any {
       if (props.backgroundColor === 'primary') props.theme = 'teal';
       if (props.backgroundColor === 'default' || props.backgroundColor === 'alt') props.theme = 'white';
       if (!props.theme) props.theme = 'white';
+      if (props.bottomDivider === 'zigzag') props.bottomDivider = 'none';
       delete props.backgroundColor;
       break;
 

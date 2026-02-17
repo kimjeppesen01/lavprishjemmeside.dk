@@ -20,7 +20,7 @@ interface Props {
   overlapAmount?: number;
   /** 'teal' = primary accent, 'white' = light section — uses design tokens */
   theme?: 'teal' | 'white';
-  bottomDivider?: 'none' | 'zigzag' | 'straight';
+  bottomDivider?: 'none' | 'straight';
   cta?: { text: string; href: string; icon?: 'chevron-down' | 'arrow-right' };
   instanceId?: string | number;
   /** When true, no overlap-spacer div (parent handles flow) */
@@ -77,7 +77,6 @@ const hasIntro = Boolean(headline && introText);
     'relative z-10 overflow-visible',
     styles.sectionBg,
     'py-16 sm:py-24 px-[var(--container-padding-x)]',
-    bottomDivider === 'zigzag' && 'pb-24',
   ]}
   style={topOverlap ? `padding-top: ${topOverlap}px` : undefined}
   aria-labelledby={headingId}
@@ -209,14 +208,6 @@ const hasIntro = Boolean(headline && introText);
     </div>
   </div>
 
-  {/* Zigzag divider */}
-  {bottomDivider === 'zigzag' && (
-    <div
-      class="zigzag-divider absolute bottom-0 left-0 w-full h-4 z-30"
-      aria-hidden="true"
-    />
-  )}
-
   {/* Straight divider */}
   {bottomDivider === 'straight' && (
     <div
@@ -234,12 +225,3 @@ const hasIntro = Boolean(headline && introText);
   />
 )}
 
-<style>
-  .zigzag-divider {
-    background-color: inherit;
-    --mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 24px 100%;
-    -webkit-mask: var(--mask);
-    mask: var(--mask);
-    transform: translateY(100%);
-  }
-</style>

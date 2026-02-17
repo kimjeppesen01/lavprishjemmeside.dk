@@ -6,7 +6,7 @@
 
 ## Description
 
-A highly visual section designed to blend into adjacent blocks using negative margin overlaps and stylized dividers. Supports both centered intro (headline + introText at top, like iMac sections) and column-based layout. Ideal for showcasing device mockups (iMacs, iPhones) that break the container boundary to create 3D depth.
+A highly visual section designed to blend into adjacent blocks using negative margin overlaps. Supports both centered intro (headline + introText at top, like iMac sections) and column-based layout. Ideal for showcasing device mockups (iMacs, iPhones) that break the container boundary to create 3D depth.
 
 **Common use cases:**
 - Product features with device mockup (desktop, smartphones)
@@ -35,7 +35,7 @@ interface Props {
   /** 'teal' matches primary accent, 'white' matches light section — uses design tokens */
   theme?: 'teal' | 'white';
   /** The styled edge at the bottom of the section */
-  bottomDivider?: 'none' | 'zigzag' | 'straight';
+  bottomDivider?: 'none' | 'straight';
   cta?: { text: string; href: string; icon?: 'chevron-down' | 'arrow-right' };
   instanceId?: string | number;
 }
@@ -53,7 +53,7 @@ interface Props {
   "imagePlacement": "right",
   "overlapAmount": 80,
   "theme": "teal",
-  "bottomDivider": "zigzag",
+  "bottomDivider": "none",
   "bulletPoints": ["Sikker adgang", "Sporbarhed online", "Specifikke rapporter"],
   "cta": { "text": "Se specifikationer", "href": "/specs", "icon": "arrow-right" }
 }
@@ -117,7 +117,7 @@ Use **overlap-image-section** when the page needs a section with a prominent vis
 
 **theme:** Use `teal` for accent blocks (primary color), `white` for light sections that blend with page alternation.
 
-**bottomDivider:** `zigzag` for stylized serrated edge, `straight` for thin line, `none` for seamless blend.
+**bottomDivider:** `straight` for thin line between sections, `none` for seamless blend.
 
 ---
 
