@@ -1,0 +1,212 @@
+---
+/**
+ * Component preview — shows a single component in all its variations.
+ * URL: /admin/components/preview/hero-section
+ *
+ * For version-aware components (hero-section, stats-banner, cta-section),
+ * renders one instance per version. For others, renders once with default props.
+ */
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import Breadcrumbs from '../../../../components/Breadcrumbs.astro';
+import HeroSection from '../../../../components/HeroSection.astro';
+import FeaturesGrid from '../../../../components/FeaturesGrid.astro';
+import IconCards from '../../../../components/IconCards.astro';
+import StatsBanner from '../../../../components/StatsBanner.astro';
+import TestimonialsCarousel from '../../../../components/TestimonialsCarousel.astro';
+import CtaSection from '../../../../components/CtaSection.astro';
+import PricingTable from '../../../../components/PricingTable.astro';
+import FaqAccordion from '../../../../components/FaqAccordion.astro';
+import ComparisonTable from '../../../../components/ComparisonTable.astro';
+import TeamGrid from '../../../../components/TeamGrid.astro';
+import VideoEmbed from '../../../../components/VideoEmbed.astro';
+import ContactForm from '../../../../components/ContactForm.astro';
+import NewsletterSignup from '../../../../components/NewsletterSignup.astro';
+import ContentImageSplit from '../../../../components/ContentImageSplit.astro';
+import Timeline from '../../../../components/Timeline.astro';
+import LogoCloud from '../../../../components/LogoCloud.astro';
+import GalleryGrid from '../../../../components/GalleryGrid.astro';
+import ProductCarousel from '../../../../components/ProductCarousel.astro';
+import StickyColumnSection from '../../../../components/StickyColumnSection.astro';
+import {
+  COMPONENT_SLUGS,
+  VERSION_OPTIONS,
+  PREVIEW_PROPS,
+  type ComponentSlug,
+} from '../../../../data/component-preview-config';
+
+const componentMap: Record<string, any> = {
+  'breadcrumbs': Breadcrumbs,
+  'hero-section': HeroSection,
+  'features-grid': FeaturesGrid,
+  'icon-cards': IconCards,
+  'stats-banner': StatsBanner,
+  'testimonials-carousel': TestimonialsCarousel,
+  'cta-section': CtaSection,
+  'pricing-table': PricingTable,
+  'faq-accordion': FaqAccordion,
+  'comparison-table': ComparisonTable,
+  'team-grid': TeamGrid,
+  'video-embed': VideoEmbed,
+  'contact-form': ContactForm,
+  'newsletter-signup': NewsletterSignup,
+  'content-image-split': ContentImageSplit,
+  'timeline': Timeline,
+  'logo-cloud': LogoCloud,
+  'gallery-grid': GalleryGrid,
+  'product-carousel': ProductCarousel,
+  'sticky-column-section': StickyColumnSection,
+};
+
+function normalizeProps(slug: string, rawProps: any): any {
+  const props = JSON.parse(JSON.stringify(rawProps || {}));
+  switch (slug) {
+    case 'faq-accordion':
+      if (!Array.isArray(props.faqs)) props.faqs = [];
+      if (!props.headline) props.headline = 'Ofte stillede spørgsmål';
+      break;
+    case 'pricing-table':
+      if (!Array.isArray(props.tiers)) props.tiers = [];
+      if (!props.headline) props.headline = 'Priser';
+      break;
+    case 'comparison-table':
+      if (!Array.isArray(props.products)) props.products = [];
+      if (!Array.isArray(props.features)) props.features = [];
+      if (!Array.isArray(props.data)) props.data = [];
+      if (!props.headline) props.headline = 'Sammenlign';
+      break;
+    case 'testimonials-carousel':
+      if (!Array.isArray(props.testimonials)) props.testimonials = [];
+      if (!props.headline) props.headline = 'Anmeldelser';
+      break;
+    case 'stats-banner':
+      if (!Array.isArray(props.stats)) props.stats = [];
+      if (!props.version) props.version = 'cards';
+      break;
+    case 'features-grid':
+      if (!Array.isArray(props.features)) props.features = [];
+      if (!props.headline) props.headline = 'Funktioner';
+      break;
+    case 'icon-cards':
+      if (!Array.isArray(props.cards)) props.cards = [];
+      if (!props.headline) props.headline = 'Kort';
+      break;
+    case 'team-grid':
+      if (!Array.isArray(props.members)) props.members = [];
+      if (!props.headline) props.headline = 'Vores team';
+      break;
+    case 'timeline':
+      if (!Array.isArray(props.events)) props.events = [];
+      if (!props.headline) props.headline = 'Tidslinje';
+      break;
+    case 'logo-cloud':
+      if (!Array.isArray(props.logos)) props.logos = [];
+      break;
+    case 'gallery-grid':
+      if (!Array.isArray(props.images)) props.images = [];
+      break;
+    case 'breadcrumbs':
+      if (!Array.isArray(props.items)) props.items = [];
+      break;
+    case 'product-carousel':
+      if (!Array.isArray(props.slides)) props.slides = [];
+      if (!props.heading) props.heading = 'Udvalgte produkter';
+      break;
+    case 'sticky-column-section':
+      if (!Array.isArray(props.items)) props.items = [];
+      if (!props.heading) props.heading = 'Sektion';
+      break;
+    case 'hero-section':
+      if (!props.headline) props.headline = 'Velkommen';
+      if (!props.version) props.version = 'default';
+      break;
+    case 'cta-section':
+      if (!props.version) props.version = 'default';
+      break;
+    default:
+      break;
+  }
+  return props;
+}
+
+export function getStaticPaths() {
+  return COMPONENT_SLUGS.map((slug) => ({ params: { slug } }));
+}
+
+const { slug } = Astro.params;
+
+if (!slug || !COMPONENT_SLUGS.includes(slug as ComponentSlug)) {
+  return Astro.redirect('/admin/components/');
+}
+
+const Component = componentMap[slug];
+if (!Component) {
+  return Astro.redirect('/admin/components/');
+}
+
+const versionOptions = VERSION_OPTIONS[slug as ComponentSlug];
+const baseProps = PREVIEW_PROPS[slug as ComponentSlug] || {};
+const variations = versionOptions
+  ? versionOptions.map((v) => ({ version: v, label: v }))
+  : [{ version: null, label: 'Standard' }];
+
+const slugLabel = slug
+  .split('-')
+  .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+  .join(' ');
+---
+
+<AdminLayout title={`Forhåndsvis: ${slugLabel}`}>
+  <div class="min-h-screen bg-gray-100">
+    <div class="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4">
+      <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <a
+            href="/admin/components/"
+            class="text-gray-600 hover:text-gray-900 text-sm"
+          >
+            ← Tilbage til komponenter
+          </a>
+          <h1 class="text-xl font-bold text-gray-900 mt-1">
+            {slugLabel}
+          </h1>
+          <p class="text-gray-500 text-sm mt-0.5">
+            {variations.length > 1
+              ? `${variations.length} versioner`
+              : 'Standard visning'}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-6 py-8 space-y-16">
+      {variations.map(({ version, label }, idx) => {
+        const props = {
+          ...baseProps,
+          ...(version ? { version } : {}),
+          instanceId: idx,
+        };
+        const normalized = normalizeProps(slug, props);
+        const sectionBg = idx % 2 === 0 ? 'section-bg-page' : 'section-bg-alt';
+        return (
+          <div class="space-y-3">
+            <div class="flex items-center gap-2">
+              <span
+                class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+              >
+                {label}
+              </span>
+              {variations.length > 1 && (
+                <span class="text-gray-500 text-sm">
+                  version={version ?? '—'}
+                </span>
+              )}
+            </div>
+            <div class={sectionBg}>
+              <Component {...normalized} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</AdminLayout>
