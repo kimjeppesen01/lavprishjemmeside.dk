@@ -752,9 +752,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         return buildBooleanField(key, descriptor, value);
       }
 
-      // String (check if it's an image URL)
+      // String (check schema format hint first, then fall back to value sniffing)
       if (type === 'string') {
-        if (isImageUrl(value)) {
+        if (descriptor.format === 'image' || isImageUrl(value)) {
           return buildImageField(key, descriptor, value);
         }
         return buildStringField(key, descriptor, value);
