@@ -1,4 +1,6 @@
 ---
+import { buildSrcset } from '../utils/image';
+
 interface Props {
   headline: string;
   description: string;
@@ -25,6 +27,7 @@ const isMinimal = version === 'minimal';
 const isSplit = version === 'split';
 const overlayOpacity = isMinimal ? 'bg-[var(--color-bg-page)]/70' : 'bg-[var(--color-bg-page)]/90';
 const pyClass = isMinimal ? 'py-12 md:py-16' : 'py-[var(--section-padding-y-lg)]';
+const heroSrcset = backgroundImage ? buildSrcset(backgroundImage) : undefined;
 ---
 
 <header
@@ -35,10 +38,13 @@ const pyClass = isMinimal ? 'py-12 md:py-16' : 'py-[var(--section-padding-y-lg)]
     <div class="absolute inset-0 z-0">
       <img
         src={backgroundImage}
+        srcset={heroSrcset}
+        sizes="100vw"
         alt=""
         class="h-full w-full object-cover"
         aria-hidden="true"
         loading="eager"
+        fetchpriority="high"
       />
       <div class={`absolute inset-0 ${overlayOpacity}`} aria-hidden="true"></div>
     </div>
@@ -104,9 +110,12 @@ const pyClass = isMinimal ? 'py-12 md:py-16' : 'py-[var(--section-padding-y-lg)]
         <div class="flex-1 max-w-md md:max-w-lg shrink-0">
           <img
             src={backgroundImage}
+            srcset={heroSrcset}
+            sizes="(max-width: 768px) 100vw, min(512px, 50vw)"
             alt=""
             class="w-full h-auto rounded-[var(--radius-card)] shadow-[var(--shadow-card)] object-cover"
             loading="eager"
+            fetchpriority="high"
           />
         </div>
       )}

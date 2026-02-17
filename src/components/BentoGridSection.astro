@@ -1,0 +1,72 @@
+---
+/**
+ * Bento grid — Asymmetric layout for feature highlights (different card sizes).
+ */
+interface Props {
+  headline: string;
+  items: Array<{
+    title: string;
+    description?: string;
+    size?: 'small' | 'medium' | 'large';
+  }>;
+  instanceId?: string | number;
+}
+
+const {
+  headline,
+  items = [],
+  instanceId = 'default',
+} = Astro.props;
+
+const headingId = `bento-heading-${instanceId}`;
+
+function sizeClass(size: string | undefined): string {
+  switch (size) {
+    case 'large':
+      return 'col-span-1 row-span-2 md:col-span-2 md:row-span-2';
+    case 'medium':
+      return 'col-span-1 row-span-2 md:col-span-2 md:row-span-1';
+    default:
+      return 'col-span-1 row-span-1';
+  }
+}
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby={headingId}
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <h2
+      id={headingId}
+      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+      style="font-family: var(--font-heading)"
+    >
+      {headline}
+    </h2>
+    {items.length > 0 && (
+      <div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:grid-rows-2 lg:auto-rows-fr">
+        {items.map((item) => (
+          <article
+            class={`flex flex-col rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-6 shadow-[var(--shadow-sm)] transition-shadow hover:shadow-[var(--shadow-md)] ${sizeClass(item.size)}`}
+          >
+            <h3
+              class="text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)]"
+              style="font-family: var(--font-heading)"
+            >
+              {item.title}
+            </h3>
+            {item.description && (
+              <p
+                class="mt-2 flex-1 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+                style="font-family: var(--font-body)"
+              >
+                {item.description}
+              </p>
+            )}
+          </article>
+        ))}
+      </div>
+    )}
+  </div>
+</section>

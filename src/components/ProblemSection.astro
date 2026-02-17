@@ -1,31 +1,35 @@
 ---
+/**
+ * Problem section — states user pain points and positions product as solution.
+ * Headline + 2–4 relatable problems with icons. Common on modern marketing sites.
+ */
 interface Props {
   headline: string;
   description?: string;
-  features: Array<{ icon: string; title: string; description: string }>;
-  columns?: 2 | 3 | 4;
+  problems: Array<{
+    icon: string;
+    title: string;
+    description: string;
+  }>;
   instanceId?: string | number;
 }
 
 const {
-  headline = 'Funktioner',
+  headline = 'Kender du disse udfordringer?',
   description,
-  features = [],
+  problems = [],
   instanceId = 'default',
 } = Astro.props;
-
-// Flexible grid: auto-fit avoids orphaned single items (e.g. 5 items in 4-col = no empty slot)
-// Min 260px per card, fills available space. Works for 3, 4, 5, 6+ items.
 ---
 
 <section
   class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
-  aria-labelledby="features-heading"
+  aria-labelledby={`problem-heading-${instanceId}`}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
     <div class="text-center">
       <h2
-        id={`features-heading-${instanceId}`}
+        id={`problem-heading-${instanceId}`}
         class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
         style="font-family: var(--font-heading)"
       >
@@ -40,30 +44,29 @@ const {
         </p>
       )}
     </div>
-    <div class="container-query">
-      <div class="mt-12 grid grid-cols-1 gap-6 cq-grid-sm">
-      {features.map((feature) => (
+    <div class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {problems.map((problem) => (
         <article
-          class="rounded-[var(--radius-card)] bg-[var(--color-bg-page)] p-[var(--card-padding-lg)] shadow-[var(--shadow-card)]"
+          class="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-[var(--card-padding-lg)] shadow-[var(--shadow-sm)]"
+          role="listitem"
         >
           <div class="text-2xl text-[var(--color-primary)]" aria-hidden="true">
-            {feature.icon}
+            {problem.icon}
           </div>
           <h3
-            class="mt-4 text-[var(--font-size-xl)] font-semibold text-[var(--color-text-primary)]"
+            class="mt-4 text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)]"
             style="font-family: var(--font-heading)"
           >
-            {feature.title}
+            {problem.title}
           </h3>
           <p
             class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
             style="font-family: var(--font-body)"
           >
-            {feature.description}
+            {problem.description}
           </p>
         </article>
       ))}
-      </div>
     </div>
   </div>
 </section>

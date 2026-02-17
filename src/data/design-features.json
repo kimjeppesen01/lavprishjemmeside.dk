@@ -6,5 +6,5 @@
   "pageLoaderText": "Indlæser...",
   "pageLoaderShowLogo": false,
   "pageLoaderDuration": 2.5,
-  "borderRadius": "full"
+  "borderRadius": "medium"
 }

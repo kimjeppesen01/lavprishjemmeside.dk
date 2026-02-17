@@ -20,9 +20,27 @@ import LogoCloud from '../components/LogoCloud.astro';
 import GalleryGrid from '../components/GalleryGrid.astro';
 import ProductCarousel from '../components/ProductCarousel.astro';
 import StickyColumnSection from '../components/StickyColumnSection.astro';
+import ProblemSection from '../components/ProblemSection.astro';
+import HowItWorksSection from '../components/HowItWorksSection.astro';
+import TrustBadgesSection from '../components/TrustBadgesSection.astro';
+import CaseStudiesSection from '../components/CaseStudiesSection.astro';
+import IntegrationsSection from '../components/IntegrationsSection.astro';
+import FoundersNoteSection from '../components/FoundersNoteSection.astro';
+import TabsSection from '../components/TabsSection.astro';
+import ModalSection from '../components/ModalSection.astro';
+import BentoGridSection from '../components/BentoGridSection.astro';
 
 const componentMap: Record<string, any> = {
   'hero-section': HeroSection,
+  'problem-section': ProblemSection,
+  'how-it-works-section': HowItWorksSection,
+  'trust-badges-section': TrustBadgesSection,
+  'case-studies-section': CaseStudiesSection,
+  'integrations-section': IntegrationsSection,
+  'founders-note-section': FoundersNoteSection,
+  'tabs-section': TabsSection,
+  'modal-section': ModalSection,
+  'bento-grid-section': BentoGridSection,
   'features-grid': FeaturesGrid,
   'icon-cards': IconCards,
   'stats-banner': StatsBanner,
@@ -50,6 +68,15 @@ function normalizeProps(slug: string, rawProps: any): any {
     case 'pricing-table': if (!Array.isArray(props.tiers)) props.tiers = []; break;
     case 'testimonials-carousel': if (!Array.isArray(props.testimonials)) props.testimonials = []; break;
     case 'stats-banner': if (!Array.isArray(props.stats)) props.stats = []; break;
+    case 'problem-section': if (!Array.isArray(props.problems)) props.problems = []; break;
+    case 'how-it-works-section': if (!Array.isArray(props.steps)) props.steps = []; break;
+    case 'trust-badges-section': if (!Array.isArray(props.badges)) props.badges = []; break;
+    case 'case-studies-section': if (!Array.isArray(props.cases)) props.cases = []; break;
+    case 'integrations-section': if (!Array.isArray(props.integrations)) props.integrations = []; break;
+    case 'founders-note-section': break;
+    case 'tabs-section': if (!Array.isArray(props.tabs)) props.tabs = []; break;
+    case 'modal-section': break;
+    case 'bento-grid-section': if (!Array.isArray(props.items)) props.items = []; break;
     case 'features-grid': if (!Array.isArray(props.features)) props.features = []; break;
     case 'icon-cards': if (!Array.isArray(props.cards)) props.cards = []; break;
     default: break;

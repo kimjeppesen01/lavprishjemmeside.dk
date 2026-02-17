@@ -1,0 +1,75 @@
+---
+/**
+ * How it works — step-by-step process explanation.
+ * 3–5 steps with number, title, description. Differs from timeline (history vs process).
+ */
+interface Props {
+  headline: string;
+  description?: string;
+  steps: Array<{
+    title: string;
+    description: string;
+  }>;
+  instanceId?: string | number;
+}
+
+const {
+  headline = 'Sådan fungerer det',
+  description,
+  steps = [],
+  instanceId = 'default',
+} = Astro.props;
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby={`how-it-works-heading-${instanceId}`}
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div class="text-center">
+      <h2
+        id={`how-it-works-heading-${instanceId}`}
+        class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+        style="font-family: var(--font-heading)"
+      >
+        {headline}
+      </h2>
+      {description && (
+        <p
+          class="mx-auto mt-4 max-w-2xl text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+          style="font-family: var(--font-body)"
+        >
+          {description}
+        </p>
+      )}
+    </div>
+    <div class="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4" role="list">
+      {steps.map((step, index) => (
+        <article
+          class="relative flex flex-col rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-[var(--card-padding-lg)] shadow-[var(--shadow-sm)]"
+          role="listitem"
+        >
+          <span
+            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-full)] bg-[var(--color-primary)] text-[var(--font-size-lg)] font-bold text-[var(--color-text-on-primary)]"
+            style="font-family: var(--font-heading)"
+            aria-hidden="true"
+          >
+            {index + 1}
+          </span>
+          <h3
+            class="mt-4 text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)]"
+            style="font-family: var(--font-heading)"
+          >
+            {step.title}
+          </h3>
+          <p
+            class="mt-2 flex-1 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+            style="font-family: var(--font-body)"
+          >
+            {step.description}
+          </p>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

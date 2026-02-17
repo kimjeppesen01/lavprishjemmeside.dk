@@ -6,6 +6,15 @@
 export const COMPONENT_SLUGS = [
   'hero-section',
   'breadcrumbs',
+  'problem-section',
+  'how-it-works-section',
+  'trust-badges-section',
+  'case-studies-section',
+  'integrations-section',
+  'founders-note-section',
+  'tabs-section',
+  'modal-section',
+  'bento-grid-section',
   'features-grid',
   'icon-cards',
   'stats-banner',
@@ -44,6 +53,93 @@ export const PREVIEW_PROPS: Record<ComponentSlug, Record<string, unknown>> = {
       { label: 'Hjemmesider', href: '' },
     ],
     separator: '>',
+  },
+  'problem-section': {
+    headline: 'Kender du disse udfordringer?',
+    description: 'Mange virksomheder står over for de samme udfordringer. Vi kan hjælpe.',
+    problems: [
+      { icon: '⏱️', title: 'For lange leveringstider', description: 'Ubegrænset ventetid og utydelige frister.' },
+      { icon: '💰', title: 'Uforudsigelige priser', description: 'Skjulte gebyrer du ikke regnede med.' },
+      { icon: '📞', title: 'Svært at få svar', description: 'Support der ikke svarer eller forstår.' },
+    ],
+  },
+  'how-it-works-section': {
+    headline: 'Sådan fungerer det',
+    description: 'Tre enkle trin til din nye hjemmeside.',
+    steps: [
+      { title: 'Book en snak', description: 'Kontakt os for en uforpligtende samtale om dine behov.' },
+      { title: 'Design og godkendelse', description: 'Vi sender et forslag til din godkendelse inden vi bygger.' },
+      { title: 'Levering og opdateringer', description: 'Din side går live, og vi hjælper med opdateringer og support.' },
+    ],
+  },
+  'trust-badges-section': {
+    badges: [
+      { type: 'ssl', label: 'Sikker betaling', icon: '🔒' },
+      { type: 'guarantee', label: '30 dages fuld refusion', icon: '✓' },
+      { type: 'payment', label: 'Visa, Mastercard, MobilePay', icon: '💳' },
+    ],
+    layout: 'horizontal',
+  },
+  'case-studies-section': {
+    headline: 'Vores referencer',
+    description: 'Se hvordan vi har hjulpet andre virksomheder.',
+    cases: [
+      {
+        image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800',
+        title: 'Ny hjemmeside for detailhandler',
+        client: 'Jensen ApS',
+        outcome: '40% stigning i online konvertering.',
+        link: '/referencer/jensen',
+      },
+      {
+        image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800',
+        title: 'E-handel løsning',
+        client: 'Hansen Import',
+        outcome: 'Udvidet markedsføring og stærkere brand.',
+        link: '',
+      },
+    ],
+    columns: 3,
+  },
+  'integrations-section': {
+    headline: 'Integrerer med dine værktøjer',
+    description: 'Vores løsning fungerer sammen med de mest populære platforme.',
+    integrations: [
+      { name: 'Mailchimp', logoUrl: 'https://placehold.co/96x32/f3f4f6/6b7280?text=Mailchimp', link: 'https://mailchimp.com' },
+      { name: 'Stripe', logoUrl: 'https://placehold.co/96x32/f3f4f6/6b7280?text=Stripe', description: 'Betalingshåndtering' },
+      { name: 'Zapier', logoUrl: 'https://placehold.co/96x32/f3f4f6/6b7280?text=Zapier' },
+    ],
+    columns: 4,
+  },
+  'founders-note-section': {
+    quote: 'Jeg startede denne virksomhed for at gøre professionelle hjemmesider tilgængelige for alle.',
+    author: 'Kim Jeppesen',
+    role: 'Grundlægger & CEO',
+    photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=320',
+    cta: { text: 'Kontakt mig', href: '/kontakt' },
+  },
+  'tabs-section': {
+    headline: 'Vælg din plan',
+    tabs: [
+      { label: 'Basis', content: '<p>5 sider, SSL certifikat og e-mail support. Perfekt til små virksomheder.</p>' },
+      { label: 'Pro', content: '<p>10 sider, SEO-optimering og prioriteret support. For virksomheder der vil vokse.</p>' },
+      { label: 'Enterprise', content: '<p>Ubegrænsede sider, dedikeret support og avanceret integration.</p>' },
+    ],
+    defaultTab: 0,
+  },
+  'modal-section': {
+    triggerText: 'Læs mere',
+    headline: 'Vigtig information',
+    content: '<p>Dette indhold vises i en modal overlay når du klikker på knappen.</p><p>Modalen bruger native HTML dialog for bedre tilgængelighed.</p>',
+  },
+  'bento-grid-section': {
+    headline: 'Vores løsninger',
+    items: [
+      { title: 'Hjemmesider', description: 'Moderne, responsive hjemmesider til alle platforme.', size: 'large' },
+      { title: 'SEO', description: 'Bliv fundet på Google.', size: 'small' },
+      { title: 'Hosting', description: 'Hurtig og sikker hosting.', size: 'medium' },
+      { title: 'Support', size: 'small' },
+    ],
   },
   'hero-section': {
     headline: 'Test Overskrift',

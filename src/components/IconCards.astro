@@ -28,7 +28,8 @@ const { headline = 'Kort', cards = [], instanceId = 'default' } = Astro.props;
     >
       {headline}
     </h2>
-    <div class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
+    <div class="container-query">
+      <div class="mt-12 grid grid-cols-1 gap-6 cq-grid-sm">
       {cards.map((card) => (
         <article
           class="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-[var(--card-padding-lg)] shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--color-primary)]/30"
@@ -59,6 +60,7 @@ const { headline = 'Kort', cards = [], instanceId = 'default' } = Astro.props;
           )}
         </article>
       ))}
+      </div>
     </div>
   </div>
 </section>

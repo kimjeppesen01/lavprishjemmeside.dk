@@ -1,0 +1,96 @@
+---
+/**
+ * Modal / dialog — Forms, CTAs, or media in overlay.
+ * Uses native <dialog> for accessibility.
+ */
+interface Props {
+  triggerText: string;
+  headline: string;
+  content: string;
+  instanceId?: string | number;
+}
+
+const {
+  triggerText = 'Åbn',
+  headline,
+  content,
+  instanceId = 'default',
+} = Astro.props;
+
+const dialogId = `modal-dialog-${instanceId}`;
+const triggerId = `modal-trigger-${instanceId}`;
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-label="Modal"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <button
+      type="button"
+      id={triggerId}
+      data-modal-open={dialogId}
+      class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+      style="font-family: var(--font-body)"
+    >
+      {triggerText}
+    </button>
+
+    <dialog
+      id={dialogId}
+      class="fixed inset-0 z-50 m-0 flex max-h-full max-w-full items-center justify-center border-0 bg-transparent p-4 backdrop:bg-[var(--color-neutral-900)]/90 [&::backdrop]:backdrop-blur-sm"
+      aria-labelledby={`${dialogId}-title`}
+    >
+      <div
+        class="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[var(--radius-lg)] bg-[var(--color-bg-page)] p-6 shadow-[var(--shadow-lg)]"
+        role="document"
+      >
+        <div class="flex items-start justify-between gap-4">
+          <h2
+            id={`${dialogId}-title`}
+            class="text-[var(--font-size-xl)] font-bold text-[var(--color-text-primary)]"
+            style="font-family: var(--font-heading)"
+          >
+            {headline}
+          </h2>
+          <button
+            type="button"
+            data-modal-close
+            class="shrink-0 rounded-[var(--radius-full)] p-2 text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-neutral-100)] hover:text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+            aria-label="Luk"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="mt-4 text-[var(--font-size-base)] leading-[var(--line-height-normal)] text-[var(--color-text-secondary)] [&>p]:mt-4 [&>p:first-child]:mt-0"
+          style="font-family: var(--font-body)"
+          set:html={content}
+        />
+      </div>
+    </dialog>
+  </div>
+</section>
+
+<script>
+  document.addEventListener('click', (e) => {
+    const openBtn = (e.target as Element)?.closest('[data-modal-open]');
+    if (openBtn) {
+      const id = openBtn.getAttribute('data-modal-open');
+      const dialog = id ? document.getElementById(id) : null;
+      if (dialog && typeof (dialog as HTMLDialogElement).showModal === 'function') {
+        (dialog as HTMLDialogElement).showModal();
+      }
+    }
+    const closeBtn = (e.target as Element)?.closest('[data-modal-close]');
+    if (closeBtn) {
+      const dialog = closeBtn.closest('dialog');
+      if (dialog && typeof (dialog as HTMLDialogElement).close === 'function') {
+        (dialog as HTMLDialogElement).close();
+      }
+    }
+    if ((e.target as Element)?.tagName === 'DIALOG' && (e.target as HTMLDialogElement).open) {
+      (e.target as HTMLDialogElement).close();
+    }
+  });
+</script>

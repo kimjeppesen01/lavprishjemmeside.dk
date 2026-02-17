@@ -27,7 +27,8 @@ const { headline = 'Priser', tiers = [], instanceId = 'default' } = Astro.props;
     >
       {headline}
     </h2>
-    <div class="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+    <div class="container-query">
+      <div class="mt-12 grid grid-cols-1 gap-8 cq-pricing-2 cq-pricing-3">
       {tiers.map((tier) => (
         <article
           class:list={[
@@ -79,6 +80,7 @@ const { headline = 'Priser', tiers = [], instanceId = 'default' } = Astro.props;
           </a>
         </article>
       ))}
+      </div>
     </div>
   </div>
 </section>

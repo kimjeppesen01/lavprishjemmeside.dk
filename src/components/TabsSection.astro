@@ -1,0 +1,98 @@
+---
+/**
+ * Tabs — Organize dense content (e.g. features, pricing).
+ */
+interface Props {
+  headline: string;
+  tabs: Array<{ label: string; content: string }>;
+  defaultTab?: number;
+  instanceId?: string | number;
+}
+
+const {
+  headline,
+  tabs = [],
+  defaultTab = 0,
+  instanceId = 'default',
+} = Astro.props;
+
+const headingId = `tabs-heading-${instanceId}`;
+const tablistId = `tabs-list-${instanceId}`;
+---
+
+<section
+  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby={headingId}
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <h2
+      id={headingId}
+      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+      style="font-family: var(--font-heading)"
+    >
+      {headline}
+    </h2>
+    {tabs.length > 0 && (
+      <div class="mt-8" data-tabs-instance={instanceId}>
+        <div
+          role="tablist"
+          id={tablistId}
+          aria-label="Faner"
+          class="flex flex-wrap gap-1 border-b border-[var(--color-border)]"
+        >
+          {tabs.map((tab, i) => (
+            <button
+              type="button"
+              role="tab"
+              id={`tab-${instanceId}-${i}`}
+              aria-selected={i === defaultTab}
+              aria-controls={`panel-${instanceId}-${i}`}
+              tabindex={i === defaultTab ? 0 : -1}
+              class="tabs-trigger rounded-t-[var(--radius-md)] px-4 py-3 text-[var(--font-size-base)] font-medium transition-colors data-[active]:border-b-2 data-[active]:border-[var(--color-primary)] data-[active]:text-[var(--color-primary)] data-[active]:-mb-px focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+              style="font-family: var(--font-body)"
+              data-index={i}
+              data-active={i === defaultTab ? '' : undefined}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div class="mt-6">
+          {tabs.map((tab, i) => (
+            <div
+              role="tabpanel"
+              id={`panel-${instanceId}-${i}`}
+              aria-labelledby={`tab-${instanceId}-${i}`}
+              hidden={i !== defaultTab}
+              class="tabs-panel text-[var(--font-size-base)] leading-[var(--line-height-normal)] text-[var(--color-text-secondary)]"
+              style="font-family: var(--font-body)"
+              set:html={tab.content}
+            />
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll('[data-tabs-instance]').forEach((root) => {
+    const triggers = root.querySelectorAll('.tabs-trigger');
+    const panels = root.querySelectorAll('.tabs-panel');
+    triggers.forEach((btn, i) => {
+      btn.addEventListener('click', () => {
+        triggers.forEach((t) => {
+          t.setAttribute('aria-selected', 'false');
+          t.setAttribute('tabindex', '-1');
+          t.removeAttribute('data-active');
+        });
+        panels.forEach((p, j) => {
+          (p as HTMLElement).hidden = j !== i;
+        });
+        btn.setAttribute('aria-selected', 'true');
+        btn.setAttribute('tabindex', '0');
+        btn.setAttribute('data-active', '');
+      });
+    });
+  });
+</script>

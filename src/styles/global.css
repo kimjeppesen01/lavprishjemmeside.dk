@@ -76,3 +76,51 @@ html.smooth-scroll {
 .stat-number--hover:hover {
   transform: scale(1.08);
 }
+@media (prefers-reduced-motion: reduce) {
+  .stat-number {
+    animation: none;
+    opacity: 1;
+  }
+  .stat-number--hover:hover {
+    transform: none;
+  }
+}
+
+/* --- Container queries (responsive by container width, not viewport) --- */
+.container-query {
+  container-type: inline-size;
+  container-name: cq;
+}
+@container cq (min-width: 320px) {
+  .cq-grid-sm { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+}
+@container cq (min-width: 640px) {
+  .cq-grid-md { grid-template-columns: repeat(2, 1fr); }
+}
+@container cq (min-width: 896px) {
+  .cq-grid-lg { grid-template-columns: repeat(3, 1fr); }
+}
+@container cq (min-width: 640px) {
+  .cq-pricing-2 { grid-template-columns: repeat(2, 1fr); }
+}
+@container cq (min-width: 896px) {
+  .cq-pricing-3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* --- Scroll-driven animations (where supported) --- */
+@supports (animation-timeline: view()) {
+  @keyframes scroll-fade-in {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .scroll-driven-fade {
+    animation: scroll-fade-in linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 80%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-driven-fade {
+    animation: none;
+  }
+}

@@ -114,7 +114,7 @@ const isInline = version === 'inline';
               const labelClass = highlight ? 'text-white/80' : 'text-[var(--color-text-secondary)]';
               return (
                 <div
-                  class={`rounded-[var(--radius-card)] p-5 sm:p-6 flex flex-col justify-center items-center text-center ${cardClass}`}
+                  class={`scroll-driven-fade rounded-[var(--radius-card)] p-5 sm:p-6 flex flex-col justify-center items-center text-center ${cardClass}`}
                   role="listitem"
                 >
                   {stat.icon && (
@@ -180,6 +180,15 @@ const isInline = version === 'inline';
   function initCountUp() {
     const els = document.querySelectorAll('.stat-number[data-count-up]');
     if (els.length === 0) return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      els.forEach(function(el) {
+        const raw = el.getAttribute('data-count-up');
+        if (raw) el.textContent = raw;
+        el.removeAttribute('data-count-up');
+      });
+      return;
+    }
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {

@@ -1,0 +1,58 @@
+---
+/**
+ * Trust badges — SSL, payment icons, guarantees.
+ * Small strip for security and payment trust, often near CTA or in footer.
+ */
+interface Props {
+  badges: Array<{
+    type: 'ssl' | 'payment' | 'guarantee' | 'custom';
+    label: string;
+    icon?: string;
+  }>;
+  layout?: 'horizontal' | 'compact';
+  instanceId?: string | number;
+}
+
+const {
+  badges = [],
+  layout = 'horizontal',
+  instanceId = 'default',
+} = Astro.props;
+
+// Default badges when none provided
+const defaultBadges = [
+  { type: 'ssl' as const, label: 'Sikker betaling', icon: '🔒' },
+  { type: 'guarantee' as const, label: '30 dages fuld refusion', icon: '✓' },
+  { type: 'payment' as const, label: 'Visa, Mastercard, MobilePay', icon: '💳' },
+];
+const displayBadges = badges.length > 0 ? badges : defaultBadges;
+const isCompact = layout === 'compact';
+---
+
+<section
+  class={`py-[var(--section-padding-y)] px-[var(--container-padding-x)] ${isCompact ? 'py-6' : ''}`}
+  aria-label="Tillidsmærker"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div
+      class:list={[
+        'flex flex-wrap items-center justify-center gap-x-8 gap-y-4',
+        isCompact && 'gap-x-6 gap-y-3',
+      ]}
+      role="list"
+    >
+      {displayBadges.map((badge) => (
+        <div
+          class="flex items-center gap-2 text-[var(--font-size-sm)] text-[var(--color-text-secondary)]"
+          role="listitem"
+          style="font-family: var(--font-body)"
+        >
+          {badge.icon && (
+            <span class="text-lg leading-none" aria-hidden="true">{badge.icon}</span>
+          )}
+          <span>{badge.label}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

@@ -1,4 +1,6 @@
 ---
+import { buildSrcset } from '../utils/image';
+
 interface Props {
   headline: string;
   members: Array<{
@@ -48,6 +50,8 @@ function socialLabel(platform: string, name: string): string {
         <article class="text-center">
           <img
             src={member.photo}
+            srcset={buildSrcset(member.photo, [128, 256, 400])}
+            sizes="128px"
             alt={`Portræt af ${member.name}`}
             class="mx-auto h-32 w-32 rounded-[var(--radius-full)] object-cover shadow-[var(--shadow-md)]"
             loading="lazy"

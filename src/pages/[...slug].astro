@@ -20,10 +20,28 @@ import LogoCloud from '../components/LogoCloud.astro';
 import GalleryGrid from '../components/GalleryGrid.astro';
 import ProductCarousel from '../components/ProductCarousel.astro';
 import StickyColumnSection from '../components/StickyColumnSection.astro';
+import ProblemSection from '../components/ProblemSection.astro';
+import HowItWorksSection from '../components/HowItWorksSection.astro';
+import TrustBadgesSection from '../components/TrustBadgesSection.astro';
+import CaseStudiesSection from '../components/CaseStudiesSection.astro';
+import IntegrationsSection from '../components/IntegrationsSection.astro';
+import FoundersNoteSection from '../components/FoundersNoteSection.astro';
+import TabsSection from '../components/TabsSection.astro';
+import ModalSection from '../components/ModalSection.astro';
+import BentoGridSection from '../components/BentoGridSection.astro';
 
 // Map component slugs to Astro components
 const componentMap = {
   'hero-section': HeroSection,
+  'problem-section': ProblemSection,
+  'how-it-works-section': HowItWorksSection,
+  'trust-badges-section': TrustBadgesSection,
+  'case-studies-section': CaseStudiesSection,
+  'integrations-section': IntegrationsSection,
+  'founders-note-section': FoundersNoteSection,
+  'tabs-section': TabsSection,
+  'modal-section': ModalSection,
+  'bento-grid-section': BentoGridSection,
   'features-grid': FeaturesGrid,
   'icon-cards': IconCards,
   'stats-banner': StatsBanner,
@@ -74,6 +92,51 @@ function normalizeProps(slug: string, rawProps: any): any {
     case 'stats-banner':
       if (!Array.isArray(props.stats)) props.stats = [];
       if (!props.version) props.version = 'cards';
+      break;
+
+    case 'problem-section':
+      if (!Array.isArray(props.problems)) props.problems = [];
+      if (!props.headline) props.headline = 'Kender du disse udfordringer?';
+      break;
+
+    case 'how-it-works-section':
+      if (!Array.isArray(props.steps)) props.steps = [];
+      if (!props.headline) props.headline = 'Sådan fungerer det';
+      break;
+
+    case 'trust-badges-section':
+      if (!Array.isArray(props.badges)) props.badges = [];
+      break;
+
+    case 'case-studies-section':
+      if (!Array.isArray(props.cases)) props.cases = [];
+      if (!props.headline) props.headline = 'Vores referencer';
+      break;
+
+    case 'integrations-section':
+      if (!Array.isArray(props.integrations)) props.integrations = [];
+      if (!props.headline) props.headline = 'Integrerer med dine værktøjer';
+      break;
+
+    case 'founders-note-section':
+      if (!props.quote) props.quote = '';
+      if (!props.author) props.author = '';
+      break;
+
+    case 'tabs-section':
+      if (!Array.isArray(props.tabs)) props.tabs = [];
+      if (!props.headline) props.headline = 'Detaljer';
+      break;
+
+    case 'modal-section':
+      if (!props.triggerText) props.triggerText = 'Åbn';
+      if (!props.headline) props.headline = 'Information';
+      if (!props.content) props.content = '<p>Indhold</p>';
+      break;
+
+    case 'bento-grid-section':
+      if (!Array.isArray(props.items)) props.items = [];
+      if (!props.headline) props.headline = 'Vores løsninger';
       break;
 
     case 'features-grid':

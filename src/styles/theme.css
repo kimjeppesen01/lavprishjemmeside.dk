@@ -1,7 +1,7 @@
 /* ===== DESIGN TOKENS ===== */
 /* Generated at build time from database */
 /* Source: https://api.lavprishjemmeside.dk/design-settings/public */
-/* Last updated: 2026-02-17T19:37:40.341Z */
+/* Last updated: 2026-02-17T21:14:59.150Z */
 
 :root {
   /* --- Brand Colors --- */
@@ -45,15 +45,15 @@
   --line-height-tight: 1.15;
   --line-height-normal: 1.6;
 
-  /* --- Shapes (border radius: full) --- */
-  --radius-sm: 1.5rem;
-  --radius-md: 3rem;
-  --radius-lg: 3rem;
-  --radius-xl: 3rem;
+  /* --- Shapes (border radius: medium) --- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
   --radius-full: 9999px;
-  --radius-button: 3rem;
-  --radius-card: 3rem;
-  --radius-input: 3rem;
+  --radius-button: 0.5rem;
+  --radius-card: 0.75rem;
+  --radius-input: 0.5rem;
 
   /* --- Shadows (style: medium) --- */
   --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
@@ -65,7 +65,7 @@
   --section-padding-y: 4rem;
   --section-padding-y-lg: 6rem;
   --container-max-width: 80rem;
-  --container-padding-x: 2rem;
-  --card-padding: 1.5rem;
-  --card-padding-lg: 1.75rem;
+  --container-padding-x: 1.5rem;
+  --card-padding: 1.25rem;
+  --card-padding-lg: 1.5rem;
 }

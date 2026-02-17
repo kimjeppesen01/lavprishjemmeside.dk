@@ -71,6 +71,12 @@ const defaultSlides = slides.length > 0 ? slides : [
     const list = document.getElementById('product-carousel-wrapper');
     if (!section || !scaleWrapper || !list) return;
 
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      scaleWrapper.style.transform = 'scale(1)';
+      return;
+    }
+
     const slides = Array.from(list.children);
     if (slides.length === 0) return;
 

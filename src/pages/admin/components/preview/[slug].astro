@@ -8,6 +8,15 @@
  */
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import Breadcrumbs from '../../../../components/Breadcrumbs.astro';
+import ProblemSection from '../../../../components/ProblemSection.astro';
+import HowItWorksSection from '../../../../components/HowItWorksSection.astro';
+import TrustBadgesSection from '../../../../components/TrustBadgesSection.astro';
+import CaseStudiesSection from '../../../../components/CaseStudiesSection.astro';
+import IntegrationsSection from '../../../../components/IntegrationsSection.astro';
+import FoundersNoteSection from '../../../../components/FoundersNoteSection.astro';
+import TabsSection from '../../../../components/TabsSection.astro';
+import ModalSection from '../../../../components/ModalSection.astro';
+import BentoGridSection from '../../../../components/BentoGridSection.astro';
 import HeroSection from '../../../../components/HeroSection.astro';
 import FeaturesGrid from '../../../../components/FeaturesGrid.astro';
 import IconCards from '../../../../components/IconCards.astro';
@@ -36,6 +45,15 @@ import {
 
 const componentMap: Record<string, any> = {
   'breadcrumbs': Breadcrumbs,
+  'problem-section': ProblemSection,
+  'how-it-works-section': HowItWorksSection,
+  'trust-badges-section': TrustBadgesSection,
+  'case-studies-section': CaseStudiesSection,
+  'integrations-section': IntegrationsSection,
+  'founders-note-section': FoundersNoteSection,
+  'tabs-section': TabsSection,
+  'modal-section': ModalSection,
+  'bento-grid-section': BentoGridSection,
   'hero-section': HeroSection,
   'features-grid': FeaturesGrid,
   'icon-cards': IconCards,
@@ -106,6 +124,42 @@ function normalizeProps(slug: string, rawProps: any): any {
       break;
     case 'breadcrumbs':
       if (!Array.isArray(props.items)) props.items = [];
+      break;
+    case 'problem-section':
+      if (!Array.isArray(props.problems)) props.problems = [];
+      if (!props.headline) props.headline = 'Kender du disse udfordringer?';
+      break;
+    case 'how-it-works-section':
+      if (!Array.isArray(props.steps)) props.steps = [];
+      if (!props.headline) props.headline = 'Sådan fungerer det';
+      break;
+    case 'trust-badges-section':
+      if (!Array.isArray(props.badges)) props.badges = [];
+      break;
+    case 'case-studies-section':
+      if (!Array.isArray(props.cases)) props.cases = [];
+      if (!props.headline) props.headline = 'Vores referencer';
+      break;
+    case 'integrations-section':
+      if (!Array.isArray(props.integrations)) props.integrations = [];
+      if (!props.headline) props.headline = 'Integrerer med dine værktøjer';
+      break;
+    case 'founders-note-section':
+      if (!props.quote) props.quote = '';
+      if (!props.author) props.author = '';
+      break;
+    case 'tabs-section':
+      if (!Array.isArray(props.tabs)) props.tabs = [];
+      if (!props.headline) props.headline = 'Detaljer';
+      break;
+    case 'modal-section':
+      if (!props.triggerText) props.triggerText = 'Åbn';
+      if (!props.headline) props.headline = 'Information';
+      if (!props.content) props.content = '<p>Indhold</p>';
+      break;
+    case 'bento-grid-section':
+      if (!Array.isArray(props.items)) props.items = [];
+      if (!props.headline) props.headline = 'Vores løsninger';
       break;
     case 'product-carousel':
       if (!Array.isArray(props.slides)) props.slides = [];
