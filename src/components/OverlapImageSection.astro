@@ -16,6 +16,8 @@ interface Props {
   bulletPoints?: string[];
   cta?: { text: string; href: string };
   instanceId?: string | number;
+  /** Passed by page wrapper for wave divider to blend into next section */
+  nextSectionBg?: 'page' | 'alt';
 }
 
 const {
@@ -30,6 +32,7 @@ const {
   bulletPoints = [],
   cta,
   instanceId = 'default',
+  nextSectionBg,
 } = Astro.props;
 
 const headingId = `overlap-image-heading-${instanceId}`;
@@ -56,7 +59,9 @@ const waveFill =
     ? 'var(--color-primary)'
     : backgroundColor === 'alt'
       ? 'var(--color-bg-section-alt)'
-      : 'var(--color-bg-page)';
+      : nextSectionBg === 'alt'
+        ? 'var(--color-bg-section-alt)'
+        : 'var(--color-bg-page)';
 ---
 
 <>

@@ -81,7 +81,13 @@ function normalizeProps(slug: string, rawProps: any): any {
     case 'tabs-section': if (!Array.isArray(props.tabs)) props.tabs = []; break;
     case 'modal-section': break;
     case 'bento-grid-section': if (!Array.isArray(props.items)) props.items = []; break;
-    case 'overlap-image-section': if (!Array.isArray(props.bulletPoints)) props.bulletPoints = []; break;
+    case 'content-image-split':
+      if (props.backgroundColor === 'white') props.backgroundColor = 'default';
+      if (props.backgroundColor === 'light') props.backgroundColor = 'alt';
+      if (props.backgroundColor === 'blue') props.backgroundColor = 'default';
+      if (!props.backgroundColor) props.backgroundColor = 'default';
+      break;
+    case 'overlap-image-section': if (!Array.isArray(props.bulletPoints)) props.bulletPoints = []; if (!props.backgroundColor) props.backgroundColor = 'default'; break;
     case 'overlap-cards-section': if (!Array.isArray(props.cards)) props.cards = []; break;
     case 'features-grid': if (!Array.isArray(props.features)) props.features = []; break;
     case 'icon-cards': if (!Array.isArray(props.cards)) props.cards = []; break;
@@ -127,6 +133,9 @@ const pageDescription = pageMeta?.meta_description;
           if (!Component) return null;
           const normalizedProps = normalizeProps(pc.slug, pc.content || {});
           normalizedProps.instanceId = pc.id;
+          if (pc.slug === 'overlap-image-section') {
+            normalizedProps.nextSectionBg = index % 2 === 0 ? 'alt' : 'page';
+          }
           const sectionBgClass = index % 2 === 0 ? 'section-bg-page' : 'section-bg-alt';
           return (
             <div class={sectionBgClass}>

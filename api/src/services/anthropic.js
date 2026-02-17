@@ -279,7 +279,7 @@ Returnér et JSON **objekt** (IKKE et array). Strukturen er:
 6. **Returnér KUN JSON** — ingen forklaring, kun JSON-objektet
 7. **Brug mediebiblioteket eller search_pexels** — vælg fra listen baseret på alt-tekst relevans, eller kald search_pexels for nye billeder. Aldrig placeholders
 8. **SEO er påkrævet** — inkluder altid "seo" objektet med meta_title, meta_description og schema_type
-9. **Sektionsbaggrunde** — alternerer automatisk (hvid/grå). Brug kun \`backgroundColor: "primary"\` på CTA eller stats-bannere. Lad andre komponenter arve baggrunden (undlad backgroundColor eller brug default).
+9. **Sektionsbaggrunde** — alternerer automatisk (hvid/grå). Brug kun \`backgroundColor: "primary"\` på cta-section eller stats-banner. For content-image-split og overlap-image-section skal du bruge \`backgroundColor: "default"\` så de arver sektionens baggrund og blander harmonisk. Brug aldrig backgroundColor på overlap-cards-section.
 
 Vær kreativ men professionel. Lav indhold der passer til brugerens beskrivelse.`;
 }
@@ -370,7 +370,7 @@ function parseComponentsFromResponse(response) {
  */
 async function generatePageContentAdvanced(contentMarkdown, context, uploadedBy = null) {
   const systemPrompt = buildAdvancedSystemPrompt(context);
-  const userContent = `Her er det færdige indhold der skal transformeres til vores komponentbibliotek:\n\n---\n\n${contentMarkdown}\n\n---\n\nTransformér ovenstående indhold til JSON med komponenter. Brug KUN tekster fra indholdet — skriv ikke nyt. Vælg det bedste billede fra mediebiblioteket eller brug search_pexels til hvert billedfelt.`;
+  const userContent = `Her er det færdige indhold der skal transformeres til vores komponentbibliotek:\n\n---\n\n${contentMarkdown}\n\n---\n\nTransformér ovenstående indhold til JSON med komponenter. Omskriv og tilpas teksten så den passer til hver komponents struktur (headline, content, bulletPoints, cards, steps osv.). Brug 8–12 komponenter for varieret, professionel UX. Vælg billeder fra mediebiblioteket eller brug search_pexels.`;
   const messages = [{ role: 'user', content: userContent }];
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
@@ -455,8 +455,8 @@ async function generatePageContentAdvanced(contentMarkdown, context, uploadedBy 
 }
 
 /**
- * Advanced system prompt — hyper-focused on transformation and component mastery.
- * NO content writing. Content is provided. Emphasis on components + media.
+ * Advanced system prompt — world-class UX, many components, REWRITE text to fit.
+ * Content is provided; AI adapts and rewrites it to fit component structures.
  */
 function buildAdvancedSystemPrompt(context) {
   const { designTokens, componentLibrary, cssVariableSyntax, availableMedia = [] } = context;
@@ -482,41 +482,46 @@ Ingen billeder er uploadet endnu. Brug \`search_pexels\` til at hente billeder t
 
 Du har adgang til \`search_pexels\`. Kald det når du har brug for et billede og intet i mediebiblioteket passer.
 - Søg specifikt: "webdesigner samarbejder med kunde" er bedre end "kontor"
-- orientation: landscape til hero/splits, portrait til team, square til gallerier
+- orientation: landscape til hero/splits/overlap, portrait til team, square til gallerier
 - Maks 6 kald per side. Brug URL'en præcist som den returneres.`;
 
-  return `Du er en ekspert i at transformere menneskeskrevet indhold til et specifikt komponentbibliotek. Din OPGAVE er IKKE at skrive indhold — det er allerede skrevet og leveret. Din opgave er udelukkende at:
+  return `Du er en verdensklasse UX-arkitekt der transformerer menneskeskrevet indhold til et moderne komponentbibliotek. Din opgave er at levere WORLD-CLASS brugeroplevelser ved at:
 
-1. **Læse** det leverede markdown-indhold
-2. **Mappe** hver sektion til den rette komponent fra biblioteket
-3. **Kopiere** teksten fra indholdet direkte ind i komponent-props — ændr ikke formuleringer
-4. **Vælge** billeder fra mediebiblioteket baseret på alt-tekst og kontekst
-5. **Udtrække** SEO-metadata fra indholdets struktur (første overskrift = meta_title, første afsnit = meta_description)
+1. **Læse** det leverede markdown-indhold grundigt
+2. **Omskrive og tilpasse** teksten så den passer præcist til hver komponents struktur og formål — dette er KRITISK
+3. **Bruge så mange komponenter som muligt** for variation, rytme og professionel sideopbygning (målet: 8–12 komponenter for typisk sideindhold)
+4. **Vælge** billeder fra mediebiblioteket eller search_pexels der matcher konteksten
+5. **Udtrække** SEO-metadata fra indholdet
 
-## KRITISK: Du skriver IKKE nyt indhold
+## KRITISK: Omskriv teksten til at passe komponenterne
 
-- Brug KUN tekster der står i det leverede indhold
-- Kopier overskrifter, beskrivelser, CTAs direkte — ingen omskrivning
-- Hvis indholdet har en sektion der ikke passer til nogen komponent, vælg den nærmeste komponent og brug indholdet
-- Prioriter at bevare den præcise tone og formulering fra kilden
+Du SKAL omskrive og tilpasse indholdet — ikke blot kopiere det 1:1. Hver komponent har en bestemt struktur; teksten skal passe ind:
 
-## Komponentbibliotek — Mester disse
+- **headline + content** (f.eks. content-image-split, overlap-image-section): Træk hovedpointen ud som overskrift, kondensér brødtekst til 1–3 korte afsnit. Brug \`<p>\` tags i content.
+- **bulletPoints** (overlap-image-section, problem-section): Konverter lange lister eller punkter til korte, skarpe bullet points (3–6 pr. sektion).
+- **features/cards** (features-grid, icon-cards, overlap-cards-section): Del lang indhold op i separate kort — hver med titel + kort beskrivelse. Vælg passende ikoner (✓, ⚡, 📋, 🎯, etc.).
+- **steps** (how-it-works-section): Konverter procesbeskrivelser til 3–4 trin med titel + beskrivelse.
+- **faqs** (faq-accordion): Udled spørgsmål og svar fra indholdet — formulér som konkrete Q&A.
+- **tabs** (tabs-section): Hvis indholdet har flere underemner, brug tabs — ét tab per emne med label + content.
+- **bento-grid**: For løsninger/ydelser — varier size (small/medium/large) for visuel interesse.
+- **overlap-image-section**: Ideel til "sådan fungerer det" eller produktfeatures — headline, content, bulletPoints, evt. CTA. Brug imagePlacement (left/right/center) for variation.
+- **overlap-cards-section**: Perfekt til 2–3 relaterede features eller trin — kort, skarpe tekster per kort.
+- **content-image-split**: Klassisk tekst + billede — alternér imagePosition (left/right) mellem sektioner for rytme.
+- Bevar tone og budskab; formuleringer må og skal tilpasses.
+
+## Komponentbibliotek — Brug flest muligt
 
 ${componentLibrary.index}
 
-Du skal kende HVER komponent og vide når den bruges:
-- **hero-section**: Første store sektion, overskrift + beskrivelse + CTA
-- **cta-section**: Opfordring til handling, centreret eller split
-- **content-image-split**: Tekst + billede side om side
-- **features-grid**: Liste af fordele/features med ikoner
-- **faq-accordion**: Spørgsmål og svar
-- **pricing-table**: Prispakker med features
-- **testimonials-carousel**: Anmeldelser/citater
-- **team-grid**: Teammedlemmer med billeder
-- **timeline**: Tidslinje eller proces
-- **stats-banner**: Tal/statistikker
-- **gallery-grid**: Billedgalleri
-- Og alle andre — læs index og schemas nøje
+**Anbefalet rækkefølge for varieret, professionel side:**
+1. hero-section (opener)
+2. problem-section ELLER stats-banner (engagement)
+3. 2–4 indholdssektioner: content-image-split, overlap-image-section, features-grid, how-it-works-section, icon-cards, overlap-cards-section, bento-grid-section, tabs-section — VÆLG UD FRA INDHOLD
+4. case-studies-section ELLER testimonials-carousel (social proof)
+5. faq-accordion (hvis spørgsmål findes i indholdet)
+6. cta-section (afslutning)
+
+**Variation:** Bland ikke kun content-image-split. Brug overlap-image-section, overlap-cards-section, how-it-works-section, tabs-section for visuel variation og dybde.
 
 ## EKSAKTE Komponent-Schemas (props SKAL matche præcist)
 
@@ -530,14 +535,17 @@ ${componentSchemas}
 
 ## CSS: Brug ${cssVariableSyntax.critical}
 
+## Sektionsbaggrunde — harmonisk blanding
+
+Sektioner alternerer automatisk (hvid/grå). For content-image-split og overlap-image-section: brug \`backgroundColor: "default"\` så de arver og blander. Kun cta-section og stats-banner må bruge \`backgroundColor: "primary"\` for accent.
+
 ${mediaSection}
 ${pexelsSection}
 
 ## SEO
 
-Udtræk fra indholdet:
-- **meta_title**: Første H1 eller overskrift (maks 60 tegn) + " | Lavprishjemmeside.dk"
-- **meta_description**: Første meningsfulde afsnit eller indholdsoversigt (maks 160 tegn)
+- **meta_title**: Første H1/overskrift (maks 60 tegn) + " | Lavprishjemmeside.dk"
+- **meta_description**: Første meningsfulde afsnit (maks 160 tegn)
 - **schema_type**: FAQPage hvis faq, Product hvis priser, WebPage standard
 
 ## Output
@@ -563,13 +571,14 @@ Returnér KUN dette JSON-objekt (ingen forklaring):
 
 ## Regler
 
-1. **4-10 komponenter** — vælg det rigtige antal baseret på indholdets længde
-2. **Props MATCHER schema** — brug præcis prop-navne fra schemas
-3. **Tekst fra indhold** — ingen nye formuleringer
-4. **Billeder fra mediebibliotek** — vælg bedste match, ingen placeholders
-5. **Logisk rækkefølge** — hero først, CTA til sidst
-6. **Dansk** — indholdet er på dansk, behold det
-7. **Sektionsbaggrunde** — alternerer automatisk (hvid/grå). Brug kun \`backgroundColor: "primary"\` på cta-section eller stats-banner. Lad andre arve`;
+1. **8–12 komponenter** — brug mange komponenter for world-class UX og visuel variation
+2. **Omskriv til komponentstrukturer** — tilpas hver tekst til headline/content/bulletPoints/cards/steps osv.
+3. **Props MATCHER schema** — præcis prop-navne fra schemas
+4. **Variation** — bland content-image-split, overlap-image-section, overlap-cards-section, features-grid, how-it-works-section, tabs-section, bento-grid-section
+5. **Billeder** — mediebibliotek eller search_pexels, aldrig placeholders
+6. **Logisk rækkefølge** — hero først, CTA til sidst
+7. **Dansk** — behold sproget
+8. **backgroundColor: "default"** for content/overlap-sektioner — lad dem arve sektionsbaggrund`;
 }
 
 module.exports = { generatePageContent, generatePageContentAdvanced };
