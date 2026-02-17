@@ -17,6 +17,8 @@ import FoundersNoteSection from '../../../../components/FoundersNoteSection.astr
 import TabsSection from '../../../../components/TabsSection.astro';
 import ModalSection from '../../../../components/ModalSection.astro';
 import BentoGridSection from '../../../../components/BentoGridSection.astro';
+import OverlapImageSection from '../../../../components/OverlapImageSection.astro';
+import OverlapCardsSection from '../../../../components/OverlapCardsSection.astro';
 import HeroSection from '../../../../components/HeroSection.astro';
 import FeaturesGrid from '../../../../components/FeaturesGrid.astro';
 import IconCards from '../../../../components/IconCards.astro';
@@ -54,6 +56,8 @@ const componentMap: Record<string, any> = {
   'tabs-section': TabsSection,
   'modal-section': ModalSection,
   'bento-grid-section': BentoGridSection,
+  'overlap-image-section': OverlapImageSection,
+  'overlap-cards-section': OverlapCardsSection,
   'hero-section': HeroSection,
   'features-grid': FeaturesGrid,
   'icon-cards': IconCards,
@@ -160,6 +164,18 @@ function normalizeProps(slug: string, rawProps: any): any {
     case 'bento-grid-section':
       if (!Array.isArray(props.items)) props.items = [];
       if (!props.headline) props.headline = 'Vores løsninger';
+      break;
+    case 'overlap-image-section':
+      if (!props.headline) props.headline = 'Sektion';
+      if (!props.content) props.content = '<p>Indhold</p>';
+      if (!props.imagePlacement) props.imagePlacement = 'right';
+      if (props.overlapAmount == null) props.overlapAmount = 80;
+      if (!props.backgroundColor) props.backgroundColor = 'default';
+      if (!props.bottomDivider) props.bottomDivider = 'straight';
+      break;
+    case 'overlap-cards-section':
+      if (!Array.isArray(props.cards)) props.cards = [];
+      if (props.overlapOffset == null) props.overlapOffset = 40;
       break;
     case 'product-carousel':
       if (!Array.isArray(props.slides)) props.slides = [];

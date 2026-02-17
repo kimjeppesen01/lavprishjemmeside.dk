@@ -122,17 +122,64 @@ VALUES
  '{"triggerText":{"type":"string","required":true},"headline":{"type":"string","required":true},"content":{"type":"string","required":true}}',
  '{"triggerText":"Læs mere","headline":"Vigtig information","content":"<p>Indhold i modalen.</p>"}',
  'modal-section.md',
- 1, 91),
+ 1, 91)
+
+ON DUPLICATE KEY UPDATE
+  name_da        = VALUES(name_da),
+  category       = VALUES(category),
+  description_da = VALUES(description_da),
+  tier           = VALUES(tier),
+  schema_fields  = VALUES(schema_fields),
+  default_content= VALUES(default_content),
+  doc_path       = VALUES(doc_path),
+  is_active      = VALUES(is_active),
+  sort_order     = VALUES(sort_order);
+
+-- ── Verify ──────────────────────────────────────────────────
+SELECT
+  slug,
+  category,
+  JSON_LENGTH(schema_fields) AS schema_field_count,
+  JSON_LENGTH(default_content) AS default_content_keys
+FROM components
+ORDER BY sort_order;
+
+
+INSERT INTO components
+  (slug, name_da, category, description_da, tier, schema_fields, default_content, doc_path, is_active, sort_order)
+VALUES
+
+
 
 ('bento-grid-section',
  'Bento Grid',
  'content',
  'Asymmetrisk grid med kort i varierende størrelser',
  1,
- '{"headline":{"type":"string","required":true},"items":{"type":"array","required":true,"items":{"type":"object","properties":{"title":"string","description":"string","size":{"type":"string","enum":["small","medium","large"]}}}}}}',
+ '{"headline":{"type":"string","required":true},"items":{"type":"array","required":true,"items":{"type":"object","properties":{"title":"string","description":"string","size":{"type":"string","enum":["small","medium","large"]}}}}}',
  '{"headline":"Vores løsninger","items":[{"title":"Hjemmesider","description":"Moderne responsive sider.","size":"large"},{"title":"SEO","size":"small"},{"title":"Hosting","size":"medium"}]}',
  'bento-grid-section.md',
  1, 50),
+
+('overlap-image-section',
+ 'Overlap Billede Sektion',
+ 'content',
+ 'Tekst + billede hvor visualet overlapper ned i næste sektion',
+ 1,
+ '{"headline":{"type":"string","required":true},"content":{"type":"string","required":true},"imageUrl":{"type":"string","format":"image","required":true},"imageAlt":{"type":"string","required":false},"imagePlacement":{"type":"string","enum":["left","right","center"],"default":"right"},"overlapAmount":{"type":"number","default":80},"backgroundColor":{"type":"string","enum":["default","primary","alt"],"default":"default"},"bottomDivider":{"type":"string","enum":["straight","wave"],"default":"straight"},"bulletPoints":{"type":"array","required":false,"items":{"type":"string"}},"cta":{"type":"object","required":false,"properties":{"text":"string","href":"string"}}}',
+ '{"headline":"Produktionshistorik","content":"<p>Systemet tillader registrering og overvågning af aktiviteter.</p>","imageUrl":"","imagePlacement":"right","overlapAmount":80,"backgroundColor":"primary","bottomDivider":"wave","bulletPoints":["Sikker adgang","Sporbarhed online"],"cta":{"text":"Se specifikationer","href":"/specs"}}',
+ 'overlap-image-section.md',
+ 1, 51),
+
+('overlap-cards-section',
+ 'Overlap Kort Sektion',
+ 'content',
+ '2-3 kort i række med horisontal overlap',
+ 1,
+ '{"headline":{"type":"string","required":false},"cards":{"type":"array","required":true,"items":{"type":"object","properties":{"imageUrl":{"type":"string","format":"image"},"imageAlt":{"type":"string"},"title":{"type":"string"},"content":{"type":"string"},"cta":{"type":"object","properties":{"text":"string","href":"string"}}}}},"overlapOffset":{"type":"number","default":40}}',
+ '{"headline":"Vælg din løsning","cards":[{"title":"Produktvisning","content":"<p>Se hvordan det fungerer.</p>","cta":{"text":"Læs mere","href":"/produkt"}},{"title":"Funktioner","content":"<p>Punkt 1, punkt 2.</p>"}],"overlapOffset":40}',
+ 'overlap-cards-section.md',
+ 1, 52),
 
 ('logo-cloud',
  'Logo Sky',
@@ -142,8 +189,32 @@ VALUES
  '{"headline":{"type":"string","required":false},"logos":{"type":"array","required":true,"items":{"type":"object","properties":{"imageUrl":"string","alt":"string","link":"string"}}},"grayscale":{"type":"boolean","default":true}}',
  '{"headline":"Betroet af kendte brands","logos":[{"imageUrl":"","alt":"Kunde 1","link":""},{"imageUrl":"","alt":"Kunde 2","link":""}],"grayscale":true}',
  'logo-cloud.md',
- 1, 23),
+ 1, 23)
 
+ON DUPLICATE KEY UPDATE
+  name_da        = VALUES(name_da),
+  category       = VALUES(category),
+  description_da = VALUES(description_da),
+  tier           = VALUES(tier),
+  schema_fields  = VALUES(schema_fields),
+  default_content= VALUES(default_content),
+  doc_path       = VALUES(doc_path),
+  is_active      = VALUES(is_active),
+  sort_order     = VALUES(sort_order);
+
+-- ── Verify ──────────────────────────────────────────────────
+SELECT
+  slug,
+  category,
+  JSON_LENGTH(schema_fields) AS schema_field_count,
+  JSON_LENGTH(default_content) AS default_content_keys
+FROM components
+ORDER BY sort_order;
+
+
+INSERT INTO components
+  (slug, name_da, category, description_da, tier, schema_fields, default_content, doc_path, is_active, sort_order)
+VALUES
 -- ─────────────────────────────────────────────
 -- CONVERSION (5)
 -- ─────────────────────────────────────────────
@@ -238,7 +309,32 @@ VALUES
  '{"headline":{"type":"string","required":true},"description":{"type":"string","required":false},"steps":{"type":"array","required":true,"items":{"type":"object","properties":{"title":"string","description":"string"}}}}',
  '{"headline":"Sådan fungerer det","description":"Tre enkle trin til din nye hjemmeside.","steps":[{"title":"Book en snak","description":"Kontakt os for en uforpligtende samtale om dine behov."},{"title":"Design og godkendelse","description":"Vi sender et forslag til din godkendelse inden vi bygger."},{"title":"Levering og opdateringer","description":"Din side går live, og vi hjælper med opdateringer og support."}]}',
  'how-it-works-section.md',
- 1, 42),
+ 1, 42)
+
+ON DUPLICATE KEY UPDATE
+  name_da        = VALUES(name_da),
+  category       = VALUES(category),
+  description_da = VALUES(description_da),
+  tier           = VALUES(tier),
+  schema_fields  = VALUES(schema_fields),
+  default_content= VALUES(default_content),
+  doc_path       = VALUES(doc_path),
+  is_active      = VALUES(is_active),
+  sort_order     = VALUES(sort_order);
+
+-- ── Verify ──────────────────────────────────────────────────
+SELECT
+  slug,
+  category,
+  JSON_LENGTH(schema_fields) AS schema_field_count,
+  JSON_LENGTH(default_content) AS default_content_keys
+FROM components
+ORDER BY sort_order;
+
+
+INSERT INTO components
+  (slug, name_da, category, description_da, tier, schema_fields, default_content, doc_path, is_active, sort_order)
+VALUES
 
 ('content-image-split',
  'Indhold-Billede Split',

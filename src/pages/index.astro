@@ -29,6 +29,8 @@ import FoundersNoteSection from '../components/FoundersNoteSection.astro';
 import TabsSection from '../components/TabsSection.astro';
 import ModalSection from '../components/ModalSection.astro';
 import BentoGridSection from '../components/BentoGridSection.astro';
+import OverlapImageSection from '../components/OverlapImageSection.astro';
+import OverlapCardsSection from '../components/OverlapCardsSection.astro';
 
 const componentMap: Record<string, any> = {
   'hero-section': HeroSection,
@@ -41,6 +43,8 @@ const componentMap: Record<string, any> = {
   'tabs-section': TabsSection,
   'modal-section': ModalSection,
   'bento-grid-section': BentoGridSection,
+  'overlap-image-section': OverlapImageSection,
+  'overlap-cards-section': OverlapCardsSection,
   'features-grid': FeaturesGrid,
   'icon-cards': IconCards,
   'stats-banner': StatsBanner,
@@ -77,6 +81,8 @@ function normalizeProps(slug: string, rawProps: any): any {
     case 'tabs-section': if (!Array.isArray(props.tabs)) props.tabs = []; break;
     case 'modal-section': break;
     case 'bento-grid-section': if (!Array.isArray(props.items)) props.items = []; break;
+    case 'overlap-image-section': if (!Array.isArray(props.bulletPoints)) props.bulletPoints = []; break;
+    case 'overlap-cards-section': if (!Array.isArray(props.cards)) props.cards = []; break;
     case 'features-grid': if (!Array.isArray(props.features)) props.features = []; break;
     case 'icon-cards': if (!Array.isArray(props.cards)) props.cards = []; break;
     default: break;

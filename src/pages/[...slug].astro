@@ -29,6 +29,8 @@ import FoundersNoteSection from '../components/FoundersNoteSection.astro';
 import TabsSection from '../components/TabsSection.astro';
 import ModalSection from '../components/ModalSection.astro';
 import BentoGridSection from '../components/BentoGridSection.astro';
+import OverlapImageSection from '../components/OverlapImageSection.astro';
+import OverlapCardsSection from '../components/OverlapCardsSection.astro';
 
 // Map component slugs to Astro components
 const componentMap = {
@@ -42,6 +44,8 @@ const componentMap = {
   'tabs-section': TabsSection,
   'modal-section': ModalSection,
   'bento-grid-section': BentoGridSection,
+  'overlap-image-section': OverlapImageSection,
+  'overlap-cards-section': OverlapCardsSection,
   'features-grid': FeaturesGrid,
   'icon-cards': IconCards,
   'stats-banner': StatsBanner,
@@ -137,6 +141,17 @@ function normalizeProps(slug: string, rawProps: any): any {
     case 'bento-grid-section':
       if (!Array.isArray(props.items)) props.items = [];
       if (!props.headline) props.headline = 'Vores løsninger';
+      break;
+
+    case 'overlap-image-section':
+      if (!props.headline) props.headline = 'Sektion';
+      if (!props.content) props.content = '';
+      if (!props.imageUrl) props.imageUrl = '';
+      if (!Array.isArray(props.bulletPoints)) props.bulletPoints = [];
+      break;
+
+    case 'overlap-cards-section':
+      if (!Array.isArray(props.cards)) props.cards = [];
       break;
 
     case 'features-grid':

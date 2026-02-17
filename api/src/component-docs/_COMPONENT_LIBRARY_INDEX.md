@@ -1,7 +1,7 @@
 # Component Library Index
 
 > **Last updated:** 2025-02-15  
-> **Total components:** 24  
+> **Total components:** 26  
 > **Framework:** Astro + Tailwind CSS v4
 
 This is the master index of all available components in the lavprishjemmeside.dk component library. All components use CSS custom properties from `theme.css` and are designed for Danish content.
@@ -15,10 +15,12 @@ This is the master index of all available components in the lavprishjemmeside.dk
 - **cta-section** - Call-to-action banner with centered or split layout
 - **stats-banner** - Eye-catching statistics display (e.g., "500+ kunder", "99% tilfredshed")
 
-### 📋 Content Sections (11 components)
+### 📋 Content Sections (13 components)
 - **problem-section** - User pain points positioned with product as solution
 - **how-it-works-section** - Step-by-step process explanation
 - **case-studies-section** - Project showcase with image, title, client, outcome, link
+- **overlap-image-section** - Section with headline, content, and image that extends/overlaps into next section
+- **overlap-cards-section** - 2–3 cards in a row with horizontal overlap
 - **features-grid** - Grid of features with icons, headlines, and descriptions
 - **icon-cards** - Card-based layout with icons and short text
 - **content-image-split** - Text content beside an image (left/right variants)
