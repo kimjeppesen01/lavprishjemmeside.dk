@@ -279,7 +279,7 @@ Returnér et JSON **objekt** (IKKE et array). Strukturen er:
 6. **Returnér KUN JSON** — ingen forklaring, kun JSON-objektet
 7. **Brug mediebiblioteket eller search_pexels** — vælg fra listen baseret på alt-tekst relevans, eller kald search_pexels for nye billeder. Aldrig placeholders
 8. **SEO er påkrævet** — inkluder altid "seo" objektet med meta_title, meta_description og schema_type
-9. **Sektionsbaggrunde** — alternerer automatisk (hvid/grå). Brug kun \`backgroundColor: "primary"\` på cta-section eller stats-banner. For content-image-split og overlap-image-section skal du bruge \`backgroundColor: "default"\` så de arver sektionens baggrund og blander harmonisk. Brug aldrig backgroundColor på overlap-cards-section.
+9. **Sektionsbaggrunde** — alternerer automatisk (hvid/grå). Brug kun \`backgroundColor: "primary"\` på cta-section eller stats-banner. For content-image-split: brug \`backgroundColor: "default"\`. For overlap-image-section: brug \`theme: "teal"\` (accent) eller \`theme: "white"\` (lys sektion). Brug aldrig backgroundColor på overlap-cards-section.
 
 Vær kreativ men professionel. Lav indhold der passer til brugerens beskrivelse.`;
 }
@@ -504,7 +504,8 @@ Du SKAL omskrive og tilpasse indholdet — ikke blot kopiere det 1:1. Hver kompo
 - **faqs** (faq-accordion): Udled spørgsmål og svar fra indholdet — formulér som konkrete Q&A.
 - **tabs** (tabs-section): Hvis indholdet har flere underemner, brug tabs — ét tab per emne med label + content.
 - **bento-grid**: For løsninger/ydelser — varier size (small/medium/large) for visuel interesse.
-- **overlap-image-section**: Ideel til "sådan fungerer det" eller produktfeatures — headline, content, bulletPoints, evt. CTA. Brug imagePlacement (left/right/center) for variation.
+- **overlap-image-section**: Ideel til "sådan fungerer det" eller produktfeatures. Brug \`introText\` for centreret intro (iMac-style), eller lad headline stå i kolonnen. Props: headline, introText?, content?, bulletPoints, imageUrl, theme (teal/white), bottomDivider (none/zigzag/straight), cta med evt. icon (chevron-down/arrow-right).
+- **alternating-feature-list**: Foretræk denne når indholdet har 2–4 overlapping tekst/billede-blokke der skal flyde sammen. Brug i stedet for flere separate overlap-image-section. Props: features (array med headline, introText?, content?, bulletPoints, imageUrl, imageAlt?, cta?), firstTheme (teal/white), overlapAmount.
 - **overlap-cards-section**: Perfekt til 2–3 relaterede features eller trin — kort, skarpe tekster per kort.
 - **content-image-split**: Klassisk tekst + billede — alternér imagePosition (left/right) mellem sektioner for rytme.
 - Bevar tone og budskab; formuleringer må og skal tilpasses.
@@ -516,12 +517,12 @@ ${componentLibrary.index}
 **Anbefalet rækkefølge for varieret, professionel side:**
 1. hero-section (opener)
 2. problem-section ELLER stats-banner (engagement)
-3. 2–4 indholdssektioner: content-image-split, overlap-image-section, features-grid, how-it-works-section, icon-cards, overlap-cards-section, bento-grid-section, tabs-section — VÆLG UD FRA INDHOLD
+3. 2–4 indholdssektioner: content-image-split, overlap-image-section, alternating-feature-list, features-grid, how-it-works-section, icon-cards, overlap-cards-section, bento-grid-section, tabs-section — VÆLG UD FRA INDHOLD
 4. case-studies-section ELLER testimonials-carousel (social proof)
 5. faq-accordion (hvis spørgsmål findes i indholdet)
 6. cta-section (afslutning)
 
-**Variation:** Bland ikke kun content-image-split. Brug overlap-image-section, overlap-cards-section, how-it-works-section, tabs-section for visuel variation og dybde.
+**Variation:** Bland ikke kun content-image-split. Brug overlap-image-section, alternating-feature-list (når 2+ overlap-blokke), overlap-cards-section, how-it-works-section, tabs-section for visuel variation og dybde.
 
 ## EKSAKTE Komponent-Schemas (props SKAL matche præcist)
 
@@ -537,7 +538,7 @@ ${componentSchemas}
 
 ## Sektionsbaggrunde — harmonisk blanding
 
-Sektioner alternerer automatisk (hvid/grå). For content-image-split og overlap-image-section: brug \`backgroundColor: "default"\` så de arver og blander. Kun cta-section og stats-banner må bruge \`backgroundColor: "primary"\` for accent.
+Sektioner alternerer automatisk (hvid/grå). For content-image-split: \`backgroundColor: "default"\`. For overlap-image-section: \`theme: "teal"\` eller \`theme: "white"\`. Kun cta-section og stats-banner må bruge \`backgroundColor: "primary"\`.
 
 ${mediaSection}
 ${pexelsSection}
@@ -574,11 +575,11 @@ Returnér KUN dette JSON-objekt (ingen forklaring):
 1. **8–12 komponenter** — brug mange komponenter for world-class UX og visuel variation
 2. **Omskriv til komponentstrukturer** — tilpas hver tekst til headline/content/bulletPoints/cards/steps osv.
 3. **Props MATCHER schema** — præcis prop-navne fra schemas
-4. **Variation** — bland content-image-split, overlap-image-section, overlap-cards-section, features-grid, how-it-works-section, tabs-section, bento-grid-section
+4. **Variation** — bland content-image-split, overlap-image-section, alternating-feature-list (ved 2+ overlap-blokke), overlap-cards-section, features-grid, how-it-works-section, tabs-section, bento-grid-section
 5. **Billeder** — mediebibliotek eller search_pexels, aldrig placeholders
 6. **Logisk rækkefølge** — hero først, CTA til sidst
 7. **Dansk** — behold sproget
-8. **backgroundColor: "default"** for content/overlap-sektioner — lad dem arve sektionsbaggrund`;
+8. **overlap-image-section**: \`theme: "teal"\` eller \`theme: "white"\` — content-image-split bruger \`backgroundColor: "default"\``;
 }
 
 module.exports = { generatePageContent, generatePageContentAdvanced };

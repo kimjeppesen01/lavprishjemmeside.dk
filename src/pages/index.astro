@@ -31,6 +31,7 @@ import ModalSection from '../components/ModalSection.astro';
 import BentoGridSection from '../components/BentoGridSection.astro';
 import OverlapImageSection from '../components/OverlapImageSection.astro';
 import OverlapCardsSection from '../components/OverlapCardsSection.astro';
+import AlternatingFeatureList from '../components/AlternatingFeatureList.astro';
 
 const componentMap: Record<string, any> = {
   'hero-section': HeroSection,
@@ -45,6 +46,7 @@ const componentMap: Record<string, any> = {
   'bento-grid-section': BentoGridSection,
   'overlap-image-section': OverlapImageSection,
   'overlap-cards-section': OverlapCardsSection,
+  'alternating-feature-list': AlternatingFeatureList,
   'features-grid': FeaturesGrid,
   'icon-cards': IconCards,
   'stats-banner': StatsBanner,
@@ -87,8 +89,9 @@ function normalizeProps(slug: string, rawProps: any): any {
       if (props.backgroundColor === 'blue') props.backgroundColor = 'default';
       if (!props.backgroundColor) props.backgroundColor = 'default';
       break;
-    case 'overlap-image-section': if (!Array.isArray(props.bulletPoints)) props.bulletPoints = []; if (!props.backgroundColor) props.backgroundColor = 'default'; break;
+    case 'overlap-image-section': if (!Array.isArray(props.bulletPoints)) props.bulletPoints = []; if (props.backgroundColor === 'primary') props.theme = 'teal'; else props.theme = 'white'; delete props.backgroundColor; break;
     case 'overlap-cards-section': if (!Array.isArray(props.cards)) props.cards = []; break;
+    case 'alternating-feature-list': if (!Array.isArray(props.features)) props.features = []; if (!props.firstTheme) props.firstTheme = 'teal'; if (props.overlapAmount == null) props.overlapAmount = 80; break;
     case 'features-grid': if (!Array.isArray(props.features)) props.features = []; break;
     case 'icon-cards': if (!Array.isArray(props.cards)) props.cards = []; break;
     default: break;
@@ -133,9 +136,6 @@ const pageDescription = pageMeta?.meta_description;
           if (!Component) return null;
           const normalizedProps = normalizeProps(pc.slug, pc.content || {});
           normalizedProps.instanceId = pc.id;
-          if (pc.slug === 'overlap-image-section') {
-            normalizedProps.nextSectionBg = index % 2 === 0 ? 'alt' : 'page';
-          }
           const sectionBgClass = index % 2 === 0 ? 'section-bg-page' : 'section-bg-alt';
           return (
             <div class={sectionBgClass}>

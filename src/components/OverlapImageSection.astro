@@ -1,212 +1,245 @@
 ---
 /**
- * Overlap Image Section — Text + image where the visual extends into the next section.
+ * Overlap Image Section — Highly visual section that blends into adjacent blocks
+ * using negative margin overlaps and stylized dividers. Supports centered intro
+ * (headline + introText) or column-based layout. Ideal for device mockups that
+ * break the container boundary for 3D depth.
  */
 import { buildSrcset } from '../utils/image';
 
 interface Props {
   headline: string;
-  content: string;
+  /** Optional centered text above the split columns (like iMac section) */
+  introText?: string;
+  /** Main column text (HTML allowed) */
+  content?: string;
+  bulletPoints?: string[];
   imageUrl: string;
   imageAlt?: string;
   imagePlacement?: 'left' | 'right' | 'center';
   overlapAmount?: number;
-  backgroundColor?: 'default' | 'primary' | 'alt';
-  bottomDivider?: 'straight' | 'wave';
-  bulletPoints?: string[];
-  cta?: { text: string; href: string };
+  /** 'teal' = primary accent, 'white' = light section — uses design tokens */
+  theme?: 'teal' | 'white';
+  bottomDivider?: 'none' | 'zigzag' | 'straight';
+  cta?: { text: string; href: string; icon?: 'chevron-down' | 'arrow-right' };
   instanceId?: string | number;
-  /** Passed by page wrapper for wave divider to blend into next section */
-  nextSectionBg?: 'page' | 'alt';
+  /** When true, no overlap-spacer div (parent handles flow) */
+  withinGroup?: boolean;
+  /** Padding-top to create room for previous section's overlapping image */
+  topOverlap?: number;
 }
 
 const {
   headline,
+  introText,
   content,
+  bulletPoints = [],
   imageUrl,
-  imageAlt,
+  imageAlt = 'Section visual',
   imagePlacement = 'right',
   overlapAmount = 80,
-  backgroundColor = 'default',
-  bottomDivider = 'straight',
-  bulletPoints = [],
+  theme = 'white',
+  bottomDivider = 'none',
   cta,
   instanceId = 'default',
-  nextSectionBg,
+  withinGroup = false,
+  topOverlap,
 } = Astro.props;
 
 const headingId = `overlap-image-heading-${instanceId}`;
 const imgSrcset = buildSrcset(imageUrl, [600, 900, 1200]);
-
-const bgClass =
-  backgroundColor === 'primary'
-    ? 'bg-[var(--color-primary)]'
-    : backgroundColor === 'alt'
-      ? 'bg-[var(--color-bg-section-alt)]'
-      : '';
-
-const textLight = backgroundColor === 'primary';
-const textClass = textLight
-  ? 'text-white'
-  : 'text-[var(--color-text-primary)]';
-const textSecondaryClass = textLight
-  ? 'text-white/90'
-  : 'text-[var(--color-text-secondary)]';
-
 const overlapPx = Math.min(Math.max(overlapAmount || 0, 0), 150);
-const waveFill =
-  backgroundColor === 'primary'
-    ? 'var(--color-primary)'
-    : backgroundColor === 'alt'
-      ? 'var(--color-bg-section-alt)'
-      : nextSectionBg === 'alt'
-        ? 'var(--color-bg-section-alt)'
-        : 'var(--color-bg-page)';
+
+// Theme styles using design tokens (teal ≈ primary, white ≈ light section)
+const themeStyles = {
+  teal: {
+    sectionBg: 'bg-[var(--color-primary)]',
+    headline: 'text-white',
+    text: 'text-white/90',
+    cta: 'bg-white/10 hover:bg-white/20 text-white border-white',
+    bulletIcon: 'bg-white border-white',
+  },
+  white: {
+    sectionBg: 'bg-[var(--color-bg-section-alt)]',
+    headline: 'text-[var(--color-primary)]',
+    text: 'text-[var(--color-text-secondary)]',
+    cta: 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white border-transparent',
+    bulletIcon: 'bg-[var(--color-primary)] border-[var(--color-primary)]',
+  },
+};
+
+const styles = themeStyles[theme];
+const hasIntro = Boolean(headline && introText);
 ---
 
-<>
 <section
-  class={`relative z-10 overflow-visible py-[var(--section-padding-y)] px-[var(--container-padding-x)] ${bgClass}`}
+  class:list={[
+    'relative z-10 overflow-visible',
+    styles.sectionBg,
+    'py-16 sm:py-24 px-[var(--container-padding-x)]',
+    bottomDivider === 'zigzag' && 'pb-24',
+  ]}
+  style={topOverlap ? `padding-top: ${topOverlap}px` : undefined}
   aria-labelledby={headingId}
 >
-  <div class="mx-auto max-w-[var(--container-max-width)]">
-    <div
-      class:list={[
-        'grid gap-8 lg:gap-12',
-        imagePlacement === 'center'
-          ? 'grid-cols-1'
-          : 'grid-cols-1 lg:grid-cols-2 lg:items-center',
-      ]}
-    >
-      {imagePlacement === 'left' && (
-        <div class="order-2 lg:order-1">
-          <div
-            class="relative overflow-hidden rounded-[var(--radius-lg)] shadow-[var(--shadow-lg)]"
-            style={`margin-bottom: -${overlapPx}px`}
-          >
-            <img
-              src={imageUrl}
-              srcset={imgSrcset}
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              alt={imageAlt || headline}
-              class="h-auto w-full object-cover"
-              loading="lazy"
-            />
-          </div>
-        </div>
-      )}
-
-      <div
-        id={headingId}
-        class:list={[
-          'order-1 flex flex-col justify-center lg:order-2',
-          imagePlacement === 'center' && 'text-center',
-        ]}
-      >
+  <div class="mx-auto max-w-[var(--container-max-width)] relative z-10">
+    {/* Optional centered intro banner (headline + introText at top) */}
+    {hasIntro && (
+      <div class="text-center max-w-3xl mx-auto mb-16">
         <h2
-          class={`text-[var(--font-size-2xl)] font-bold md:text-[var(--font-size-3xl)] ${textClass}`}
+          id={headingId}
+          class:list={[
+            'text-2xl md:text-3xl font-light uppercase tracking-wide mb-4',
+            styles.headline,
+          ]}
           style="font-family: var(--font-heading)"
         >
           {headline}
         </h2>
-        <div
-          class={`mt-4 text-[var(--font-size-base)] leading-[var(--line-height-normal)] ${textSecondaryClass} [&>p]:mt-4 [&>p:first-child]:mt-0`}
+        <p
+          class:list={['text-base md:text-lg font-light', styles.text]}
           style="font-family: var(--font-body)"
-          set:html={content}
-        />
+        >
+          {introText}
+        </p>
+      </div>
+    )}
+
+    {/* Main split layout */}
+    <div
+      class:list={[
+        'flex flex-col-reverse gap-12',
+        imagePlacement === 'center' && 'items-center',
+        imagePlacement === 'left' && 'lg:flex-row-reverse lg:items-center',
+        imagePlacement === 'right' && 'lg:flex-row lg:items-center',
+      ]}
+    >
+      {/* Text / content column */}
+      <div
+        class:list={[
+          'flex-1 w-full',
+          imagePlacement === 'center' && 'max-w-3xl mx-auto text-center',
+        ]}
+      >
+        {/* Headline in column when no introText */}
+        {!hasIntro && (
+          <h2
+            id={headingId}
+            class:list={[
+              'text-2xl md:text-3xl font-light uppercase tracking-wide mb-6',
+              styles.headline,
+            ]}
+            style="font-family: var(--font-heading)"
+          >
+            {headline}
+          </h2>
+        )}
+
+        {content && (
+          <div
+            class:list={['text-[var(--font-size-base)] font-light leading-[var(--line-height-normal)] mb-8 [&>p]:mt-4 [&>p:first-child]:mt-0', styles.text]}
+            style="font-family: var(--font-body)"
+            set:html={content}
+          />
+        )}
+
         {bulletPoints.length > 0 && (
-          <ul class="mt-6 space-y-2" role="list">
+          <ul class="space-y-4 mb-8" role="list">
             {bulletPoints.map((item) => (
-              <li
-                class={`flex items-start gap-2 text-[var(--font-size-base)] ${textSecondaryClass}`}
-                style="font-family: var(--font-body)"
-              >
-                <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--color-primary)]" aria-hidden="true" />
-                {item}
+              <li class="flex items-start gap-3">
+                <span
+                  class:list={['mt-1.5 w-2 h-2 shrink-0 rounded-full border', styles.bulletIcon]}
+                  aria-hidden="true"
+                />
+                <span
+                  class:list={['text-sm md:text-base font-light', styles.text]}
+                  style="font-family: var(--font-body)"
+                >
+                  {item}
+                </span>
               </li>
             ))}
           </ul>
         )}
+
         {cta && (
-          <div class="mt-6">
-            <a
-              href={cta.href}
-              class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] border-2 px-6 py-3 text-[var(--font-size-base)] font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
-              class:list={[
-                textLight
-                  ? 'border-white bg-white/10 text-white hover:bg-white/20 focus:ring-white'
-                  : 'border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary-light)] focus:ring-[var(--color-primary)]',
-              ]}
-              style="font-family: var(--font-body)"
-            >
-              {cta.text}
-            </a>
-          </div>
+          <a
+            href={cta.href}
+            class:list={[
+              'inline-flex items-center gap-2 min-h-[44px] px-6 py-3 font-medium border-2 rounded-[var(--radius-button)] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2',
+              styles.cta,
+              theme === 'teal' && 'focus:ring-white',
+              theme === 'white' && 'focus:ring-[var(--color-primary)]',
+            ]}
+            style="font-family: var(--font-body)"
+          >
+            {cta.text}
+            {cta.icon === 'chevron-down' && (
+              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            )}
+            {cta.icon === 'arrow-right' && (
+              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            )}
+          </a>
         )}
       </div>
 
-      {imagePlacement === 'right' && (
-        <div class="relative">
-          <div
-            class="relative overflow-hidden rounded-[var(--radius-lg)] shadow-[var(--shadow-lg)]"
-            style={`margin-bottom: -${overlapPx}px`}
-          >
-            <img
-              src={imageUrl}
-              srcset={imgSrcset}
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              alt={imageAlt || headline}
-              class="h-auto w-full object-cover"
-              loading="lazy"
-            />
-          </div>
+      {/* Image column with overlap */}
+      <div
+        class:list={[
+          'flex-1 w-full flex justify-center relative z-20',
+          imagePlacement === 'center' && 'justify-center',
+        ]}
+      >
+        <div class="inline-block drop-shadow-lg" style={`margin-bottom: -${overlapPx}px`}>
+          <img
+            src={imageUrl}
+            srcset={imgSrcset}
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            alt={imageAlt || headline}
+            class="max-w-full h-auto object-contain"
+            loading="lazy"
+          />
         </div>
-      )}
-
-      {imagePlacement === 'center' && (
-        <div class="relative">
-          <div
-            class="relative mx-auto max-w-2xl overflow-hidden rounded-[var(--radius-lg)] shadow-[var(--shadow-lg)]"
-            style={`margin-bottom: -${overlapPx}px`}
-          >
-            <img
-              src={imageUrl}
-              srcset={imgSrcset}
-              sizes="(max-width: 1024px) 100vw, 672px"
-              alt={imageAlt || headline}
-              class="h-auto w-full object-cover"
-              loading="lazy"
-            />
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   </div>
 
-  {bottomDivider === 'wave' && (
+  {/* Zigzag divider */}
+  {bottomDivider === 'zigzag' && (
     <div
-      class="absolute bottom-0 left-0 right-0 h-12 overflow-hidden pointer-events-none"
+      class="zigzag-divider absolute bottom-0 left-0 w-full h-4 z-30"
       aria-hidden="true"
-    >
-      <svg
-        class="absolute bottom-0 w-full"
-        viewBox="0 0 1200 120"
-        preserveAspectRatio="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          fill={waveFill}
-          d="M0,60 C300,120 900,0 1200,60 L1200,120 L0,120 Z"
-        />
-      </svg>
-    </div>
+    />
+  )}
+
+  {/* Straight divider */}
+  {bottomDivider === 'straight' && (
+    <div
+      class="absolute bottom-0 left-0 right-0 h-px bg-[var(--color-border)]"
+      aria-hidden="true"
+    />
   )}
 </section>
-{overlapPx > 0 && (
+
+{overlapPx > 0 && !withinGroup && (
   <div
     class="overlap-spacer"
     style={`height: ${overlapPx}px`}
     aria-hidden="true"
   />
 )}
-</>
+
+<style>
+  .zigzag-divider {
+    background-color: inherit;
+    --mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 24px 100%;
+    -webkit-mask: var(--mask);
+    mask: var(--mask);
+    transform: translateY(100%);
+  }
+</style>

@@ -31,6 +31,7 @@ import ModalSection from '../components/ModalSection.astro';
 import BentoGridSection from '../components/BentoGridSection.astro';
 import OverlapImageSection from '../components/OverlapImageSection.astro';
 import OverlapCardsSection from '../components/OverlapCardsSection.astro';
+import AlternatingFeatureList from '../components/AlternatingFeatureList.astro';
 
 // Map component slugs to Astro components
 const componentMap = {
@@ -46,6 +47,7 @@ const componentMap = {
   'bento-grid-section': BentoGridSection,
   'overlap-image-section': OverlapImageSection,
   'overlap-cards-section': OverlapCardsSection,
+  'alternating-feature-list': AlternatingFeatureList,
   'features-grid': FeaturesGrid,
   'icon-cards': IconCards,
   'stats-banner': StatsBanner,
@@ -145,23 +147,28 @@ function normalizeProps(slug: string, rawProps: any): any {
 
     case 'overlap-image-section':
       if (!props.headline) props.headline = 'Sektion';
-      if (!props.content) props.content = '';
       if (!props.imageUrl) props.imageUrl = '';
       if (!Array.isArray(props.bulletPoints)) props.bulletPoints = [];
+      if (props.backgroundColor === 'primary') props.theme = 'teal';
+      if (props.backgroundColor === 'default' || props.backgroundColor === 'alt') props.theme = 'white';
+      if (!props.theme) props.theme = 'white';
+      delete props.backgroundColor;
       break;
 
     case 'overlap-cards-section':
       if (!Array.isArray(props.cards)) props.cards = [];
       break;
 
+    case 'alternating-feature-list':
+      if (!Array.isArray(props.features)) props.features = [];
+      if (!props.firstTheme) props.firstTheme = 'teal';
+      if (props.overlapAmount == null) props.overlapAmount = 80;
+      break;
+
     case 'content-image-split':
       if (props.backgroundColor === 'white') props.backgroundColor = 'default';
       if (props.backgroundColor === 'light') props.backgroundColor = 'alt';
       if (props.backgroundColor === 'blue') props.backgroundColor = 'default';
-      if (!props.backgroundColor) props.backgroundColor = 'default';
-      break;
-
-    case 'overlap-image-section':
       if (!props.backgroundColor) props.backgroundColor = 'default';
       break;
 
@@ -332,10 +339,6 @@ const pageTitle = pageComponents[0]?.content?.headline ||
     const normalizedProps = normalizeProps(pc.slug, pc.content || {});
     // Unique instance id to avoid duplicate HTML ids when same component appears multiple times
     normalizedProps.instanceId = pc.id;
-    // Wave divider blend: pass next section bg so overlap-image-section wave transitions smoothly
-    if (pc.slug === 'overlap-image-section') {
-      normalizedProps.nextSectionBg = index % 2 === 0 ? 'alt' : 'page';
-    }
 
     // Alternating section backgrounds (page → alt → page → …)
     const sectionBgClass = index % 2 === 0 ? 'section-bg-page' : 'section-bg-alt';

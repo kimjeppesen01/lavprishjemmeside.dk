@@ -19,6 +19,7 @@ import ModalSection from '../../../../components/ModalSection.astro';
 import BentoGridSection from '../../../../components/BentoGridSection.astro';
 import OverlapImageSection from '../../../../components/OverlapImageSection.astro';
 import OverlapCardsSection from '../../../../components/OverlapCardsSection.astro';
+import AlternatingFeatureList from '../../../../components/AlternatingFeatureList.astro';
 import HeroSection from '../../../../components/HeroSection.astro';
 import FeaturesGrid from '../../../../components/FeaturesGrid.astro';
 import IconCards from '../../../../components/IconCards.astro';
@@ -58,6 +59,7 @@ const componentMap: Record<string, any> = {
   'bento-grid-section': BentoGridSection,
   'overlap-image-section': OverlapImageSection,
   'overlap-cards-section': OverlapCardsSection,
+  'alternating-feature-list': AlternatingFeatureList,
   'hero-section': HeroSection,
   'features-grid': FeaturesGrid,
   'icon-cards': IconCards,
@@ -167,15 +169,21 @@ function normalizeProps(slug: string, rawProps: any): any {
       break;
     case 'overlap-image-section':
       if (!props.headline) props.headline = 'Sektion';
-      if (!props.content) props.content = '<p>Indhold</p>';
       if (!props.imagePlacement) props.imagePlacement = 'right';
       if (props.overlapAmount == null) props.overlapAmount = 80;
-      if (!props.backgroundColor) props.backgroundColor = 'default';
-      if (!props.bottomDivider) props.bottomDivider = 'straight';
+      if (props.backgroundColor === 'primary') props.theme = 'teal';
+      else props.theme = props.theme || 'white';
+      delete props.backgroundColor;
+      if (!props.bottomDivider) props.bottomDivider = 'none';
       break;
     case 'overlap-cards-section':
       if (!Array.isArray(props.cards)) props.cards = [];
       if (props.overlapOffset == null) props.overlapOffset = 40;
+      break;
+    case 'alternating-feature-list':
+      if (!Array.isArray(props.features)) props.features = [];
+      if (!props.firstTheme) props.firstTheme = 'teal';
+      if (props.overlapAmount == null) props.overlapAmount = 80;
       break;
     case 'product-carousel':
       if (!Array.isArray(props.slides)) props.slides = [];
