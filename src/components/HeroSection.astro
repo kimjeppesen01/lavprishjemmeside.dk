@@ -6,6 +6,7 @@ interface Props {
   secondaryCta?: { text: string; href: string };
   backgroundImage?: string;
   alignment?: 'left' | 'center';
+  version?: 'default' | 'minimal' | 'split';
   instanceId?: string | number;
 }
 
@@ -16,15 +17,21 @@ const {
   secondaryCta,
   backgroundImage,
   alignment = 'left',
+  version = 'default',
   instanceId = 'default',
 } = Astro.props;
+
+const isMinimal = version === 'minimal';
+const isSplit = version === 'split';
+const overlayOpacity = isMinimal ? 'bg-[var(--color-bg-page)]/70' : 'bg-[var(--color-bg-page)]/90';
+const pyClass = isMinimal ? 'py-12 md:py-16' : 'py-[var(--section-padding-y-lg)]';
 ---
 
 <header
-  class="relative overflow-hidden py-[var(--section-padding-y-lg)] px-[var(--container-padding-x)]"
+  class={`relative overflow-hidden ${pyClass} px-[var(--container-padding-x)]`}
   role="banner"
 >
-  {backgroundImage && (
+  {backgroundImage && !isSplit && (
     <div class="absolute inset-0 z-0">
       <img
         src={backgroundImage}
@@ -33,51 +40,74 @@ const {
         aria-hidden="true"
         loading="eager"
       />
-      <div
-        class="absolute inset-0 bg-[var(--color-bg-page)]/90"
-        aria-hidden="true"
-      ></div>
+      <div class={`absolute inset-0 ${overlayOpacity}`} aria-hidden="true"></div>
     </div>
   )}
   <div class="relative z-10 mx-auto max-w-[var(--container-max-width)]">
     <div
       class:list={[
-        'flex flex-col gap-6',
-        alignment === 'center' && 'items-center text-center',
+        isSplit
+          ? 'flex flex-col gap-8 md:flex-row md:items-center md:gap-12'
+          : 'flex flex-col gap-6',
+        !isSplit && alignment === 'center' && 'items-center text-center',
       ]}
     >
-      <h1
-        class="text-[var(--font-size-4xl)] font-bold leading-[var(--line-height-tight)] text-[var(--color-text-primary)] md:text-[var(--font-size-5xl)]"
-        style="font-family: var(--font-heading)"
-      >
-        {headline}
-      </h1>
-      <p
-        class="max-w-2xl text-[var(--font-size-lg)] leading-[var(--line-height-normal)] text-[var(--color-text-secondary)]"
-        style="font-family: var(--font-body)"
-      >
-        {description}
-      </p>
-      {(primaryCta || secondaryCta) && (
-        <div class="flex flex-col gap-3 sm:flex-row sm:gap-4">
-          {primaryCta && (
-            <a
-              href={primaryCta.href}
-              class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
-              style="font-family: var(--font-body)"
-            >
-              {primaryCta.text}
-            </a>
-          )}
-          {secondaryCta && (
-            <a
-              href={secondaryCta.href}
-              class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] border-2 border-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-primary)] transition-colors hover:bg-[var(--color-primary-light)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
-              style="font-family: var(--font-body)"
-            >
-              {secondaryCta.text}
-            </a>
-          )}
+      <div class={isSplit ? 'flex-1' : ''}>
+        <h1
+          class={`font-bold leading-[var(--line-height-tight)] text-[var(--color-text-primary)] ${
+            isMinimal
+              ? 'text-[var(--font-size-3xl)] md:text-[var(--font-size-4xl)]'
+              : 'text-[var(--font-size-4xl)] md:text-[var(--font-size-5xl)]'
+          }`}
+          style="font-family: var(--font-heading)"
+        >
+          {headline}
+        </h1>
+        <p
+          class={`max-w-2xl leading-[var(--line-height-normal)] text-[var(--color-text-secondary)] ${
+            isMinimal ? 'text-[var(--font-size-base)] mt-2' : 'text-[var(--font-size-lg)]'
+          }`}
+          style="font-family: var(--font-body)"
+        >
+          {description}
+        </p>
+        {(primaryCta || secondaryCta) && (
+          <div
+            class:list={[
+              'flex flex-col gap-3 sm:flex-row sm:gap-4',
+              isMinimal && 'mt-4',
+              !isMinimal && 'mt-6',
+            ]}
+          >
+            {primaryCta && (
+              <a
+                href={primaryCta.href}
+                class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+                style="font-family: var(--font-body)"
+              >
+                {primaryCta.text}
+              </a>
+            )}
+            {secondaryCta && (
+              <a
+                href={secondaryCta.href}
+                class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] border-2 border-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-primary)] transition-colors hover:bg-[var(--color-primary-light)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+                style="font-family: var(--font-body)"
+              >
+                {secondaryCta.text}
+              </a>
+            )}
+          </div>
+        )}
+      </div>
+      {isSplit && backgroundImage && (
+        <div class="flex-1 max-w-md md:max-w-lg shrink-0">
+          <img
+            src={backgroundImage}
+            alt=""
+            class="w-full h-auto rounded-[var(--radius-card)] shadow-[var(--shadow-card)] object-cover"
+            loading="eager"
+          />
         </div>
       )}
     </div>

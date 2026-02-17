@@ -111,6 +111,40 @@ The editor shows the image picker if **either** is true:
 
 ---
 
+## Component Versions (Styling Variants)
+
+Some components support multiple **visual versions** — different layouts or styling presets selectable in the editor.
+
+### How it works
+
+1. Add a `version` field to `schema_fields` with `type: "string"` and an `enum` of allowed values.
+2. The editor renders this as an **A/B button group** (same as other enum fields).
+3. The Astro component reads the `version` prop and conditionally renders different markup or classes.
+
+### Schema pattern
+
+```json
+"version": {
+  "type": "string",
+  "enum": ["default", "minimal", "split"],
+  "default": "default"
+}
+```
+
+### Components with versions (as of schema_component_versions.sql)
+
+| Component      | Versions | Description |
+|----------------|----------|-------------|
+| **hero-section** | `default` \| `minimal` \| `split` | default: full hero with overlay; minimal: tighter, lighter overlay; split: text left, image right |
+| **stats-banner** | `cards` \| `inline` | cards: Saren-style card grid; inline: compact horizontal row |
+| **cta-section**  | `default` \| `minimal` | default: full CTA; minimal: headline + button only, compact |
+
+### Migration
+
+Run `api/src/schema_component_versions.sql` in phpMyAdmin to add the `version` field to existing component schemas without overwriting other schema changes.
+
+---
+
 ## Editor Flow (Step by Step)
 
 ### 1. Opening the modal
@@ -229,6 +263,7 @@ When you create a new Astro component and want it to appear in the editor:
    - `category` ENUM: `opener | trust | conversion | content | structure`
 4. **Run the SQL** in phpMyAdmin
 5. **Test the editor** by adding the component to a page and opening the edit modal — verify every field generates the correct control
+6. **(Optional) Add version variants** — if the component has multiple distinct layouts (e.g. cards vs inline), add a `version` enum to `schema_fields` and implement conditional rendering in the Astro component. See *Component Versions* above.
 
 ---
 
@@ -266,5 +301,6 @@ The original `seed_components.sql` used **wrong column names** and was never app
 | `api/src/routes/components.js` | `GET /components` — returns component library with `schema_fields` aliased as `default_props` |
 | `api/src/routes/page-components.js` | `GET /page-components`, `POST /page-components/update`, `POST /page-components/publish`, `POST /page-components/delete-page` |
 | `api/src/seed_components_v2.sql` | Authoritative seed for all 20 components with correct `schema_fields` |
+| `api/src/schema_component_versions.sql` | Migration: adds `version` enum to hero-section, stats-banner, cta-section |
 | `src/pages/[...slug].astro` | Reads `page_components` at build time, renders components as static HTML |
 | `api/src/schema_phase6.sql` | Defines the `components` and `page_components` table schemas |

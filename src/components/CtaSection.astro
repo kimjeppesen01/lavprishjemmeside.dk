@@ -5,6 +5,7 @@ interface Props {
   ctaButton?: { text: string; href: string };
   backgroundColor?: 'default' | 'primary' | 'alt';
   layout?: 'centered' | 'split';
+  version?: 'default' | 'minimal';
   instanceId?: string | number;
 }
 
@@ -14,8 +15,11 @@ const {
   ctaButton,
   backgroundColor = 'primary',
   layout = 'centered',
+  version = 'default',
   instanceId = 'default',
 } = Astro.props;
+
+const isMinimal = version === 'minimal';
 
 const bgClass =
   backgroundColor === 'primary'
@@ -41,7 +45,7 @@ const buttonClass =
 ---
 
 <section
-  class={`py-[var(--section-padding-y)] px-[var(--container-padding-x)] ${bgClass}`}
+  class={`px-[var(--container-padding-x)] ${bgClass} ${isMinimal ? 'py-8 md:py-10' : 'py-[var(--section-padding-y)]'}`}
   aria-labelledby="cta-heading"
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
@@ -50,17 +54,19 @@ const buttonClass =
         layout === 'centered' && 'flex flex-col items-center text-center',
         layout === 'split' &&
           'flex flex-col gap-6 md:flex-row md:items-center md:justify-between',
+        isMinimal && layout === 'centered' && 'gap-4',
+        isMinimal && layout === 'split' && 'gap-4 md:gap-6',
       ]}
     >
       <div class={layout === 'split' ? 'flex-1' : ''}>
         <h2
           id={`cta-heading-${instanceId}`}
-          class={`text-[var(--font-size-2xl)] font-bold md:text-[var(--font-size-3xl)] ${textClass}`}
+          class={`font-bold ${textClass} ${isMinimal ? 'text-[var(--font-size-xl)] md:text-[var(--font-size-2xl)]' : 'text-[var(--font-size-2xl)] md:text-[var(--font-size-3xl)]'}`}
           style="font-family: var(--font-heading)"
         >
           {headline}
         </h2>
-        {description && (
+        {description && !isMinimal && (
           <p
             class={`mt-2 text-[var(--font-size-base)] ${descClass}`}
             style="font-family: var(--font-body)"
@@ -72,7 +78,8 @@ const buttonClass =
       {ctaButton && (
         <div
           class:list={[
-            layout === 'centered' && 'mt-6',
+            layout === 'centered' && !isMinimal && 'mt-6',
+            layout === 'centered' && isMinimal && 'mt-2',
             layout === 'split' && 'md:ml-8 md:shrink-0',
           ]}
         >

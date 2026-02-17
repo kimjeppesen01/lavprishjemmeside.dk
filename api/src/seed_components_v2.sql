@@ -26,8 +26,8 @@ VALUES
  'opener',
  'Stor overskrift med beskrivelse, CTA-knapper og valgfrit baggrundsbillede',
  1,
- '{"headline":{"type":"string","required":true},"description":{"type":"string","required":true},"primaryCta":{"type":"object","required":false,"properties":{"text":"string","href":"string"}},"secondaryCta":{"type":"object","required":false,"properties":{"text":"string","href":"string"}},"backgroundImage":{"type":"string","format":"image","required":false},"alignment":{"type":"string","enum":["left","center"],"default":"left"}}',
- '{"headline":"Hjemmeside til fast lav pris","description":"Vi bygger professionelle hjemmesider hurtigt og til priser alle kan følge med på.","primaryCta":{"text":"Se priser","href":"/priser"},"secondaryCta":{"text":"Læs mere","href":"/om-os"},"alignment":"left"}',
+ '{"headline":{"type":"string","required":true},"description":{"type":"string","required":true},"primaryCta":{"type":"object","required":false,"properties":{"text":"string","href":"string"}},"secondaryCta":{"type":"object","required":false,"properties":{"text":"string","href":"string"}},"backgroundImage":{"type":"string","format":"image","required":false},"alignment":{"type":"string","enum":["left","center"],"default":"left"},"version":{"type":"string","enum":["default","minimal","split"],"default":"default"}}',
+ '{"headline":"Hjemmeside til fast lav pris","description":"Vi bygger professionelle hjemmesider hurtigt og til priser alle kan følge med på.","primaryCta":{"text":"Se priser","href":"/priser"},"secondaryCta":{"text":"Læs mere","href":"/om-os"},"alignment":"left","version":"default"}',
  'hero-section.md',
  1, 10),
 
@@ -39,8 +39,8 @@ VALUES
  'trust',
  'Iøjnefaldende nøgletal og statistikker',
  1,
- '{"stats":{"type":"array","required":true,"items":{"type":"object","properties":{"value":"string","label":"string","icon":"string"}}},"backgroundColor":{"type":"string","enum":["blue","dark","light"],"default":"blue"}}',
- '{"stats":[{"value":"500+","label":"Tilfredse kunder","icon":"⭐"},{"value":"99%","label":"Oppetid","icon":"🚀"},{"value":"24t","label":"Support","icon":"💬"}],"backgroundColor":"blue"}',
+ '{"stats":{"type":"array","required":true,"items":{"type":"object","properties":{"value":"string","label":"string","icon":"string"}}},"backgroundColor":{"type":"string","enum":["blue","dark","light"],"default":"blue"},"version":{"type":"string","enum":["cards","inline"],"default":"cards"}}',
+ '{"stats":[{"value":"500+","label":"Tilfredse kunder","icon":"⭐"},{"value":"99%","label":"Oppetid","icon":"🚀"},{"value":"24t","label":"Support","icon":"💬"}],"backgroundColor":"blue","version":"cards"}',
  'stats-banner.md',
  1, 20),
 
@@ -82,8 +82,8 @@ VALUES
  'conversion',
  'Call-to-action banner med centreret eller split layout',
  1,
- '{"headline":{"type":"string","required":true},"description":{"type":"string","required":true},"ctaButton":{"type":"object","required":true,"properties":{"text":"string","href":"string"}},"backgroundColor":{"type":"string","enum":["blue","dark","light"],"default":"blue"},"layout":{"type":"string","enum":["centered","split"],"default":"centered"}}',
- '{"headline":"Klar til en ny hjemmeside?","description":"Kom i gang i dag og få din side op at køre på ingen tid.","ctaButton":{"text":"Kom i gang","href":"/kontakt"},"layout":"centered","backgroundColor":"blue"}',
+ '{"headline":{"type":"string","required":true},"description":{"type":"string","required":true},"ctaButton":{"type":"object","required":true,"properties":{"text":"string","href":"string"}},"backgroundColor":{"type":"string","enum":["blue","dark","light"],"default":"blue"},"layout":{"type":"string","enum":["centered","split"],"default":"centered"},"version":{"type":"string","enum":["default","minimal"],"default":"default"}}',
+ '{"headline":"Klar til en ny hjemmeside?","description":"Kom i gang i dag og få din side op at køre på ingen tid.","ctaButton":{"text":"Kom i gang","href":"/kontakt"},"layout":"centered","backgroundColor":"blue","version":"default"}',
  'cta-section.md',
  1, 30),
 

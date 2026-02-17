@@ -73,6 +73,7 @@ function normalizeProps(slug: string, rawProps: any): any {
 
     case 'stats-banner':
       if (!Array.isArray(props.stats)) props.stats = [];
+      if (!props.version) props.version = 'cards';
       break;
 
     case 'features-grid':
@@ -119,6 +120,11 @@ function normalizeProps(slug: string, rawProps: any): any {
 
     case 'hero-section':
       if (!props.headline) props.headline = 'Velkommen';
+      if (!props.version) props.version = 'default';
+      break;
+
+    case 'cta-section':
+      if (!props.version) props.version = 'default';
       break;
 
     default:
