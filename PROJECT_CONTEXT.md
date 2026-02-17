@@ -531,6 +531,16 @@ script: |
 - **Phase 3**: Admin dashboard infrastructure — login page, overview dashboard, sessions API, AdminLayout with auth guard
 - **Phase 4**: Production infrastructure — rate limiting (5 login/15min, 100 events/15min), query caching (60s TTL), database indexes (sessions.last_activity, security_logs composite)
 - **Phase 5**: Email infrastructure & password reset — Resend API integration, forgot-password and reset-password pages, password_reset_tokens table (60-min expiry, rate limited 3/15min), Danish email templates (HTML + plain text), email enumeration prevention, auto-login after reset
+- **Phase 6**: Component library & page builder — 20 components registered (opener/trust/conversion/content/structure), schema-driven component editor with A/B selectors, boolean toggles, image pickers, repeatable array cards, AI page assembler, design/styling dashboard, dynamic static page rendering from DB
+
+## Developer Documentation
+
+| Doc | Purpose |
+|---|---|
+| `docs/COMPONENT_EDITOR.md` | **Full reference for the schema-driven component editor** — schema format, field type mapping, form builder internals, save flow, media picker, adding new components |
+| `docs/GLOBAL_FEATURES.md` | Styling features (smooth scroll, korn-overlay, sideloader, sticky header) from Admin → Design & styling |
+
+---
 
 ## Global Features
 
@@ -539,6 +549,8 @@ Styling-funktioner (smooth scroll, korn-overlay, sideloader, klæbende header) s
 ---
 
 ## Pending
+- **Component editor UX**: Re-ordering of array items (drag-and-drop or up/down arrows)
+- **Component variations**: Add A/B content variant support per page component instance
 - **Dashboard enhancements**: Date filtering, charts, auto-refresh, CSV export (see Admin Dashboard section above)
 - **Dashboard pages**: Security logs, content management, user management, session detail view
 - **Public pages**: Priser, Om os, Kontakt
@@ -546,58 +558,69 @@ Styling-funktioner (smooth scroll, korn-overlay, sideloader, klæbende header) s
 
 ---
 
-## Future Phases (Product Vision)
+## Phase 6: Component Library & Page Builder (Implemented)
 
-### Phase 6: Component Library & Styling Dashboard
+**Status: LIVE** — core functionality complete, actively being extended.
 
-**Vision**: Transform this into a white-label product for clients. Admin dashboard becomes a full CMS where clients can customize styling and build pages with pre-made components.
+**Full technical reference:** `docs/COMPONENT_EDITOR.md`
 
-**Architecture**: Hybrid approach (database-driven with static generation)
-- Store design settings and page content in database
-- Preview changes dynamically in admin dashboard
-- Publish button triggers GitHub Actions rebuild → static site deployed
-- Production sites remain fast, static, SEO-friendly
+### Architecture
 
-**Database Schema** (4 new tables):
-1. **design_settings** - Store color palettes, typography, theme identity, shapes
-   - Colors: primary, secondary, accent, neutral shades
-   - Typography: font families, size scales
-   - Theme identity: Business, Vibrant, Minimalistic presets
-   - Shapes: border radius, shadows
+Database-driven content + static generation:
+1. Admin builds/edits pages at `/admin/pages/` → saved to `page_components` table
+2. "Publicer" triggers GitHub Actions → `npm run build` → Astro reads DB → static HTML
+3. Public site is fully static (SEO-friendly, fast, zero admin JS overhead)
 
-2. **components** - Component template library
-   - Component types: Hero, Features, Pricing, Contact, etc.
-   - Template paths (Astro files)
-   - Schema (JSON field definitions)
-   - Flexible: allows adding custom components
+### Database tables (Phase 6)
 
-3. **page_components** - Page content instances
-   - Maps components to pages (/, /priser, /om-os, etc.)
-   - Stores actual content for each component instance
-   - Sort order, publish status
+| Table | Purpose |
+|---|---|
+| `components` | Template library — 20 components with `schema_fields` JSON, `default_content`, category ENUM |
+| `page_components` | Content instances per page — `content` JSON, `sort_order`, `is_published` |
+| `design_settings` | Color palette, typography, border radius, shadow style (one row per site) |
+| `theme_presets` | Business / Vibrant / Minimalistic full-config presets |
 
-4. **theme_presets** - Pre-configured design themes
-   - Business, Vibrant, Minimalistic presets
-   - Complete styling configurations in JSON
+### Component library (20 components)
 
-**Admin Dashboard Structure**:
-- `/admin/styling/` - Color pickers, theme selector, shape controls, live preview
-- `/admin/components/` - Component library management
-- `/admin/pages/` - Page builder (add/edit/reorder components)
+| Category | Components |
+|---|---|
+| `opener` | hero-section |
+| `trust` | stats-banner, testimonials-carousel, team-grid, logo-cloud |
+| `conversion` | cta-section, pricing-table, comparison-table, contact-form, newsletter-signup |
+| `content` | features-grid, icon-cards, content-image-split, video-embed, timeline, faq-accordion, gallery-grid, product-carousel, sticky-column-section |
+| `structure` | breadcrumbs |
 
-**Client Workflow**:
-1. Login → Select theme preset (Business/Vibrant/Minimalistic)
-2. Customize colors via color picker
-3. Build pages by adding components (Hero, Features, etc.)
-4. Fill in content (titles, text, images)
-5. Preview changes → Publish → Site rebuilds in ~30 seconds
+### Key files
 
-**Key Features**:
-- Reusable Astro component library (`src/components/sections/`)
-- CSS variables for theming (no hardcoded colors)
-- Drag-and-drop component ordering (or up/down arrows for MVP)
-- GitHub Actions integration for automated rebuilds
-- **Flexible component system**: Supports adding custom components beyond initial library
+| File | Role |
+|---|---|
+| `src/pages/admin/pages.astro` | Page builder UI + schema-driven component editor (form builder, value collector, media picker) |
+| `src/pages/[...slug].astro` | Dynamic static page renderer — reads `page_components` from DB at build time |
+| `api/src/routes/components.js` | `GET /components` — returns component library (note: `schema_fields` aliased as `default_props`) |
+| `api/src/routes/page-components.js` | CRUD for page component instances + publish endpoint |
+| `api/src/seed_components_v2.sql` | **Authoritative seed** for all 20 components with correct `schema_fields` — run in phpMyAdmin after `schema_phase6.sql` |
+| `api/src/schema_phase6.sql` | Defines all Phase 6 tables |
+
+### Critical: schema_fields aliasing
+
+`GET /components` aliases `schema_fields` as `default_props`. The editor reads `component.default_props`. If this alias changes, the form builder silently falls back to raw JSON editing for all components.
+
+### Admin Dashboard Structure
+
+| URL | Purpose |
+|---|---|
+| `/admin/pages/` | Page builder — add/edit/reorder/delete components per page, SEO meta, publish |
+| `/admin/components/` | Component catalog — browse library, view documentation |
+| `/admin/styling/` | Design system — color pickers, theme presets, shape/shadow controls |
+| `/admin/media/` | Media library — upload and browse images |
+| `/admin/ai-assemble/` | AI page assembler — generate full pages from a prompt |
+
+**Client workflow**:
+1. Login → `/admin/pages/` → select a page
+2. Add component → choose from library → component added with `default_content`
+3. Click "Rediger" → schema-driven form opens → edit text, toggle booleans, pick images
+4. "Gem ændringer" → saved to DB
+5. "Publicer side" → triggers GitHub Actions → static site rebuilt in ~30s
 
 ---
 
