@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Component Library — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.DMrkU45s.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Component Library — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.DTmw8H92.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -103,7 +103,7 @@ Luk
           </div>
           <p class="text-sm text-gray-600 mb-4 line-clamp-2">${escapeHtml(comp.description || '(Ingen beskrivelse)')}</p>
           <div class="flex gap-2">
-            <a href="/component-test/#preview-${escapeAttr(comp.slug)}" target="_blank" rel="noopener noreferrer" class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium px-4 py-2 rounded transition-colors text-sm">
+            <a href="/admin/components/preview/${escapeAttr(comp.slug)}/" target="_blank" rel="noopener noreferrer" class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium px-4 py-2 rounded transition-colors text-sm">
               Forhåndsvis
             </a>
             <button onclick="openModal('${escapeAttr(comp.slug)}', '${escapeAttr(comp.name)}', '${escapeAttr(comp.documentation || 'Ingen dokumentation tilgængelig.')}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded transition-colors text-sm">
