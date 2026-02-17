@@ -21,13 +21,23 @@ A horizontal banner displaying key statistics such as customer counts, satisfact
 interface Props {
   // Required props
   stats: Array<{
-    value: string;    // Display value (e.g., "500+", "99%", "15")
-    label: string;    // Danish label (e.g., "tilfredse kunder", "år i branchen")
-    icon?: string;   // Icon name or emoji (optional)
+    value: string;      // Display value (e.g., "500+", "99%", "15"); count-up when numeric
+    label: string;      // Label (e.g., "tilfredse kunder", "Pre-Made Demos")
+    icon?: string;     // Icon emoji (optional)
+    highlight?: boolean; // Dark card style (default: true for first stat)
   }>;
 
-  // Optional props
+  // Optional intro (left column)
+  headline?: string;
+  description?: string;
+
+  // Optional right column
+  updateText?: string;  // e.g. "Last Major Update - v1.5.6 - (21 MAR 2025)"
+  infoItems?: string[]; // Bottom row items, e.g. ["2 New Demos Monthly", "Weekly Updates"]
+
+  // Layout
   backgroundColor?: 'default' | 'primary' | 'alt';  // (default: 'default')
+  instanceId?: string | number;
 }
 ```
 
@@ -35,12 +45,17 @@ interface Props {
 
 ```json
 {
+  "headline": "Ongoing Innovation: Stay Ahead with Saren",
+  "description": "By choosing Saren®, you're investing in a theme that grows with you.",
+  "updateText": "Last Major Update - v1.5.6 - (21 MAR 2025)",
   "stats": [
-    { "value": "500+", "label": "tilfredse kunder", "icon": "users" },
-    { "value": "99%", "label": "tilfredshedsrate", "icon": "star" },
-    { "value": "15", "label": "år i branchen", "icon": "calendar" }
+    { "value": "28+", "label": "Pre-Made Demos", "highlight": true },
+    { "value": "50+", "label": "Custom Widgets" },
+    { "value": "250+", "label": "Inner Pages" },
+    { "value": "900+", "label": "Template Blocks" }
   ],
-  "backgroundColor": "default"
+  "infoItems": ["2 New Demos Monthly", "Weekly Updates", "6 - Months Support"],
+  "backgroundColor": "alt"
 }
 ```
 
@@ -96,18 +111,24 @@ This component uses the following design tokens from `theme.css`:
 
 ## Visual Layout
 
+Two-column layout on desktop: intro text left, stats and info boxes right.
+
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│   [icon] 500+     [icon] 99%       [icon] 15                        │
-│   tilfredse       tilfredshedsrate  år i branchen                   │
-│   kunder                                                            │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  Headline                    │  Last Major Update - v1.5.6 - (21 MAR 2025)       │
+│  Description text            │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐               │
+│                              │  │ 28+  │ │ 50+  │ │ 250+ │ │ 900+ │               │
+│                              │  │Demos │ │Widgets│Pages │Blocks │               │
+│                              │  └──────┘ └──────┘ └──────┘ └──────┘               │
+│                              │  [2 New Demos Monthly] [Weekly Updates] [Support]  │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Implementation Notes
 
-- Use a responsive grid (2 columns on mobile, 3–4 on desktop).
-- Ensure numbers stand out visually (larger font, `--color-primary` or bold).
-- Icons should be decorative; do not rely on them for meaning alone.
+- Clean Tailwind layout; no nested Elementor-style markup.
+- Stats as rounded cards: first stat dark (highlight), others light.
+- **Growing numbers:** numeric values (e.g. "28+", "99%", "15") get a count-up animation on scroll-into-view; all stats get a scale/opacity grow-in.
+- Use a responsive grid (2 cols mobile, 4 on desktop for stats; 1–3 for info items).

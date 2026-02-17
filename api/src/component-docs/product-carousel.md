@@ -6,7 +6,7 @@
 
 ## Description
 
-A scroll-pinned horizontal carousel that stays fixed while slides move left on vertical scroll. Mimics premium site builders' "scroll to explore" pattern. Uses GSAP ScrollTrigger for smooth, performant animations. Each slide gently scales up when centered in the viewport.
+A scroll-pinned horizontal carousel that stays fixed while the whole carousel scales from 50% to 100% and slides move left on vertical scroll. Mimics premium site builders' "scroll to explore" pattern. Uses GSAP ScrollTrigger for smooth, performant animations. The carousel scales up as you scroll (scrub-linked).
 
 **Common use cases:**
 - Showcase product images or case studies

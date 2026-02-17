@@ -1,7 +1,7 @@
 ---
 /**
- * Scroll-pinned horizontal product carousel.
- * Section stays fixed while slides move horizontally on vertical scroll.
+ * Scroll-pinned horizontal product carousel with scroll-driven scale.
+ * Section stays fixed while the carousel scales from 0.5→1 and slides move horizontally on vertical scroll.
  * Uses GSAP ScrollTrigger. Requires client:load for GSAP.
  *
  * Props:
@@ -33,28 +33,29 @@ const defaultSlides = slides.length > 0 ? slides : [
   aria-labelledby="product-carousel-heading"
   class="relative w-full h-[500px] md:h-[600px] my-16 overflow-hidden"
 >
-  <h2 id="product-carousel-heading" class="sr-only">
-    {heading}
-  </h2>
-  <div class="overflow-hidden h-full">
-    <ul id="product-carousel-wrapper" class="flex h-full gap-8 md:gap-12 pl-4 md:pl-8">
-      {defaultSlides.map((slide) => (
-        <li class="product-carousel-slide flex-none w-[52vw] md:w-[38vw] h-full shrink-0 transition-transform duration-500 origin-center">
-          <figure class="w-full h-full overflow-hidden rounded-[var(--radius-card)] shadow-[var(--shadow-card)]">
-            <img
-              src={slide.img}
-              alt={slide.alt ?? slide.caption ?? 'Produkt'}
-              class="w-full h-full object-cover"
-              loading="lazy"
-              decoding="async"
-            />
-            {slide.caption && (
-              <figcaption class="sr-only">{slide.caption}</figcaption>
-            )}
-          </figure>
-        </li>
-      ))}
-    </ul>
+  <h2 id="product-carousel-heading" class="sr-only">{heading}</h2>
+
+  <div id="product-carousel-scale-wrapper" class="h-full origin-center">
+    <div class="overflow-hidden h-full">
+      <ul id="product-carousel-wrapper" class="flex h-full gap-8 md:gap-12 pl-4 md:pl-8">
+        {defaultSlides.map((slide) => (
+          <li class="flex-none w-[52vw] md:w-[38vw] h-full shrink-0">
+            <figure class="w-full h-full overflow-hidden rounded-[var(--radius-card)] shadow-[var(--shadow-card)]">
+              <img
+                src={slide.img}
+                alt={slide.alt ?? slide.caption ?? 'Produkt'}
+                class="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+              {slide.caption && (
+                <figcaption class="sr-only">{slide.caption}</figcaption>
+              )}
+            </figure>
+          </li>
+        ))}
+      </ul>
+    </div>
   </div>
 </section>
 
@@ -65,41 +66,30 @@ const defaultSlides = slides.length > 0 ? slides : [
   gsap.registerPlugin(ScrollTrigger);
 
   function initProductCarousel() {
-    const wrapper = document.getElementById('product-carousel-wrapper');
-    if (!wrapper) return;
+    const section = document.getElementById('product-carousel');
+    const scaleWrapper = document.getElementById('product-carousel-scale-wrapper');
+    const list = document.getElementById('product-carousel-wrapper');
+    if (!section || !scaleWrapper || !list) return;
 
-    const slides = Array.from(wrapper.children);
+    const slides = Array.from(list.children);
     if (slides.length === 0) return;
 
-    const totalWidth = wrapper.scrollWidth - window.innerWidth;
-    if (totalWidth <= 0) return;
+    const totalWidth = list.scrollWidth - window.innerWidth;
+    const scrollDistance = totalWidth > 0 ? totalWidth : window.innerHeight;
 
-    const scrollTween = gsap.to(wrapper, {
-      x: -totalWidth,
-      ease: 'none',
+    gsap.timeline({
       scrollTrigger: {
-        trigger: '#product-carousel',
+        trigger: section,
         start: 'top top',
-        end: () => `+=${totalWidth}`,
+        end: () => `+=${scrollDistance}`,
         scrub: true,
         pin: true,
         anticipatePin: 1,
         invalidateOnRefresh: true,
       },
-    });
-
-    slides.forEach((slide) => {
-      ScrollTrigger.create({
-        trigger: slide,
-        containerAnimation: scrollTween,
-        start: 'center center',
-        end: '+=200',
-        onEnter: () => slide.style.transform = 'scale(1.12)',
-        onLeaveBack: () => { slide.style.transform = ''; },
-        onLeave: () => { slide.style.transform = ''; },
-        onEnterBack: () => { slide.style.transform = 'scale(1.12)'; },
-      });
-    });
+    })
+      .fromTo(scaleWrapper, { scale: 0.5 }, { scale: 1 }, 0)
+      .to(list, { x: -Math.max(0, totalWidth), ease: 'none' }, 0);
   }
 
   if (typeof document !== 'undefined') {

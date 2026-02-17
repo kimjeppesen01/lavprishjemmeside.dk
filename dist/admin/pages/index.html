@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Page Builder — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.DlSAAs5q.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Page Builder — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.DlUt1k1s.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -36,16 +36,13 @@ Publicer side
 Meta titel <span id="seo-title-count" class="text-xs text-gray-400 ml-2">0/60</span> </label> <input type="text" id="seo-meta-title" maxlength="200" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Sidetitel | Lavprishjemmeside.dk"> </div> <div> <label class="block text-sm font-medium text-gray-700 mb-1">
 Meta beskrivelse <span id="seo-desc-count" class="text-xs text-gray-400 ml-2">0/160</span> </label> <textarea id="seo-meta-description" maxlength="320" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Kort beskrivelse af siden..."></textarea> </div> <div> <label class="block text-sm font-medium text-gray-700 mb-1">OG billede URL</label> <div class="flex gap-2"> <input type="text" id="seo-og-image" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="https://lavprishjemmeside.dk/uploads/..."> <button onclick="openMediaPickerForSeo()" class="px-3 py-2 bg-blue-100 hover:bg-blue-200 border border-blue-300 text-blue-700 rounded-lg text-sm">Vælg</button> </div> </div> <button onclick="saveSeoMeta()" class="bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
 Gem SEO
-</button> <span id="seo-save-status" class="text-sm text-green-600 ml-2 hidden">Gemt!</span> </div> </div> </div> </div> </div> </div> </div>  <div id="add-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"> <div class="bg-white rounded-lg shadow-xl max-w-md w-full"> <div class="border-b border-gray-200 p-6 flex justify-between items-center"> <h3 class="text-xl font-bold text-gray-900">Tilføj komponent</h3> <button onclick="closeAddComponentModal()" class="text-gray-500 hover:text-gray-700 text-2xl">×</button> </div> <div class="p-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Vælg komponent:</label> <select id="component-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4"> <option value="">-- Vælg en komponent --</option> </select> <label class="block text-sm font-medium text-gray-700 mb-2">Sorteringsrækkefølge:</label> <input type="number" id="sort-order-input" min="1" value="1" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4"> </div> <div class="bg-gray-50 border-t border-gray-200 p-6 flex gap-3"> <button onclick="closeAddComponentModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-lg transition-colors">
+</button> <span id="seo-save-status" class="text-sm text-green-600 ml-2 hidden">Gemt!</span> </div> </div> </div> </div> </div> </div> </div>  <div id="add-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"> <div class="bg-white rounded-lg shadow-xl max-w-md w-full"> <div class="border-b border-gray-200 p-6 flex justify-between items-center"> <h3 class="text-xl font-bold text-gray-900">Tilføj komponent</h3> <button onclick="closeAddComponentModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button> </div> <div class="p-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Vælg komponent:</label> <select id="component-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4"> <option value="">-- Vælg en komponent --</option> </select> <label class="block text-sm font-medium text-gray-700 mb-2">Sorteringsrækkefølge:</label> <input type="number" id="sort-order-input" min="1" value="1" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4"> </div> <div class="bg-gray-50 border-t border-gray-200 p-6 flex gap-3"> <button onclick="closeAddComponentModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-lg transition-colors">
 Annuller
 </button> <button onclick="addComponentToPage()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
 Tilføj
-</button> </div> </div> </div>  <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"> <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"> <div class="border-b border-gray-200 p-6 flex justify-between items-center flex-shrink-0"> <div> <h3 class="text-xl font-bold text-gray-900">Rediger komponent</h3> <p id="edit-component-name" class="text-sm text-gray-500 mt-1"></p> </div> <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700 text-2xl">×</button> </div> <div class="p-6 flex-1 overflow-y-auto"> <!-- Image fields (auto-detected) --> <div id="edit-image-fields" class="hidden mb-4 space-y-3"> <label class="block text-sm font-medium text-gray-700 mb-1">Billeder i komponenten:</label> </div> <label class="block text-sm font-medium text-gray-700 mb-2">
-Komponent indhold (JSON):
-<span class="text-xs text-gray-500 ml-2">Rediger props som JSON</span> </label> <textarea id="edit-content-json" rows="15" class="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm" spellcheck="false" placeholder="{&quot;headline&quot;: &quot;...&quot;, &quot;description&quot;: &quot;...&quot;}"></textarea> <div id="edit-json-error" class="hidden mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2"></div> <div class="mt-4 text-xs text-gray-600"> <strong>Tips:</strong> Brug formateret JSON (4 mellemrum indrykning) for bedre læsbarhed.
-<button onclick="formatEditJson()" class="ml-2 text-blue-600 hover:underline">
-Formatér JSON
-</button> </div> </div> <div class="bg-gray-50 border-t border-gray-200 p-6 flex gap-3 flex-shrink-0"> <button onclick="closeEditModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-lg transition-colors">
+</button> </div> </div> </div>  <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"> <div class="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col"> <div class="border-b border-gray-200 p-6 flex justify-between items-center flex-shrink-0"> <div> <h3 class="text-xl font-bold text-gray-900">Rediger komponent</h3> <p id="edit-component-name" class="text-sm text-gray-500 mt-1"></p> </div> <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button> </div> <div class="p-6 flex-1 overflow-y-auto"> <!-- Schema-driven form panel --> <div id="edit-form-panel" class="space-y-5"></div> <!-- Collapsible Advanced JSON section --> <div class="mt-6 border-t border-gray-200 pt-4"> <button onclick="toggleAdvancedJson()" class="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"> <span id="advanced-json-arrow" class="text-xs transition-transform inline-block">&#9654;</span>
+Avanceret JSON
+</button> <div id="advanced-json-section" class="hidden mt-3"> <textarea id="edit-content-json" rows="12" class="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm" spellcheck="false" placeholder="{&quot;headline&quot;: &quot;...&quot;, &quot;description&quot;: &quot;...&quot;}"></textarea> <div id="edit-json-error" class="hidden mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2"></div> <div class="mt-2 flex gap-3 text-xs text-gray-500"> <button onclick="formatEditJson()" class="text-blue-600 hover:underline">Formatér JSON</button> <button onclick="applyJsonToForm()" class="text-blue-600 hover:underline">Anvend JSON til formular</button> </div> </div> </div> </div> <div class="bg-gray-50 border-t border-gray-200 p-6 flex gap-3 flex-shrink-0"> <button onclick="closeEditModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-lg transition-colors">
 Annuller
 </button> <button onclick="saveComponentEdit()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
 Gem ændringer
@@ -120,17 +117,15 @@ Gem ændringer
 
         const btn = document.createElement('button');
         btn.className = 'flex-1 text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors';
-        btn.innerHTML = `
-          <div class="font-medium text-gray-900">${escapeHtml(page || '/ (Startside)')}</div>
-          <div class="text-xs text-gray-500 mt-1">${allPageComponents.filter(pc => pc.page_path === page).length} komponent(er)</div>
-        `;
-        btn.addEventListener('click', () => selectPage(page));
+        btn.innerHTML = '<div class="font-medium text-gray-900">' + escapeHtml(page || '/ (Startside)') + '</div>' +
+          '<div class="text-xs text-gray-500 mt-1">' + allPageComponents.filter(pc => pc.page_path === page).length + ' komponent(er)</div>';
+        btn.addEventListener('click', function() { selectPage(page); });
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'px-3 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-lg text-sm transition-colors';
-        deleteBtn.innerHTML = '🗑';
+        deleteBtn.textContent = '\uD83D\uDDD1';
         deleteBtn.title = 'Slet side';
-        deleteBtn.addEventListener('click', (e) => {
+        deleteBtn.addEventListener('click', function(e) {
           e.stopPropagation();
           deletePage(page);
         });
@@ -171,33 +166,32 @@ Gem ændringer
       noComponents.classList.add('hidden');
 
       // Sort by sort_order
-      pageComponents.sort((a, b) => a.sort_order - b.sort_order);
+      pageComponents.sort(function(a, b) { return a.sort_order - b.sort_order; });
 
-      pageComponents.forEach((pc, index) => {
-        const component = allComponents.find(c => c.id === pc.component_id);
-        const div = document.createElement('div');
+      pageComponents.forEach(function(pc, index) {
+        var component = allComponents.find(function(c) { return c.id === pc.component_id; });
+        var div = document.createElement('div');
         div.className = 'bg-gray-50 rounded-lg p-4 flex items-center justify-between border border-gray-200';
-        div.innerHTML = `
-          <div class="flex-1">
-            <p class="font-medium text-gray-900">${index + 1}. ${escapeHtml(component ? component.name : 'Ukendt komponent')}</p>
-            <p class="text-xs text-gray-500 mt-1">${escapeHtml(component ? component.slug : '')}</p>
-          </div>
-          <div class="flex gap-2">
-            ${index > 0 ? `<button onclick="reorderComponent(${pc.id}, -1)" class="px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm">↑</button>` : '<span class="px-3 py-2 text-sm text-gray-300">↑</span>'}
-            ${index < pageComponents.length - 1 ? `<button onclick="reorderComponent(${pc.id}, 1)" class="px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm">↓</button>` : '<span class="px-3 py-2 text-sm text-gray-300">↓</span>'}
-            <button onclick="editComponent(${pc.id})" class="px-3 py-2 bg-blue-100 hover:bg-blue-200 border border-blue-300 text-blue-700 rounded text-sm">Rediger</button>
-            <button onclick="deleteComponent(${pc.id})" class="px-3 py-2 bg-red-100 hover:bg-red-200 border border-red-300 text-red-700 rounded text-sm">Slet</button>
-          </div>
-        `;
+        div.innerHTML =
+          '<div class="flex-1">' +
+            '<p class="font-medium text-gray-900">' + (index + 1) + '. ' + escapeHtml(component ? component.name : 'Ukendt komponent') + '</p>' +
+            '<p class="text-xs text-gray-500 mt-1">' + escapeHtml(component ? component.slug : '') + '</p>' +
+          '</div>' +
+          '<div class="flex gap-2">' +
+            (index > 0 ? '<button onclick="reorderComponent(' + pc.id + ', -1)" class="px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm">\u2191</button>' : '<span class="px-3 py-2 text-sm text-gray-300">\u2191</span>') +
+            (index < pageComponents.length - 1 ? '<button onclick="reorderComponent(' + pc.id + ', 1)" class="px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm">\u2193</button>' : '<span class="px-3 py-2 text-sm text-gray-300">\u2193</span>') +
+            '<button onclick="editComponent(' + pc.id + ')" class="px-3 py-2 bg-blue-100 hover:bg-blue-200 border border-blue-300 text-blue-700 rounded text-sm">Rediger</button>' +
+            '<button onclick="deleteComponent(' + pc.id + ')" class="px-3 py-2 bg-red-100 hover:bg-red-200 border border-red-300 text-red-700 rounded text-sm">Slet</button>' +
+          '</div>';
         componentsList.appendChild(div);
       });
     }
 
     // Populate component select dropdown
     function populateComponentSelect() {
-      const select = document.getElementById('component-select');
-      allComponents.forEach(comp => {
-        const option = document.createElement('option');
+      var select = document.getElementById('component-select');
+      allComponents.forEach(function(comp) {
+        var option = document.createElement('option');
         option.value = comp.id;
         option.textContent = comp.name;
         select.appendChild(option);
@@ -217,8 +211,8 @@ Gem ændringer
 
     // Add component to page
     window.addComponentToPage = async function() {
-      const componentId = document.getElementById('component-select').value;
-      const sortOrder = parseInt(document.getElementById('sort-order-input').value);
+      var componentId = document.getElementById('component-select').value;
+      var sortOrder = parseInt(document.getElementById('sort-order-input').value);
 
       if (!componentId) {
         alert('Vælg venligst en komponent');
@@ -231,7 +225,7 @@ Gem ændringer
       }
 
       try {
-        const res = await fetch(API + '/page-components', {
+        var res = await fetch(API + '/page-components', {
           method: 'POST',
           headers: {
             'Authorization': 'Bearer ' + token,
@@ -247,7 +241,7 @@ Gem ændringer
 
         if (!res.ok) throw new Error('Fejl ved tilføjelse af komponent');
 
-        const newPageComponent = await res.json();
+        var newPageComponent = await res.json();
         allPageComponents.push(newPageComponent);
         selectPage(selectedPage);
         closeAddComponentModal();
@@ -258,45 +252,36 @@ Gem ændringer
 
     // Reorder component
     window.reorderComponent = async function(id, direction) {
-      const pc = allPageComponents.find(x => x.id === id);
+      var pc = allPageComponents.find(function(x) { return x.id === id; });
       if (!pc) return;
 
-      const pageComponents = allPageComponents.filter(x => x.page_path === selectedPage);
-      pageComponents.sort((a, b) => a.sort_order - b.sort_order);
+      var pageComponents = allPageComponents.filter(function(x) { return x.page_path === selectedPage; });
+      pageComponents.sort(function(a, b) { return a.sort_order - b.sort_order; });
 
-      const currentIndex = pageComponents.findIndex(x => x.id === id);
-      const newIndex = currentIndex + direction;
+      var currentIndex = pageComponents.findIndex(function(x) { return x.id === id; });
+      var newIndex = currentIndex + direction;
 
       if (newIndex < 0 || newIndex >= pageComponents.length) return;
 
-      // Swap sort orders
-      const [from, to] = direction > 0
-        ? [pageComponents[currentIndex].sort_order, pageComponents[newIndex].sort_order]
-        : [pageComponents[newIndex].sort_order, pageComponents[currentIndex].sort_order];
+      var fromOrder = direction > 0 ? pageComponents[currentIndex].sort_order : pageComponents[newIndex].sort_order;
+      var toOrder = direction > 0 ? pageComponents[newIndex].sort_order : pageComponents[currentIndex].sort_order;
 
       try {
         await Promise.all([
           fetch(API + '/page-components/reorder', {
             method: 'POST',
-            headers: {
-              'Authorization': 'Bearer ' + token,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ id, sort_order: to })
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, sort_order: toOrder })
           }),
           fetch(API + '/page-components/reorder', {
             method: 'POST',
-            headers: {
-              'Authorization': 'Bearer ' + token,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ id: pageComponents[newIndex].id, sort_order: from })
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: pageComponents[newIndex].id, sort_order: fromOrder })
           })
         ]);
 
-        // Update local data
-        pc.sort_order = to;
-        pageComponents[newIndex].sort_order = from;
+        pc.sort_order = toOrder;
+        pageComponents[newIndex].sort_order = fromOrder;
         selectPage(selectedPage);
       } catch (err) {
         alert('Fejl ved sortering: ' + err.message);
@@ -308,18 +293,15 @@ Gem ændringer
       if (!confirm('Slet denne komponent fra siden?')) return;
 
       try {
-        const res = await fetch(API + '/page-components/delete', {
+        var res = await fetch(API + '/page-components/delete', {
           method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ id })
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: id })
         });
 
         if (!res.ok) throw new Error('Fejl ved sletning');
 
-        allPageComponents = allPageComponents.filter(pc => pc.id !== id);
+        allPageComponents = allPageComponents.filter(function(pc) { return pc.id !== id; });
         selectPage(selectedPage);
       } catch (err) {
         alert('Fejl: ' + err.message);
@@ -328,7 +310,7 @@ Gem ændringer
 
     // Publish page
     window.publishPage = async function() {
-      const pageComponents = allPageComponents.filter(pc => pc.page_path === selectedPage);
+      var pageComponents = allPageComponents.filter(function(pc) { return pc.page_path === selectedPage; });
 
       if (pageComponents.length === 0) {
         alert('Siden har ingen komponenter at publicere');
@@ -336,28 +318,25 @@ Gem ændringer
       }
 
       try {
-        const btn = document.getElementById('publish-btn');
+        var btn = document.getElementById('publish-btn');
         btn.disabled = true;
         btn.textContent = 'Publicerer...';
 
         await Promise.all(
-          pageComponents.map(pc =>
-            fetch(API + '/page-components/publish', {
+          pageComponents.map(function(pc) {
+            return fetch(API + '/page-components/publish', {
               method: 'POST',
-              headers: {
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json'
-              },
+              headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
               body: JSON.stringify({ id: pc.id, is_published: true })
-            })
-          )
+            });
+          })
         );
 
-        alert('✓ Side publiceret');
+        alert('\u2713 Side publiceret');
       } catch (err) {
         alert('Fejl ved publicering: ' + err.message);
       } finally {
-        const btn = document.getElementById('publish-btn');
+        var btn = document.getElementById('publish-btn');
         btn.disabled = false;
         btn.textContent = 'Publicer side';
       }
@@ -365,69 +344,87 @@ Gem ændringer
 
     // Delete entire page
     window.deletePage = async function(page) {
-      const componentCount = allPageComponents.filter(pc => pc.page_path === page).length;
-      const pageName = page || '/ (Startside)';
+      var componentCount = allPageComponents.filter(function(pc) { return pc.page_path === page; }).length;
+      var pageName = page || '/ (Startside)';
 
-      if (!confirm(`Slet hele siden "${pageName}"?\n\nDette vil slette ${componentCount} komponent(er) permanent.`)) {
+      if (!confirm('Slet hele siden "' + pageName + '"?\n\nDette vil slette ' + componentCount + ' komponent(er) permanent.')) {
         return;
       }
 
       try {
-        const res = await fetch(API + '/page-components/delete-page', {
+        var res = await fetch(API + '/page-components/delete-page', {
           method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
           body: JSON.stringify({ page_path: page })
         });
 
         if (!res.ok) {
-          const error = await res.json();
+          var error = await res.json();
           throw new Error(error.error || 'Fejl ved sletning');
         }
 
-        const result = await res.json();
-
-        // Remove deleted components from local state
-        allPageComponents = allPageComponents.filter(pc => pc.page_path !== page);
-
-        // Re-render pages list
+        var result = await res.json();
+        allPageComponents = allPageComponents.filter(function(pc) { return pc.page_path !== page; });
         renderPages();
-
-        // Show delete success with deploy prompt
         showDeployNotice(pageName, result.deleted_count);
       } catch (err) {
         alert('Fejl: ' + err.message);
       }
     };
 
-    // Edit component modal
-    let editingComponentId = null;
+    // ══════════════════════════════════════════════════════════
+    // ── EDIT COMPONENT MODAL (Schema-Driven Form Builder) ──
+    // ══════════════════════════════════════════════════════════
+
+    var editingComponentId = null;
+    var editingSchema = null;
 
     window.editComponent = function(id) {
-      const pc = allPageComponents.find(x => x.id === id);
-      if (!pc) {
-        alert('Komponent ikke fundet');
-        return;
-      }
+      var pc = allPageComponents.find(function(x) { return x.id === id; });
+      if (!pc) { alert('Komponent ikke fundet'); return; }
 
-      const component = allComponents.find(c => c.id === pc.component_id);
+      var component = allComponents.find(function(c) { return c.id === pc.component_id; });
       editingComponentId = id;
 
       // Set modal title
       document.getElementById('edit-component-name').textContent =
-        component ? component.name_da || component.name : 'Ukendt komponent';
+        (component ? (component.name_da || component.name) : 'Ukendt komponent') +
+        (component ? ' (' + component.slug + ')' : '');
 
-      // Set JSON content
-      const jsonTextarea = document.getElementById('edit-content-json');
-      jsonTextarea.value = JSON.stringify(pc.content, null, 2);
+      // Get schema — API aliases schema_fields as default_props
+      var schema = null;
+      if (component && component.default_props) {
+        schema = typeof component.default_props === 'string'
+          ? tryParseJson(component.default_props)
+          : component.default_props;
+      }
+      editingSchema = schema;
 
-      // Clear error
+      var content = pc.content || {};
+      if (typeof content === 'string') content = tryParseJson(content) || {};
+
+      // Build form or fall back to raw JSON
+      var formPanel = document.getElementById('edit-form-panel');
+      formPanel.innerHTML = '';
+
+      if (schema && typeof schema === 'object' && Object.keys(schema).length > 0) {
+        buildFormFromSchema(formPanel, schema, content);
+      } else {
+        // Fallback: no schema available
+        var notice = document.createElement('div');
+        notice.className = 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700 mb-4';
+        notice.textContent = 'Ingen schema tilg\u00e6ngelig for denne komponent. Brug Avanceret JSON nedenfor.';
+        formPanel.appendChild(notice);
+      }
+
+      // Set JSON textarea
+      var jsonTextarea = document.getElementById('edit-content-json');
+      jsonTextarea.value = JSON.stringify(content, null, 2);
       document.getElementById('edit-json-error').classList.add('hidden');
 
-      // Detect and render image fields
-      renderImageFields(pc.content);
+      // Collapse advanced JSON by default
+      document.getElementById('advanced-json-section').classList.add('hidden');
+      document.getElementById('advanced-json-arrow').style.transform = '';
 
       // Show modal
       document.getElementById('edit-modal').classList.remove('hidden');
@@ -436,134 +433,868 @@ Gem ændringer
     window.closeEditModal = function() {
       document.getElementById('edit-modal').classList.add('hidden');
       editingComponentId = null;
+      editingSchema = null;
+    };
+
+    // ── Toggle advanced JSON section ──
+
+    window.toggleAdvancedJson = function() {
+      var section = document.getElementById('advanced-json-section');
+      var arrow = document.getElementById('advanced-json-arrow');
+      var isHidden = section.classList.contains('hidden');
+
+      if (isHidden) {
+        // Sync form values to JSON before showing
+        if (editingSchema) {
+          var values = collectFormValues();
+          document.getElementById('edit-content-json').value = JSON.stringify(values, null, 2);
+        }
+        section.classList.remove('hidden');
+        arrow.style.transform = 'rotate(90deg)';
+      } else {
+        section.classList.add('hidden');
+        arrow.style.transform = '';
+      }
     };
 
     window.formatEditJson = function() {
       try {
-        const textarea = document.getElementById('edit-content-json');
-        const json = JSON.parse(textarea.value);
+        var textarea = document.getElementById('edit-content-json');
+        var json = JSON.parse(textarea.value);
         textarea.value = JSON.stringify(json, null, 2);
         document.getElementById('edit-json-error').classList.add('hidden');
       } catch (err) {
-        const errorDiv = document.getElementById('edit-json-error');
+        var errorDiv = document.getElementById('edit-json-error');
         errorDiv.textContent = 'Ugyldig JSON: ' + err.message;
         errorDiv.classList.remove('hidden');
       }
     };
 
+    window.applyJsonToForm = function() {
+      try {
+        var content = JSON.parse(document.getElementById('edit-content-json').value);
+        document.getElementById('edit-json-error').classList.add('hidden');
+        if (editingSchema) {
+          var formPanel = document.getElementById('edit-form-panel');
+          formPanel.innerHTML = '';
+          buildFormFromSchema(formPanel, editingSchema, content);
+        }
+      } catch (err) {
+        var errorDiv = document.getElementById('edit-json-error');
+        errorDiv.textContent = 'Ugyldig JSON: ' + err.message;
+        errorDiv.classList.remove('hidden');
+      }
+    };
+
+    // ── Save ──
+
     window.saveComponentEdit = async function() {
       if (!editingComponentId) return;
 
-      const textarea = document.getElementById('edit-content-json');
-      let content;
+      var content;
 
-      // Validate JSON
-      try {
-        content = JSON.parse(textarea.value);
-      } catch (err) {
-        const errorDiv = document.getElementById('edit-json-error');
-        errorDiv.textContent = 'Ugyldig JSON: ' + err.message;
-        errorDiv.classList.remove('hidden');
-        return;
+      // Collect from form if schema exists, otherwise from JSON textarea
+      if (editingSchema && Object.keys(editingSchema).length > 0) {
+        content = collectFormValues();
+      } else {
+        try {
+          content = JSON.parse(document.getElementById('edit-content-json').value);
+        } catch (err) {
+          var errorDiv = document.getElementById('edit-json-error');
+          errorDiv.textContent = 'Ugyldig JSON: ' + err.message;
+          errorDiv.classList.remove('hidden');
+          document.getElementById('advanced-json-section').classList.remove('hidden');
+          document.getElementById('advanced-json-arrow').style.transform = 'rotate(90deg)';
+          return;
+        }
       }
 
       try {
-        const res = await fetch(API + '/page-components/update', {
+        var res = await fetch(API + '/page-components/update', {
           method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            id: editingComponentId,
-            content: content
-          })
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingComponentId, content: content })
         });
 
         if (!res.ok) {
-          const error = await res.json();
+          var error = await res.json();
           throw new Error(error.error || 'Fejl ved opdatering');
         }
 
-        // Update local state
-        const pc = allPageComponents.find(x => x.id === editingComponentId);
-        if (pc) {
-          pc.content = content;
-        }
+        var pc = allPageComponents.find(function(x) { return x.id === editingComponentId; });
+        if (pc) pc.content = content;
 
         closeEditModal();
-        selectPage(selectedPage); // Refresh component list
-        alert('✓ Komponent opdateret');
+        selectPage(selectedPage);
+        alert('\u2713 Komponent opdateret');
       } catch (err) {
         alert('Fejl: ' + err.message);
       }
     };
 
+    // ══════════════════════════════════════════════════
+    // ── SCHEMA-DRIVEN FORM BUILDER                  ──
+    // ══════════════════════════════════════════════════
+
+    /**
+     * Build the full form from a schema_fields object + current values.
+     * Each field in schema gets the appropriate UI control.
+     */
+    function buildFormFromSchema(container, schema, values) {
+      var keys = Object.keys(schema);
+      keys.forEach(function(key) {
+        var descriptor = schema[key];
+        if (!descriptor || typeof descriptor !== 'object') return;
+
+        var value = values[key];
+        var fieldEl = buildField(key, descriptor, value);
+        if (fieldEl) container.appendChild(fieldEl);
+      });
+
+      // Also render any fields in values that are NOT in the schema (extra fields)
+      var extraKeys = Object.keys(values).filter(function(k) { return !schema[k]; });
+      if (extraKeys.length > 0) {
+        var extraSection = document.createElement('div');
+        extraSection.className = 'border-t border-gray-200 pt-4 mt-4';
+        var extraLabel = document.createElement('p');
+        extraLabel.className = 'text-xs font-medium text-gray-400 uppercase tracking-wide mb-3';
+        extraLabel.textContent = 'Andre felter';
+        extraSection.appendChild(extraLabel);
+
+        extraKeys.forEach(function(key) {
+          var val = values[key];
+          // Render as string input for primitives, or JSON textarea for complex
+          if (typeof val === 'object' && val !== null) {
+            var wrap = createFieldWrapper(key, false);
+            var ta = document.createElement('textarea');
+            ta.className = 'w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm';
+            ta.rows = 3;
+            ta.setAttribute('data-field', key);
+            ta.setAttribute('data-type', 'json');
+            ta.value = JSON.stringify(val, null, 2);
+            wrap.appendChild(ta);
+            extraSection.appendChild(wrap);
+          } else {
+            var wrap = createFieldWrapper(key, false);
+            var inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm';
+            inp.setAttribute('data-field', key);
+            inp.setAttribute('data-type', typeof val === 'boolean' ? 'boolean' : typeof val === 'number' ? 'number' : 'string');
+            inp.value = val != null ? String(val) : '';
+            wrap.appendChild(inp);
+            extraSection.appendChild(wrap);
+          }
+        });
+
+        container.appendChild(extraSection);
+      }
+    }
+
+    /**
+     * Build a single field control based on its type descriptor.
+     */
+    function buildField(key, descriptor, value) {
+      var type = descriptor.type || 'string';
+
+      // Enum selector (A/B style)
+      if (descriptor.enum && descriptor.enum.length > 0) {
+        return buildEnumField(key, descriptor, value);
+      }
+
+      // Boolean toggle
+      if (type === 'boolean') {
+        return buildBooleanField(key, descriptor, value);
+      }
+
+      // String (check if it's an image URL)
+      if (type === 'string') {
+        if (isImageUrl(value)) {
+          return buildImageField(key, descriptor, value);
+        }
+        return buildStringField(key, descriptor, value);
+      }
+
+      // Number
+      if (type === 'number') {
+        return buildNumberField(key, descriptor, value);
+      }
+
+      // Object (nested fields)
+      if (type === 'object') {
+        return buildObjectField(key, descriptor, value);
+      }
+
+      // Array of items
+      if (type === 'array') {
+        return buildArrayField(key, descriptor, value);
+      }
+
+      // Fallback: text input
+      return buildStringField(key, { type: 'string', required: descriptor.required }, value != null ? String(value) : '');
+    }
+
+    // ── String field ──
+
+    function buildStringField(key, descriptor, value) {
+      var isLong = /description|content|note|text|body/i.test(key) || (typeof value === 'string' && value.length > 80);
+      var wrap = createFieldWrapper(key, descriptor.required);
+
+      if (isLong) {
+        var ta = document.createElement('textarea');
+        ta.className = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm';
+        ta.rows = 3;
+        ta.setAttribute('data-field', key);
+        ta.setAttribute('data-type', 'string');
+        ta.value = value || '';
+        ta.placeholder = key;
+        wrap.appendChild(ta);
+      } else {
+        var inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm';
+        inp.setAttribute('data-field', key);
+        inp.setAttribute('data-type', 'string');
+        inp.value = value || '';
+        inp.placeholder = key;
+        wrap.appendChild(inp);
+      }
+
+      return wrap;
+    }
+
+    // ── Number field ──
+
+    function buildNumberField(key, descriptor, value) {
+      var wrap = createFieldWrapper(key, descriptor.required);
+      var inp = document.createElement('input');
+      inp.type = 'number';
+      inp.className = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm';
+      inp.setAttribute('data-field', key);
+      inp.setAttribute('data-type', 'number');
+      inp.value = value != null ? value : (descriptor.default != null ? descriptor.default : '');
+      wrap.appendChild(inp);
+      return wrap;
+    }
+
+    // ── Enum field (A/B style selector) ──
+
+    function buildEnumField(key, descriptor, value) {
+      var wrap = createFieldWrapper(key, descriptor.required);
+      var current = value != null ? value : (descriptor.default != null ? descriptor.default : descriptor.enum[0]);
+
+      var btnGroup = document.createElement('div');
+      btnGroup.className = 'flex gap-2';
+      btnGroup.setAttribute('data-field', key);
+      btnGroup.setAttribute('data-type', 'enum');
+
+      descriptor.enum.forEach(function(option) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.setAttribute('data-value', String(option));
+        btn.textContent = formatEnumLabel(key, option);
+
+        if (String(option) === String(current)) {
+          btn.className = 'flex-1 px-4 py-3 rounded-lg border-2 border-blue-500 bg-blue-50 text-blue-700 font-medium text-sm transition-colors';
+        } else {
+          btn.className = 'flex-1 px-4 py-3 rounded-lg border-2 border-gray-200 bg-white text-gray-600 hover:border-gray-400 text-sm transition-colors';
+        }
+
+        btn.addEventListener('click', function() {
+          // Deselect all
+          var siblings = btnGroup.querySelectorAll('button');
+          siblings.forEach(function(s) {
+            s.className = 'flex-1 px-4 py-3 rounded-lg border-2 border-gray-200 bg-white text-gray-600 hover:border-gray-400 text-sm transition-colors';
+          });
+          // Select this
+          btn.className = 'flex-1 px-4 py-3 rounded-lg border-2 border-blue-500 bg-blue-50 text-blue-700 font-medium text-sm transition-colors';
+        });
+
+        btnGroup.appendChild(btn);
+      });
+
+      wrap.appendChild(btnGroup);
+      return wrap;
+    }
+
+    // ── Boolean toggle ──
+
+    function buildBooleanField(key, descriptor, value) {
+      var wrap = document.createElement('div');
+      wrap.className = 'flex items-center justify-between py-2';
+
+      var label = document.createElement('span');
+      label.className = 'text-sm font-medium text-gray-700';
+      label.textContent = formatFieldLabel(key);
+      wrap.appendChild(label);
+
+      var toggle = document.createElement('label');
+      toggle.className = 'relative inline-flex items-center cursor-pointer';
+
+      var checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'sr-only peer';
+      checkbox.checked = !!value;
+      checkbox.setAttribute('data-field', key);
+      checkbox.setAttribute('data-type', 'boolean');
+
+      var track = document.createElement('div');
+      track.className = 'w-11 h-6 bg-gray-200 peer-checked:bg-blue-600 rounded-full transition-colors';
+
+      var thumb = document.createElement('div');
+      thumb.className = 'absolute left-[2px] top-[2px] w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow';
+
+      toggle.appendChild(checkbox);
+      toggle.appendChild(track);
+      toggle.appendChild(thumb);
+      wrap.appendChild(toggle);
+
+      return wrap;
+    }
+
+    // ── Image field ──
+
+    function buildImageField(key, descriptor, value) {
+      var wrap = createFieldWrapper(key, descriptor.required);
+      var row = document.createElement('div');
+      row.className = 'flex items-center gap-3';
+
+      var img = document.createElement('img');
+      img.src = value || '';
+      img.className = 'w-16 h-16 rounded-lg object-cover bg-gray-200 flex-shrink-0';
+      img.onerror = function() { this.src = 'https://placehold.co/64x64/e2e8f0/94a3b8?text=?'; };
+
+      var inputWrap = document.createElement('div');
+      inputWrap.className = 'flex-1 min-w-0';
+
+      var inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono';
+      inp.setAttribute('data-field', key);
+      inp.setAttribute('data-type', 'string');
+      inp.value = value || '';
+      inp.placeholder = 'Billede URL';
+      inp.addEventListener('input', function() { img.src = inp.value; });
+
+      inputWrap.appendChild(inp);
+
+      var pickBtn = document.createElement('button');
+      pickBtn.type = 'button';
+      pickBtn.className = 'mt-1 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 border border-blue-300 text-blue-700 rounded text-xs font-medium transition-colors';
+      pickBtn.textContent = 'Skift billede';
+      pickBtn.addEventListener('click', function() {
+        openMediaPicker(function(url) {
+          inp.value = url;
+          img.src = url;
+        });
+      });
+
+      inputWrap.appendChild(pickBtn);
+
+      row.appendChild(img);
+      row.appendChild(inputWrap);
+      wrap.appendChild(row);
+      return wrap;
+    }
+
+    // ── Object field (grouped sub-fields) ──
+
+    function buildObjectField(key, descriptor, value) {
+      var wrap = document.createElement('div');
+      wrap.className = 'border border-gray-200 rounded-lg p-4 bg-gray-50';
+      wrap.setAttribute('data-field', key);
+      wrap.setAttribute('data-type', 'object');
+
+      var header = document.createElement('p');
+      header.className = 'text-sm font-medium text-gray-700 mb-3';
+      header.textContent = formatFieldLabel(key);
+      if (descriptor.required) {
+        var star = document.createElement('span');
+        star.className = 'text-red-500 ml-1';
+        star.textContent = '*';
+        header.appendChild(star);
+      }
+      wrap.appendChild(header);
+
+      var subValues = (typeof value === 'object' && value !== null) ? value : {};
+      var subProps = descriptor.properties || {};
+
+      // Build sub-fields from schema properties
+      var subKeys = Object.keys(subProps);
+      if (subKeys.length > 0) {
+        subKeys.forEach(function(subKey) {
+          var subType = typeof subProps[subKey] === 'string' ? subProps[subKey] : (subProps[subKey].type || 'string');
+          var subVal = subValues[subKey];
+
+          var subWrap = document.createElement('div');
+          subWrap.className = 'mb-3 last:mb-0';
+
+          var subLabel = document.createElement('label');
+          subLabel.className = 'block text-xs font-medium text-gray-600 mb-1';
+          subLabel.textContent = formatFieldLabel(subKey);
+          subWrap.appendChild(subLabel);
+
+          var subInp = document.createElement('input');
+          subInp.type = subType === 'number' ? 'number' : 'text';
+          subInp.className = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm';
+          subInp.setAttribute('data-subfield', subKey);
+          subInp.setAttribute('data-subtype', subType);
+          subInp.value = subVal != null ? String(subVal) : '';
+          subInp.placeholder = subKey;
+          subWrap.appendChild(subInp);
+
+          wrap.appendChild(subWrap);
+        });
+      } else {
+        // No properties defined — render sub-fields from current values
+        Object.keys(subValues).forEach(function(subKey) {
+          var subVal = subValues[subKey];
+          var subWrap = document.createElement('div');
+          subWrap.className = 'mb-3 last:mb-0';
+
+          var subLabel = document.createElement('label');
+          subLabel.className = 'block text-xs font-medium text-gray-600 mb-1';
+          subLabel.textContent = formatFieldLabel(subKey);
+          subWrap.appendChild(subLabel);
+
+          var subInp = document.createElement('input');
+          subInp.type = 'text';
+          subInp.className = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm';
+          subInp.setAttribute('data-subfield', subKey);
+          subInp.setAttribute('data-subtype', typeof subVal === 'number' ? 'number' : 'string');
+          subInp.value = subVal != null ? String(subVal) : '';
+          subWrap.appendChild(subInp);
+
+          wrap.appendChild(subWrap);
+        });
+      }
+
+      return wrap;
+    }
+
+    // ── Array field (repeatable cards) ──
+
+    function buildArrayField(key, descriptor, value) {
+      var wrap = document.createElement('div');
+      wrap.setAttribute('data-field', key);
+      wrap.setAttribute('data-type', 'array');
+
+      var items = Array.isArray(value) ? value : [];
+      var itemSchema = descriptor.items || {};
+      var itemProps = itemSchema.properties || {};
+
+      // Header with count + add button
+      var header = document.createElement('div');
+      header.className = 'flex items-center justify-between mb-3';
+
+      var headerLabel = document.createElement('span');
+      headerLabel.className = 'text-sm font-medium text-gray-700';
+      headerLabel.textContent = formatFieldLabel(key);
+      if (descriptor.required) {
+        headerLabel.innerHTML += ' <span class="text-red-500">*</span>';
+      }
+
+      var countBadge = document.createElement('span');
+      countBadge.className = 'text-xs text-gray-400 ml-2';
+      countBadge.setAttribute('data-array-count', key);
+      countBadge.textContent = '(' + items.length + ' elementer)';
+      headerLabel.appendChild(countBadge);
+
+      var addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'px-3 py-1.5 bg-green-100 hover:bg-green-200 border border-green-300 text-green-700 rounded text-xs font-medium transition-colors';
+      addBtn.textContent = '+ Tilf\u00f8j';
+      addBtn.addEventListener('click', function() {
+        var newItem = createEmptyItem(itemProps);
+        var cardContainer = wrap.querySelector('[data-array-cards]');
+        var idx = cardContainer.children.length;
+        var card = buildArrayItemCard(key, idx, itemProps, newItem, wrap);
+        cardContainer.appendChild(card);
+        updateArrayCount(wrap, key);
+      });
+
+      header.appendChild(headerLabel);
+      header.appendChild(addBtn);
+      wrap.appendChild(header);
+
+      // Cards container
+      var cardsContainer = document.createElement('div');
+      cardsContainer.className = 'space-y-3';
+      cardsContainer.setAttribute('data-array-cards', key);
+
+      items.forEach(function(item, idx) {
+        var card = buildArrayItemCard(key, idx, itemProps, item, wrap);
+        cardsContainer.appendChild(card);
+      });
+
+      wrap.appendChild(cardsContainer);
+      return wrap;
+    }
+
+    function buildArrayItemCard(arrayKey, index, itemProps, itemValues, arrayWrap) {
+      var card = document.createElement('div');
+      card.className = 'border border-gray-200 rounded-lg p-4 bg-gray-50 relative';
+      card.setAttribute('data-array-item', index);
+
+      // Delete button
+      var deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-red-100 hover:bg-red-200 text-red-600 text-sm transition-colors';
+      deleteBtn.innerHTML = '&times;';
+      deleteBtn.addEventListener('click', function() {
+        card.remove();
+        updateArrayCount(arrayWrap, arrayKey);
+        // Re-index remaining cards
+        var cards = arrayWrap.querySelectorAll('[data-array-item]');
+        cards.forEach(function(c, i) { c.setAttribute('data-array-item', i); });
+      });
+      card.appendChild(deleteBtn);
+
+      // Number badge
+      var badge = document.createElement('span');
+      badge.className = 'text-xs text-gray-400 font-mono';
+      badge.textContent = '#' + (index + 1);
+      card.appendChild(badge);
+
+      var itemData = (typeof itemValues === 'object' && itemValues !== null) ? itemValues : {};
+
+      // Build sub-fields from schema or from existing data
+      var fieldKeys = Object.keys(itemProps).length > 0 ? Object.keys(itemProps) : Object.keys(itemData);
+
+      fieldKeys.forEach(function(subKey) {
+        var subType = typeof itemProps[subKey] === 'string' ? itemProps[subKey] : 'string';
+        var subVal = itemData[subKey];
+
+        var subWrap = document.createElement('div');
+        subWrap.className = 'mt-2';
+
+        var subLabel = document.createElement('label');
+        subLabel.className = 'block text-xs font-medium text-gray-600 mb-1';
+        subLabel.textContent = formatFieldLabel(subKey);
+        subWrap.appendChild(subLabel);
+
+        // Check if this is an image field
+        if (isImageUrl(subVal)) {
+          var imgRow = document.createElement('div');
+          imgRow.className = 'flex items-center gap-2';
+
+          var img = document.createElement('img');
+          img.src = subVal || '';
+          img.className = 'w-10 h-10 rounded object-cover bg-gray-200 flex-shrink-0';
+          img.onerror = function() { this.src = 'https://placehold.co/40x40/e2e8f0/94a3b8?text=?'; };
+
+          var inp = document.createElement('input');
+          inp.type = 'text';
+          inp.className = 'flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-xs font-mono';
+          inp.setAttribute('data-subfield', subKey);
+          inp.setAttribute('data-subtype', 'string');
+          inp.value = subVal || '';
+          inp.addEventListener('input', function() { img.src = inp.value; });
+
+          var pickBtn = document.createElement('button');
+          pickBtn.type = 'button';
+          pickBtn.className = 'px-2 py-1 bg-blue-100 hover:bg-blue-200 border border-blue-300 text-blue-700 rounded text-xs transition-colors';
+          pickBtn.textContent = 'Skift';
+          pickBtn.addEventListener('click', function() {
+            openMediaPicker(function(url) { inp.value = url; img.src = url; });
+          });
+
+          imgRow.appendChild(img);
+          imgRow.appendChild(inp);
+          imgRow.appendChild(pickBtn);
+          subWrap.appendChild(imgRow);
+        } else if (subType === 'boolean') {
+          var cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.className = 'w-4 h-4 text-blue-600 rounded border-gray-300';
+          cb.checked = !!subVal;
+          cb.setAttribute('data-subfield', subKey);
+          cb.setAttribute('data-subtype', 'boolean');
+          subWrap.appendChild(cb);
+        } else if (subType === 'array') {
+          // Nested array (e.g., features in tiers) — render as comma-separated or JSON
+          var ta = document.createElement('textarea');
+          ta.className = 'w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs';
+          ta.rows = 2;
+          ta.setAttribute('data-subfield', subKey);
+          ta.setAttribute('data-subtype', 'stringarray');
+          ta.value = Array.isArray(subVal) ? subVal.join('\n') : (subVal || '');
+          ta.placeholder = 'En per linje';
+          subWrap.appendChild(ta);
+        } else if (subType === 'object') {
+          // Nested object (e.g., cta: { text, href }) — render sub-fields inline
+          var subObj = (typeof subVal === 'object' && subVal !== null) ? subVal : {};
+          Object.keys(subObj).forEach(function(nestedKey) {
+            var nestedWrap = document.createElement('div');
+            nestedWrap.className = 'mt-1';
+            var nestedLabel = document.createElement('label');
+            nestedLabel.className = 'block text-xs text-gray-500 mb-0.5';
+            nestedLabel.textContent = nestedKey;
+            nestedWrap.appendChild(nestedLabel);
+            var nestedInp = document.createElement('input');
+            nestedInp.type = 'text';
+            nestedInp.className = 'w-full border border-gray-300 rounded px-2 py-1 text-xs';
+            nestedInp.setAttribute('data-subfield', subKey + '.' + nestedKey);
+            nestedInp.setAttribute('data-subtype', 'string');
+            nestedInp.value = subObj[nestedKey] != null ? String(subObj[nestedKey]) : '';
+            nestedWrap.appendChild(nestedInp);
+            subWrap.appendChild(nestedWrap);
+          });
+        } else {
+          // String / number
+          var isLongSub = /description|desc|answer|content|body/i.test(subKey) || (typeof subVal === 'string' && subVal.length > 60);
+          if (isLongSub) {
+            var ta = document.createElement('textarea');
+            ta.className = 'w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs';
+            ta.rows = 2;
+            ta.setAttribute('data-subfield', subKey);
+            ta.setAttribute('data-subtype', subType);
+            ta.value = subVal != null ? String(subVal) : '';
+            subWrap.appendChild(ta);
+          } else {
+            var inp = document.createElement('input');
+            inp.type = subType === 'number' ? 'number' : 'text';
+            inp.className = 'w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs';
+            inp.setAttribute('data-subfield', subKey);
+            inp.setAttribute('data-subtype', subType);
+            inp.value = subVal != null ? String(subVal) : '';
+            subWrap.appendChild(inp);
+          }
+        }
+
+        card.appendChild(subWrap);
+      });
+
+      return card;
+    }
+
+    function updateArrayCount(arrayWrap, arrayKey) {
+      var count = arrayWrap.querySelectorAll('[data-array-item]').length;
+      var badge = arrayWrap.querySelector('[data-array-count="' + arrayKey + '"]');
+      if (badge) badge.textContent = '(' + count + ' elementer)';
+    }
+
+    function createEmptyItem(itemProps) {
+      var item = {};
+      Object.keys(itemProps).forEach(function(key) {
+        var type = typeof itemProps[key] === 'string' ? itemProps[key] : 'string';
+        if (type === 'boolean') item[key] = false;
+        else if (type === 'number') item[key] = 0;
+        else if (type === 'array') item[key] = [];
+        else if (type === 'object') item[key] = {};
+        else item[key] = '';
+      });
+      return item;
+    }
+
+    // ══════════════════════════════════════════════════
+    // ── VALUE COLLECTION                            ──
+    // ══════════════════════════════════════════════════
+
+    /**
+     * Collect all form values back into a JSON object.
+     * Walks the form panel and reads data-field / data-subfield attributes.
+     */
+    function collectFormValues() {
+      var result = {};
+      var formPanel = document.getElementById('edit-form-panel');
+
+      // Process top-level fields
+      var topFields = formPanel.querySelectorAll('[data-field]');
+      topFields.forEach(function(el) {
+        var key = el.getAttribute('data-field');
+        var type = el.getAttribute('data-type');
+
+        // Skip nested fields (inside other data-field elements)
+        if (el.parentElement.closest('[data-field]') && el.parentElement.closest('[data-field]') !== el) return;
+
+        if (type === 'enum') {
+          // Read selected button
+          var selected = el.querySelector('.border-blue-500');
+          result[key] = selected ? parseEnumValue(selected.getAttribute('data-value')) : null;
+        } else if (type === 'boolean') {
+          result[key] = el.checked;
+        } else if (type === 'number') {
+          result[key] = el.value !== '' ? Number(el.value) : null;
+        } else if (type === 'string') {
+          result[key] = el.value;
+        } else if (type === 'json') {
+          result[key] = tryParseJson(el.value) || el.value;
+        } else if (type === 'object') {
+          result[key] = collectObjectValues(el);
+        } else if (type === 'array') {
+          result[key] = collectArrayValues(el);
+        }
+      });
+
+      return result;
+    }
+
+    function collectObjectValues(objectEl) {
+      var obj = {};
+      var subFields = objectEl.querySelectorAll('[data-subfield]');
+      subFields.forEach(function(inp) {
+        var subKey = inp.getAttribute('data-subfield');
+        var subType = inp.getAttribute('data-subtype');
+
+        // Handle nested object fields like "cta.text"
+        if (subKey.indexOf('.') > -1) {
+          var parts = subKey.split('.');
+          if (!obj[parts[0]] || typeof obj[parts[0]] !== 'object') obj[parts[0]] = {};
+          obj[parts[0]][parts[1]] = inp.value;
+          return;
+        }
+
+        if (subType === 'boolean') {
+          obj[subKey] = inp.checked;
+        } else if (subType === 'number') {
+          obj[subKey] = inp.value !== '' ? Number(inp.value) : null;
+        } else {
+          obj[subKey] = inp.value;
+        }
+      });
+      return obj;
+    }
+
+    function collectArrayValues(arrayEl) {
+      var items = [];
+      var cards = arrayEl.querySelectorAll('[data-array-item]');
+      cards.forEach(function(card) {
+        var item = {};
+        var subFields = card.querySelectorAll('[data-subfield]');
+        subFields.forEach(function(inp) {
+          var subKey = inp.getAttribute('data-subfield');
+          var subType = inp.getAttribute('data-subtype');
+
+          // Handle nested object fields like "cta.text"
+          if (subKey.indexOf('.') > -1) {
+            var parts = subKey.split('.');
+            if (!item[parts[0]] || typeof item[parts[0]] !== 'object') item[parts[0]] = {};
+            item[parts[0]][parts[1]] = inp.value;
+            return;
+          }
+
+          if (subType === 'boolean') {
+            item[subKey] = inp.checked;
+          } else if (subType === 'number') {
+            item[subKey] = inp.value !== '' ? Number(inp.value) : null;
+          } else if (subType === 'stringarray') {
+            // Newline-separated → array
+            item[subKey] = inp.value.split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
+          } else {
+            item[subKey] = inp.value;
+          }
+        });
+        items.push(item);
+      });
+      return items;
+    }
+
+    function parseEnumValue(str) {
+      if (str === 'true') return true;
+      if (str === 'false') return false;
+      var num = Number(str);
+      if (!isNaN(num) && str !== '') return num;
+      return str;
+    }
+
+    // ══════════════════════════════════════════════════
+    // ── HELPERS                                     ──
+    // ══════════════════════════════════════════════════
+
+    function createFieldWrapper(key, required) {
+      var wrap = document.createElement('div');
+      var label = document.createElement('label');
+      label.className = 'block text-sm font-medium text-gray-700 mb-1.5';
+      label.textContent = formatFieldLabel(key);
+      if (required) {
+        var star = document.createElement('span');
+        star.className = 'text-red-500 ml-1';
+        star.textContent = '*';
+        label.appendChild(star);
+      }
+      wrap.appendChild(label);
+      return wrap;
+    }
+
+    function formatFieldLabel(key) {
+      // camelCase / snake_case → Title Case
+      return key
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/[_-]/g, ' ')
+        .replace(/^\w/, function(c) { return c.toUpperCase(); })
+        .trim();
+    }
+
+    function formatEnumLabel(fieldKey, value) {
+      var labels = {
+        'left': '\u2190 Venstrestillet',
+        'center': '\u2194 Centreret',
+        'right': 'H\u00f8jrestillet \u2192',
+        'default': 'Standard',
+        'alt': 'Alternativ',
+        'primary': 'Prim\u00e6r',
+      };
+      return labels[String(value)] || String(value);
+    }
+
+    function tryParseJson(str) {
+      try { return JSON.parse(str); } catch (_) { return null; }
+    }
+
+    function isImageUrl(value) {
+      if (typeof value !== 'string') return false;
+      return /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(value) ||
+        value.startsWith('https://placehold') ||
+        value.includes('/uploads/') ||
+        value.includes('unsplash.com') ||
+        value.includes('pexels.com');
+    }
+
     // Show deploy notice after page deletion
     function showDeployNotice(pageName, deletedCount) {
-      // Remove any existing notice
-      const existing = document.getElementById('deploy-notice');
+      var existing = document.getElementById('deploy-notice');
       if (existing) existing.remove();
 
-      const notice = document.createElement('div');
+      var notice = document.createElement('div');
       notice.id = 'deploy-notice';
       notice.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
-      notice.innerHTML = `
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 text-xl flex-shrink-0">!</div>
-            <h3 class="text-lg font-bold text-gray-900">Side slettet fra databasen</h3>
-          </div>
-          <p class="text-gray-700 mb-2"><strong>${escapeHtml(pageName)}</strong> er slettet (${deletedCount} komponent(er) fjernet).</p>
-          <p class="text-gray-600 mb-4">Siden er stadig live indtil du udfører en ny udrulning. Tryk nedenfor for at fjerne den fra hjemmesiden.</p>
-          <div class="flex gap-3">
-            <button onclick="document.getElementById('deploy-notice').remove()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-3 rounded-lg transition-colors">
-              Luk
-            </button>
-            <button id="deploy-notice-btn" onclick="triggerDeployFromNotice()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-3 rounded-lg transition-colors">
-              Udrulning nu
-            </button>
-          </div>
-        </div>
-      `;
+      notice.innerHTML =
+        '<div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">' +
+          '<div class="flex items-center gap-3 mb-4">' +
+            '<div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 text-xl flex-shrink-0">!</div>' +
+            '<h3 class="text-lg font-bold text-gray-900">Side slettet fra databasen</h3>' +
+          '</div>' +
+          '<p class="text-gray-700 mb-2"><strong>' + escapeHtml(pageName) + '</strong> er slettet (' + deletedCount + ' komponent(er) fjernet).</p>' +
+          '<p class="text-gray-600 mb-4">Siden er stadig live indtil du udf\u00f8rer en ny udrulning. Tryk nedenfor for at fjerne den fra hjemmesiden.</p>' +
+          '<div class="flex gap-3">' +
+            '<button onclick="document.getElementById(\'deploy-notice\').remove()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-3 rounded-lg transition-colors">Luk</button>' +
+            '<button id="deploy-notice-btn" onclick="triggerDeployFromNotice()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-3 rounded-lg transition-colors">Udrulning nu</button>' +
+          '</div>' +
+        '</div>';
       document.body.appendChild(notice);
     }
 
     // Trigger GitHub Actions deploy
     window.triggerDeployFromNotice = async function() {
-      const btn = document.getElementById('deploy-notice-btn');
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Starter udrulning...';
-      }
+      var btn = document.getElementById('deploy-notice-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Starter udrulning...'; }
       try {
-        const res = await fetch(API + '/publish', {
+        var res = await fetch(API + '/publish', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
         });
-        const data = await res.json();
+        var data = await res.json();
         if (res.ok) {
-          if (btn) {
-            btn.textContent = 'Udrulning startet';
-            btn.className = 'flex-1 bg-green-600 text-white font-medium px-4 py-3 rounded-lg';
-          }
-          setTimeout(() => {
-            const notice = document.getElementById('deploy-notice');
-            if (notice) notice.remove();
-          }, 3000);
+          if (btn) { btn.textContent = 'Udrulning startet'; btn.className = 'flex-1 bg-green-600 text-white font-medium px-4 py-3 rounded-lg'; }
+          setTimeout(function() { var n = document.getElementById('deploy-notice'); if (n) n.remove(); }, 3000);
         } else {
           alert('Fejl: ' + (data.error || res.status));
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = 'Udrulning nu';
-          }
+          if (btn) { btn.disabled = false; btn.textContent = 'Udrulning nu'; }
         }
       } catch (err) {
         alert('Fejl: ' + err.message);
-        if (btn) {
-          btn.disabled = false;
-          btn.textContent = 'Udrulning nu';
-        }
+        if (btn) { btn.disabled = false; btn.textContent = 'Udrulning nu'; }
       }
     };
 
@@ -571,11 +1302,11 @@ Gem ændringer
 
     async function loadSeoMeta(page) {
       try {
-        const res = await fetch(API + '/page-components/page-meta?page=' + encodeURIComponent(page), {
+        var res = await fetch(API + '/page-components/page-meta?page=' + encodeURIComponent(page), {
           headers: { 'Authorization': 'Bearer ' + token }
         });
         if (!res.ok) return;
-        const meta = await res.json();
+        var meta = await res.json();
         currentSeoMeta = meta;
         document.getElementById('seo-meta-title').value = meta.meta_title || '';
         document.getElementById('seo-meta-description').value = meta.meta_description || '';
@@ -613,11 +1344,16 @@ Gem ændringer
             meta_title: document.getElementById('seo-meta-title').value || null,
             meta_description: document.getElementById('seo-meta-description').value || null,
             og_image: document.getElementById('seo-og-image').value || null,
-            schema_markup: currentSeoMeta?.schema_markup || null
+            schema_markup: currentSeoMeta ? currentSeoMeta.schema_markup : null
           })
         });
         if (!res.ok) throw new Error('Fejl ved gemning');
-        currentSeoMeta = { ...currentSeoMeta, meta_title: document.getElementById('seo-meta-title').value, meta_description: document.getElementById('seo-meta-description').value, og_image: document.getElementById('seo-og-image').value };
+        currentSeoMeta = {
+          meta_title: document.getElementById('seo-meta-title').value,
+          meta_description: document.getElementById('seo-meta-description').value,
+          og_image: document.getElementById('seo-og-image').value,
+          schema_markup: currentSeoMeta ? currentSeoMeta.schema_markup : null
+        };
         var status = document.getElementById('seo-save-status');
         status.classList.remove('hidden');
         setTimeout(function() { status.classList.add('hidden'); }, 2000);
@@ -632,79 +1368,10 @@ Gem ændringer
       });
     };
 
-    // ── Image field detection and media picker ──
-
-    function isImageUrl(value) {
-      if (typeof value !== 'string') return false;
-      return /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(value) ||
-        value.startsWith('https://placehold') ||
-        value.includes('/uploads/') ||
-        value.includes('unsplash.com');
-    }
-
-    function renderImageFields(content) {
-      const container = document.getElementById('edit-image-fields');
-      // Clear previous (keep the label)
-      while (container.children.length > 1) container.removeChild(container.lastChild);
-      let hasImages = false;
-
-      // Top-level string fields
-      for (const [key, value] of Object.entries(content || {})) {
-        if (typeof value === 'string' && isImageUrl(value)) {
-          hasImages = true;
-          container.appendChild(createImageControl(key, value, null, null));
-        }
-        // Array fields with image sub-props
-        if (Array.isArray(value)) {
-          value.forEach(function(item, idx) {
-            if (typeof item !== 'object' || item === null) return;
-            for (const [subKey, subVal] of Object.entries(item)) {
-              if (typeof subVal === 'string' && isImageUrl(subVal)) {
-                hasImages = true;
-                container.appendChild(createImageControl(subKey, subVal, key, idx));
-              }
-            }
-          });
-        }
-      }
-
-      container.classList.toggle('hidden', !hasImages);
-    }
-
-    function createImageControl(fieldName, currentUrl, arrayKey, arrayIndex) {
-      const pathLabel = arrayKey !== null ? arrayKey + '[' + arrayIndex + '].' + fieldName : fieldName;
-
-      const row = document.createElement('div');
-      row.className = 'flex items-center gap-3 bg-gray-50 rounded-lg p-2 border border-gray-200';
-      row.innerHTML =
-        '<img src="' + escapeAttr(currentUrl) + '" class="w-12 h-12 rounded object-cover bg-gray-200 flex-shrink-0" onerror="this.src=\'https://placehold.co/48x48/e2e8f0/94a3b8?text=?\'" />' +
-        '<div class="flex-1 min-w-0">' +
-          '<p class="text-xs font-mono text-gray-500">' + escapeHtml(pathLabel) + '</p>' +
-          '<p class="text-xs text-gray-400 truncate">' + escapeHtml(currentUrl) + '</p>' +
-        '</div>' +
-        '<button class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 border border-blue-300 text-blue-700 rounded text-xs font-medium transition-colors whitespace-nowrap">Skift billede</button>';
-
-      row.querySelector('button').addEventListener('click', function() {
-        openMediaPicker(function(selectedUrl) {
-          // Update the live content
-          var content = JSON.parse(document.getElementById('edit-content-json').value);
-          if (arrayKey !== null) {
-            content[arrayKey][arrayIndex][fieldName] = selectedUrl;
-          } else {
-            content[fieldName] = selectedUrl;
-          }
-          document.getElementById('edit-content-json').value = JSON.stringify(content, null, 2);
-          renderImageFields(content);
-        });
-      });
-
-      return row;
-    }
-
     // ── Media picker modal ──
 
-    let mediaPickerCallback = null;
-    let mediaPickerSearchTimeout = null;
+    var mediaPickerCallback = null;
+    var mediaPickerSearchTimeout = null;
 
     window.openMediaPicker = function(callback) {
       mediaPickerCallback = callback;
