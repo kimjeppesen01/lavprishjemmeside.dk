@@ -42,9 +42,10 @@ Slet
 Annuller
 </button> <button onclick="saveAltText()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
 Gem
-</button> </div> </div> </div> <script>
+</button> </div> </div> </div> <script>(function(){const apiUrl = "https://api.lavprishjemmeside.dk";
+
   (function() {
-    const API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+    const API = apiUrl;
     const token = localStorage.getItem('admin_token');
 
     if (!token) {
@@ -367,7 +368,7 @@ Gem
     // Init
     loadMedia('', false);
   })();
-  </script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
+  })();</script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
     (function() {
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
       if (path === '/admin') return;

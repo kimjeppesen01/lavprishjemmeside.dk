@@ -40,9 +40,10 @@ Annuller
 Publicer til live nu (~90 sek)
 </button> </section> </form> </div> <div id="success-toast" class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-3 rounded-xl shadow-lg hidden z-50">
 ✓ Indstillinger gemt
-</div> </div> <script>
+</div> </div> <script>(function(){const apiUrl = "https://api.lavprishjemmeside.dk";
+
   (function() {
-    const API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+    const API = apiUrl;
     const token = localStorage.getItem('admin_token');
     if (!token) { window.location.href = '/admin/'; return; }
 
@@ -414,7 +415,7 @@ Publicer til live nu (~90 sek)
 
     load();
   })();
-  </script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
+  })();</script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
     (function() {
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
       if (path === '/admin') return;

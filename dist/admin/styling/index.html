@@ -70,9 +70,10 @@ Accent handling
 Dette er et eksempel på et kort med den nuværende design-stil.
 </p> </div> </div> <!-- Typography Example --> <div class="border-t border-gray-200 pt-6"> <p class="text-xs text-gray-500 uppercase tracking-wider mb-2">Typografi</p> <h1 class="text-3xl font-bold mb-2" style="font-family: var(--font-heading); color: var(--color-neutral-900);">Overskrift H1</h1> <h2 class="text-xl font-semibold mb-2" style="font-family: var(--font-heading); color: var(--color-neutral-800);">Overskrift H2</h2> <p style="font-family: var(--font-body); color: var(--color-neutral-700);">
 Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved hjælp af designtokenerne.
-</p> </div> </div> </div> </div> </div> </div> </div> <script>
+</p> </div> </div> </div> </div> </div> </div> </div> <script>(function(){const apiUrl = "https://api.lavprishjemmeside.dk";
+
   (function() {
-    const API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+    const API = apiUrl;
     const token = localStorage.getItem('admin_token');
 
     if (!token) {
@@ -457,7 +458,7 @@ Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved 
     // Load settings on page load
     loadSettings();
   })();
-  </script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
+  })();</script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
     (function() {
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
       if (path === '/admin') return;

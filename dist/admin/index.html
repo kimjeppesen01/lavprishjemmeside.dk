@@ -34,9 +34,10 @@ Log ud
 Glemt adgangskode?
 </a> </div> </div> <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
 Log ind
-</button> </form> </div> </div> <script>
+</button> </form> </div> </div> <script>(function(){const apiUrl = "https://api.lavprishjemmeside.dk";
+
   (function() {
-    var API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+    var API = apiUrl;
     var form = document.getElementById('login-form');
     var errorMsg = document.getElementById('error-msg');
     var submitBtn = document.getElementById('submit-btn');
@@ -71,7 +72,7 @@ Log ind
       });
     });
   })();
-  </script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
+  })();</script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
     (function() {
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
       if (path === '/admin') return;

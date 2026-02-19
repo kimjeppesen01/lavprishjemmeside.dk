@@ -52,9 +52,10 @@ Vælg .md-fil
 Udløs udrulning nu
 </button> <button onclick="goToPageBuilder()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-3 rounded-lg transition-colors">
 Gå til Sidestyring
-</button> </div> </div> <!-- Error message (hidden by default) --> <div id="result-error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4"> <p class="text-red-700 font-medium mb-2">✗ Fejl under generering</p> <p class="text-red-600 text-sm" id="error-message"></p> </div> <!-- Empty state (shown by default) --> <div id="result-empty" class="text-center py-8 text-gray-500"> <p>Udfyld formularen og klik "Generer side med AI" for at starte</p> </div> </div> </div> </div> </div> <script>
+</button> </div> </div> <!-- Error message (hidden by default) --> <div id="result-error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4"> <p class="text-red-700 font-medium mb-2">✗ Fejl under generering</p> <p class="text-red-600 text-sm" id="error-message"></p> </div> <!-- Empty state (shown by default) --> <div id="result-empty" class="text-center py-8 text-gray-500"> <p>Udfyld formularen og klik "Generer side med AI" for at starte</p> </div> </div> </div> </div> </div> <script>(function(){const apiUrl = "https://api.lavprishjemmeside.dk";
+
   (function() {
-    const API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+    const API = apiUrl;
     const token = localStorage.getItem('admin_token');
 
     if (!token) {
@@ -297,7 +298,7 @@ Gå til Sidestyring
       }
     };
   })();
-  </script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
+  })();</script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
     (function() {
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
       if (path === '/admin') return;

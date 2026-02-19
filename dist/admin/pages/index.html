@@ -48,9 +48,10 @@ Avanceret JSON
 Annuller
 </button> <button onclick="saveComponentEdit()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
 Gem ændringer
-</button> </div> </div> </div>  <div id="media-picker-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4"> <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"> <div class="border-b border-gray-200 p-4 flex justify-between items-center flex-shrink-0"> <h3 class="text-lg font-bold text-gray-900">Vælg billede</h3> <button onclick="closeMediaPicker()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button> </div> <div class="p-4 border-b border-gray-200 flex-shrink-0"> <input type="text" id="media-picker-search" placeholder="Søg i billeder..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div id="media-picker-grid" class="p-4 flex-1 overflow-y-auto grid grid-cols-3 sm:grid-cols-4 gap-3"> <p class="col-span-full text-center text-gray-500 py-8">Henter billeder...</p> </div> </div> </div> <script>
+</button> </div> </div> </div>  <div id="media-picker-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4"> <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"> <div class="border-b border-gray-200 p-4 flex justify-between items-center flex-shrink-0"> <h3 class="text-lg font-bold text-gray-900">Vælg billede</h3> <button onclick="closeMediaPicker()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button> </div> <div class="p-4 border-b border-gray-200 flex-shrink-0"> <input type="text" id="media-picker-search" placeholder="Søg i billeder..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div id="media-picker-grid" class="p-4 flex-1 overflow-y-auto grid grid-cols-3 sm:grid-cols-4 gap-3"> <p class="col-span-full text-center text-gray-500 py-8">Henter billeder...</p> </div> </div> </div> <script>(function(){const apiUrl = "https://api.lavprishjemmeside.dk";
+
   (function() {
-    const API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+    const API = apiUrl;
     const token = localStorage.getItem('admin_token');
 
     if (!token) {
@@ -1453,7 +1454,7 @@ Gem ændringer
     // Load data on page load
     loadData();
   })();
-  </script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
+  })();</script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
     (function() {
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
       if (path === '/admin') return;

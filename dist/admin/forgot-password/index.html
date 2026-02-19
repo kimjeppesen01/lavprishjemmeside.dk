@@ -11,9 +11,10 @@ Indtast din e-mail, og vi sender dig et link til at nulstille din adgangskode.
 Send nulstillingslink
 </button> </form> <div class="mt-4 text-center"> <a href="/admin/" class="text-sm text-blue-600 hover:underline">
 Tilbage til login
-</a> </div> </div> </div> <script>
+</a> </div> </div> </div> <script>(function(){const apiUrl = "https://api.lavprishjemmeside.dk";
+
   (function() {
-    var API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+    var API = apiUrl;
     var form = document.getElementById('forgot-form');
     var errorMsg = document.getElementById('error-msg');
     var successMsg = document.getElementById('success-msg');
@@ -62,7 +63,7 @@ Tilbage til login
       });
     });
   })();
-  </script>  <footer class="mt-auto bg-gray-900 text-gray-400 py-12"> <div class="mx-auto max-w-6xl px-4"> <div class="grid gap-8 md:grid-cols-3"> <div> <h4 class="text-white font-semibold mb-3">lavprishjemmeside.dk</h4> <p class="text-sm">Professionelle hjemmesider til lav pris for danske virksomheder.</p> </div><div> <h4 class="text-white font-semibold mb-3">Sider</h4> <ul class="space-y-2 text-sm"> <li> <a href="/" class="hover:text-white transition-colors">Forside</a> </li><li> <a href="/priser" class="hover:text-white transition-colors">Priser</a> </li><li> <a href="/om-os" class="hover:text-white transition-colors">Om os</a> </li><li> <a href="/kontakt" class="hover:text-white transition-colors">Kontakt</a> </li> </ul> </div><div> <h4 class="text-white font-semibold mb-3">Kontakt</h4> <ul class="space-y-2 text-sm"> <li> <a href="mailto:info@lavprishjemmeside.dk" class="hover:text-white transition-colors">info@lavprishjemmeside.dk</a> </li> </ul> </div> </div> <div class="border-t border-gray-800 mt-8 pt-8 text-sm text-center"> © 2026. Alle rettigheder forbeholdes. </div> </div> </footer> <script>
+  })();</script>  <footer class="mt-auto bg-gray-900 text-gray-400 py-12"> <div class="mx-auto max-w-6xl px-4"> <div class="grid gap-8 md:grid-cols-3"> <div> <h4 class="text-white font-semibold mb-3">lavprishjemmeside.dk</h4> <p class="text-sm">Professionelle hjemmesider til lav pris for danske virksomheder.</p> </div><div> <h4 class="text-white font-semibold mb-3">Sider</h4> <ul class="space-y-2 text-sm"> <li> <a href="/" class="hover:text-white transition-colors">Forside</a> </li><li> <a href="/priser" class="hover:text-white transition-colors">Priser</a> </li><li> <a href="/om-os" class="hover:text-white transition-colors">Om os</a> </li><li> <a href="/kontakt" class="hover:text-white transition-colors">Kontakt</a> </li> </ul> </div><div> <h4 class="text-white font-semibold mb-3">Kontakt</h4> <ul class="space-y-2 text-sm"> <li> <a href="mailto:info@lavprishjemmeside.dk" class="hover:text-white transition-colors">info@lavprishjemmeside.dk</a> </li> </ul> </div> </div> <div class="border-t border-gray-800 mt-8 pt-8 text-sm text-center"> © 2026. Alle rettigheder forbeholdes. </div> </div> </footer> <script>
 (function() {
   const API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
 

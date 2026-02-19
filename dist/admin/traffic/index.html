@@ -94,9 +94,10 @@ GOOGLE_GA4_PROPERTY_ID=123456789</pre> <p class="text-xs text-amber-600 mt-2">GÃ
         }
       });
     })();
-    </script>  </body></html> <script>
+    </script>  </body></html> <script>(function(){const apiUrl = "https://api.lavprishjemmeside.dk";
+
 (function() {
-  var API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+  var API = apiUrl;
   var token = localStorage.getItem('admin_token');
   var currentDays = 28;
   var scData = null;
@@ -281,4 +282,4 @@ GOOGLE_GA4_PROPERTY_ID=123456789</pre> <p class="text-xs text-amber-600 mt-2">GÃ
   // Initial load
   loadSearchConsole();
 })();
-</script>
+})();</script>
