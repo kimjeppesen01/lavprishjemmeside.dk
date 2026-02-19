@@ -327,9 +327,28 @@ EMAIL_FROM_NAME=client.dk
 EMAIL_FROM_ADDRESS=noreply@client.dk
 GITHUB_PAT=ghp_xxxx
 GITHUB_REPO=YOUR_ORG/client.dk
+ANTHROPIC_API_KEY=
+PEXELS_API_KEY=
 ```
 
 Save (Ctrl+O, Enter, Ctrl+X in nano). Generate a secure `JWT_SECRET` (e.g. `openssl rand -hex 32`).
+
+**Copy API keys from the main site** — `ANTHROPIC_API_KEY` (required for AI Assemble) and `PEXELS_API_KEY` are not domain-specific. Copy them from the main site's server `.env`:
+
+```bash
+# Run on server — copies keys without printing values to screen
+MAIN_ENV=~/repositories/lavprishjemmeside.dk/api/.env
+LJ_ENV=~/repositories/client.dk/api/.env
+for KEY in ANTHROPIC_API_KEY PEXELS_API_KEY GITHUB_PAT; do
+  VALUE=$(grep "^${KEY}=" "$MAIN_ENV" | head -1)
+  [ -n "$VALUE" ] && sed -i "/^${KEY}=/d" "$LJ_ENV" && echo "$VALUE" >> "$LJ_ENV" && echo "Set $KEY"
+done
+# Fix GITHUB_REPO back to the new domain's repo
+sed -i "s|^GITHUB_REPO=.*|GITHUB_REPO=YOUR_ORG/client.dk|" "$LJ_ENV"
+touch ~/repositories/client.dk/api/tmp/restart.txt
+```
+
+Without `ANTHROPIC_API_KEY`, the AI Assemble feature will fail. Without `GITHUB_PAT` with `workflow` scope, the Publish button will fail.
 
 ---
 
@@ -517,6 +536,11 @@ Output path for dist [./deploy-output]: ./deploy-output
 | API returns 503 Service Unavailable | Node.js app is not running or crashed on startup. In cPanel → Setup Node.js App, check the app is Started. Then test manually via SSH: `export PATH=/opt/alt/alt-nodejs22/root/usr/bin:$PATH && cd ~/repositories/[domain]/api && node server.cjs` — the error will be printed to stderr. |
 | API subdomain not resolving (curl: Could not resolve host) | The `api.[domain]` subdomain was not created in cPanel. Go to cPanel → Domains → Subdomains, create `api` under the domain. Creating the subdomain also adds the DNS A record automatically. |
 | Login form submits as GET (credentials appear in the URL) | The admin JS event listener is not registering. Most likely the API subdomain doesn’t exist yet (so fetch fails silently and the browser falls back to native form submit). Create the subdomain and Node.js app first. If the subdomain is fine, check for JS errors in the browser console. |
+| “Kunne ikke opdatere design indstillinger” (500 on design settings save) | Feature toggle columns are missing from the DB. Run: `mysql -u DB_USER -p'DB_PASS' -h 127.0.0.1 DB_NAME -e “ALTER TABLE design_settings ADD COLUMN IF NOT EXISTS feature_smooth_scroll TINYINT(1) NOT NULL DEFAULT 1; ALTER TABLE design_settings ADD COLUMN IF NOT EXISTS feature_grain_overlay TINYINT(1) NOT NULL DEFAULT 1; ALTER TABLE design_settings ADD COLUMN IF NOT EXISTS feature_page_loader TINYINT(1) NOT NULL DEFAULT 1; ALTER TABLE design_settings ADD COLUMN IF NOT EXISTS feature_sticky_header TINYINT(1) NOT NULL DEFAULT 1; ALTER TABLE design_settings ADD COLUMN IF NOT EXISTS page_loader_text VARCHAR(100) NOT NULL DEFAULT 'Indlæser...'; ALTER TABLE design_settings ADD COLUMN IF NOT EXISTS page_loader_show_logo TINYINT(1) NOT NULL DEFAULT 1; ALTER TABLE design_settings ADD COLUMN IF NOT EXISTS page_loader_duration DECIMAL(3,1) NOT NULL DEFAULT 2.5;”` — This is fixed in `run-schema.cjs` (schema_design_features.sql now included), so it only affects installs from before this fix. |
+| api.[domain] resolves on server (`dig @server`) but browser shows “can't find server” | DNS has propagated globally but your ISP's resolver hasn't caught up yet. Fastest fix: switch your Mac/PC DNS to Google (`8.8.8.8`, `8.8.4.4`) in Network Settings. Alternatively add a temporary `/etc/hosts` entry: `echo “SERVER_IP api.client.dk” \| sudo tee -a /etc/hosts`. ISP resolvers typically catch up within a few hours. |
+| “Too many login attempts, please try again in 15 minutes” | The in-memory rate limiter (5 attempts / 15 min) was triggered. Either wait 15 minutes, or restart the Node app to reset it: `touch ~/repositories/client.dk/api/tmp/restart.txt`. |
+| Admin actions fail after password change (401 / token errors) | The browser has a stale JWT token from before the password change. Open DevTools → Application → Local Storage → `https://client.dk` → delete `admin_token`. Log in fresh with the new credentials. |
+| AI Assemble fails or returns error | `ANTHROPIC_API_KEY` is missing from `api/.env`. Copy it from the main site's `.env` on the server (see B.4 above) and restart the app. |
 | API 500 or “database disconnected” | Check `api/.env` exists, `DB_HOST=127.0.0.1`, DB name/user/password correct; schema and seed run. |
 | CORS error in browser | `CORS_ORIGIN` in `api/.env` must match the site URL exactly (e.g. `https://client.dk`). |
 | Build uses wrong domain | Set GitHub Variables `PUBLIC_SITE_URL` and `PUBLIC_API_URL` for that repo. |
