@@ -19,6 +19,7 @@ const aiPromptSettingsRoutes = require('./src/routes/ai-prompt-settings');
 const publishRoutes = require('./src/routes/publish');
 const mediaRoutes = require('./src/routes/media');
 const trafficRoutes = require('./src/routes/traffic');
+const masterRoutes = require('./src/routes/master');
 const { requestLogger } = require('./src/middleware/logger');
 
 const app = express();
@@ -27,8 +28,8 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet());
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'https://lavprishjemmeside.dk',
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
 }));
 app.use(express.json({ limit: '500kb' }));
 app.use(requestLogger);
@@ -48,6 +49,7 @@ app.use('/ai-prompt-settings', aiPromptSettingsRoutes);
 app.use('/publish', publishRoutes);
 app.use('/media', mediaRoutes);
 app.use('/traffic', trafficRoutes);
+app.use('/master', masterRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

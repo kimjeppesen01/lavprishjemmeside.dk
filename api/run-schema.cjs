@@ -16,9 +16,11 @@ const SCHEMA_ORDER = [
   'schema_page_meta.sql',
   'schema_ai_prompt_settings.sql',
   'schema_design_features.sql',
+  'schema_master.sql',
   'schema_indexes.sql',
 ];
 const SEED_FILE = 'seed_components_v2.sql';
+const MASTER_SEED_FILE = 'seed_master.sql';
 const SRC = path.join(__dirname, 'src');
 
 async function runSql(conn, filePath) {
@@ -54,6 +56,11 @@ async function main() {
     if (fs.existsSync(seedPath)) {
       console.log('  Running', SEED_FILE);
       await runSql(conn, seedPath);
+    }
+    const masterSeedPath = path.join(SRC, MASTER_SEED_FILE);
+    if (fs.existsSync(masterSeedPath)) {
+      console.log('  Running', MASTER_SEED_FILE);
+      await runSql(conn, masterSeedPath);
     }
   } finally {
     await conn.end();

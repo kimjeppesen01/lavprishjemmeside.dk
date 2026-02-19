@@ -1,0 +1,465 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+---
+
+<AdminLayout title="Master Hub">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Master Hub</h1>
+    <span class="text-xs text-gray-400">lavprishjemmeside.dk only</span>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="flex gap-1 border-b border-gray-200 mb-6">
+    <button onclick="switchTab('sites')" id="tab-sites" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-blue-600 text-blue-700">
+      Sites
+    </button>
+    <button onclick="switchTab('agents')" id="tab-agents" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+      Agents &amp; Kanban
+    </button>
+    <button onclick="switchTab('ai')" id="tab-ai" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+      AI Usage
+    </button>
+  </div>
+
+  <!-- ── Tab 1: Sites ────────────────────────────────────────── -->
+  <div id="panel-sites">
+    <div id="sites-loading" class="text-center py-12 text-gray-400">Henter sites…</div>
+    <div id="sites-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm mb-4"></div>
+    <div id="sites-grid" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-5"></div>
+
+    <div class="mt-6 pt-4 border-t border-gray-200">
+      <details>
+        <summary class="text-sm font-medium text-gray-600 cursor-pointer hover:text-gray-900">+ Registrer nyt site</summary>
+        <form id="add-site-form" class="mt-4 bg-white border border-gray-200 rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Navn</label>
+            <input name="name" placeholder="Min Kunde A/S" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Domain</label>
+            <input name="domain" placeholder="minkunde.dk" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">API URL</label>
+            <input name="api_url" placeholder="https://api.minkunde.dk" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Admin URL</label>
+            <input name="admin_url" placeholder="https://minkunde.dk/admin/" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">DB Name</label>
+            <input name="db_name" placeholder="theartis_minkunde" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">DB User</label>
+            <input name="db_user" placeholder="theartis_minkunde" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">DB Password</label>
+            <input name="db_password" type="password" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <div class="md:col-span-2 flex justify-end">
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Gem site</button>
+          </div>
+        </form>
+      </details>
+    </div>
+  </div>
+
+  <!-- ── Tab 2: Agents & Kanban ──────────────────────────────── -->
+  <div id="panel-agents" class="hidden">
+    <!-- IAN agent status cards -->
+    <div class="mb-6">
+      <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">IAN Agent Status</h2>
+      <div id="agent-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div>
+        <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div>
+        <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div>
+      </div>
+    </div>
+
+    <!-- Kanban board -->
+    <div class="mb-4 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider">Kanban Board</h2>
+      <button onclick="openAddCard()" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">+ Tilføj opgave</button>
+    </div>
+
+    <!-- Add card form (hidden by default) -->
+    <div id="add-card-form" class="hidden bg-white border border-blue-200 rounded-xl p-5 mb-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Titel *</label>
+        <input id="card-title" placeholder="Opgavetitel" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Kolonne</label>
+        <select id="card-column" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          <option value="backlog">Backlog</option>
+          <option value="in_progress">In Progress</option>
+          <option value="review">Review</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+      <div class="md:col-span-2">
+        <label class="text-xs text-gray-500 block mb-1">Beskrivelse</label>
+        <textarea id="card-desc" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea>
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Prioritet</label>
+        <select id="card-priority" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+          <option value="critical">Critical</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Tildelt</label>
+        <select id="card-assigned" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          <option value="human">Human</option>
+          <option value="haiku">Haiku</option>
+          <option value="sonnet">Sonnet</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Version target</label>
+        <input id="card-version" placeholder="1.1.0" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+      </div>
+      <div class="md:col-span-2 flex gap-2 justify-end">
+        <button onclick="document.getElementById('add-card-form').classList.add('hidden')" class="px-4 py-2 border border-gray-300 text-sm rounded-lg hover:bg-gray-50">Annuller</button>
+        <button onclick="submitCard()" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Gem</button>
+      </div>
+    </div>
+
+    <div id="kanban-loading" class="text-center py-12 text-gray-400">Henter kanban…</div>
+    <div id="kanban-board" class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"></div>
+  </div>
+
+  <!-- ── Tab 3: AI Usage ─────────────────────────────────────── -->
+  <div id="panel-ai" class="hidden">
+    <div id="ai-loading" class="text-center py-12 text-gray-400">Henter AI-forbrug…</div>
+    <div id="ai-content" class="hidden space-y-6"></div>
+  </div>
+</AdminLayout>
+
+<script define:vars={{ apiUrl }}>
+var API = apiUrl;
+var activeTab = 'sites';
+var kanbanData = {};
+
+// ─── Auth helper ──────────────────────────────────────────────
+function authHeaders() {
+  var token = localStorage.getItem('admin_token');
+  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+}
+
+// ─── Tab switching ─────────────────────────────────────────────
+function switchTab(tab) {
+  ['sites', 'agents', 'ai'].forEach(function(t) {
+    var panel = document.getElementById('panel-' + t);
+    var btn = document.getElementById('tab-' + t);
+    if (panel) panel.classList.toggle('hidden', t !== tab);
+    if (btn) {
+      btn.classList.toggle('border-blue-600', t === tab);
+      btn.classList.toggle('text-blue-700', t === tab);
+      btn.classList.toggle('border-transparent', t !== tab);
+      btn.classList.toggle('text-gray-500', t !== tab);
+    }
+  });
+  activeTab = tab;
+  if (tab === 'sites') loadSites();
+  if (tab === 'agents') { loadAgents(); loadKanban(); }
+  if (tab === 'ai') loadAiUsage();
+}
+
+// ─── Sites tab ────────────────────────────────────────────────
+function healthDot(status) {
+  var colors = { online: 'bg-green-500', degraded: 'bg-amber-400', offline: 'bg-red-500', unknown: 'bg-gray-400' };
+  return '<span class="inline-block w-2.5 h-2.5 rounded-full ' + (colors[status] || 'bg-gray-400') + '"></span>';
+}
+
+function priorityBadge(p) {
+  var map = { low: 'bg-gray-100 text-gray-600', medium: 'bg-blue-100 text-blue-700', high: 'bg-amber-100 text-amber-700', critical: 'bg-red-100 text-red-700' };
+  return '<span class="text-xs px-2 py-0.5 rounded-full font-medium ' + (map[p] || map.medium) + '">' + p + '</span>';
+}
+
+function assignedLabel(a) {
+  var map = { haiku: 'Haiku', sonnet: 'Sonnet', human: 'Human' };
+  return map[a] || a;
+}
+
+function fmt(n) { return Number(n).toLocaleString('da-DK'); }
+function fmtCost(n) { return '$' + Number(n).toFixed(4); }
+
+function renderSiteCard(site) {
+  return '<div class="bg-white border border-gray-200 rounded-xl p-5 space-y-3">' +
+    '<div class="flex items-center justify-between">' +
+      '<div>' +
+        '<a href="' + site.admin_url + '" target="_blank" class="font-semibold text-gray-900 hover:text-blue-600">' + site.name + '</a>' +
+        '<p class="text-xs text-gray-500">' + site.domain + '</p>' +
+      '</div>' +
+      '<div class="flex items-center gap-2">' +
+        healthDot(site.health) +
+        '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">v' + site.version + '</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="grid grid-cols-4 gap-2 text-center">' +
+      '<div class="bg-gray-50 rounded-lg p-2"><p class="text-lg font-bold text-gray-900">' + site.pages + '</p><p class="text-xs text-gray-500">Sider</p></div>' +
+      '<div class="bg-gray-50 rounded-lg p-2"><p class="text-lg font-bold text-gray-900">' + site.components_used + '</p><p class="text-xs text-gray-500">Kompon.</p></div>' +
+      '<div class="bg-gray-50 rounded-lg p-2"><p class="text-lg font-bold text-gray-900">' + site.media + '</p><p class="text-xs text-gray-500">Media</p></div>' +
+      '<div class="bg-gray-50 rounded-lg p-2"><p class="text-lg font-bold text-gray-900">' + site.db_size_mb + '</p><p class="text-xs text-gray-500">MB DB</p></div>' +
+    '</div>' +
+    '<div class="flex items-center justify-between text-xs text-gray-500">' +
+      '<span>AI tokens (30d): <strong class="text-gray-800">' + fmt(site.ai_tokens) + '</strong></span>' +
+      '<span>Cost: <strong class="text-gray-800">' + fmtCost(site.ai_cost_usd) + '</strong></span>' +
+      '<a href="' + site.admin_url + '" target="_blank" class="text-blue-600 hover:underline font-medium">Admin →</a>' +
+    '</div>' +
+  '</div>';
+}
+
+function loadSites() {
+  var loading = document.getElementById('sites-loading');
+  var grid = document.getElementById('sites-grid');
+  var errEl = document.getElementById('sites-error');
+  loading.classList.remove('hidden');
+  grid.classList.add('hidden');
+  errEl.classList.add('hidden');
+
+  fetch(API + '/master/sites', { headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(sites) {
+      loading.classList.add('hidden');
+      grid.innerHTML = sites.map(renderSiteCard).join('');
+      grid.classList.remove('hidden');
+    })
+    .catch(function(e) {
+      loading.classList.add('hidden');
+      errEl.textContent = 'Kunne ikke hente sites: ' + e.message;
+      errEl.classList.remove('hidden');
+    });
+}
+
+// Add site form
+document.getElementById('add-site-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var data = {};
+  new FormData(this).forEach(function(v, k) { if (v) data[k] = v; });
+  fetch(API + '/master/sites', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.error) { alert(res.error); return; }
+      e.target.reset();
+      loadSites();
+    })
+    .catch(function(e) { alert('Fejl: ' + e.message); });
+});
+
+// ─── Agents tab ───────────────────────────────────────────────
+function statusColor(s) {
+  var map = { online: 'bg-green-500', busy: 'bg-amber-400', offline: 'bg-red-400' };
+  return map[s] || 'bg-gray-400';
+}
+
+function timeSince(ts) {
+  if (!ts) return 'Aldrig';
+  var d = new Date(ts);
+  var secs = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (secs < 60) return secs + 's siden';
+  if (secs < 3600) return Math.floor(secs / 60) + 'm siden';
+  if (secs < 86400) return Math.floor(secs / 3600) + 't siden';
+  return Math.floor(secs / 86400) + 'd siden';
+}
+
+function renderAgentCard(agent) {
+  var names = { haiku: 'Haiku Worker', sonnet: 'Sonnet Worker', ian: 'IAN Orchestrator' };
+  return '<div class="bg-white border border-gray-200 rounded-xl p-5">' +
+    '<div class="flex items-center gap-3 mb-3">' +
+      '<span class="inline-block w-3 h-3 rounded-full ' + statusColor(agent.status) + '"></span>' +
+      '<span class="font-semibold text-gray-900">' + (names[agent.agent_type] || agent.agent_type) + '</span>' +
+      '<span class="ml-auto text-xs text-gray-400">' + timeSince(agent.last_seen) + '</span>' +
+    '</div>' +
+    (agent.current_task ? '<p class="text-xs text-gray-600 mb-3 truncate" title="' + agent.current_task + '">' + agent.current_task + '</p>' : '<p class="text-xs text-gray-400 mb-3">Ingen aktiv opgave</p>') +
+    '<div class="grid grid-cols-3 gap-2 text-center">' +
+      '<div><p class="text-sm font-bold">' + (agent.messages_sent_today || 0) + '</p><p class="text-xs text-gray-400">Slack msgs</p></div>' +
+      '<div><p class="text-sm font-bold">' + fmt(agent.tokens_used_today || 0) + '</p><p class="text-xs text-gray-400">Tokens</p></div>' +
+      '<div><p class="text-sm font-bold">' + fmtCost(agent.cost_usd_today || 0) + '</p><p class="text-xs text-gray-400">Cost</p></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function loadAgents() {
+  fetch(API + '/master/ian-status', { headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(agents) {
+      var grid = document.getElementById('agent-cards');
+      grid.innerHTML = agents.length
+        ? agents.map(renderAgentCard).join('')
+        : '<p class="text-sm text-gray-400 col-span-3">Ingen heartbeat data modtaget endnu.</p>';
+    })
+    .catch(function() {
+      document.getElementById('agent-cards').innerHTML = '<p class="text-sm text-red-500 col-span-3">Kunne ikke hente agent status.</p>';
+    });
+}
+
+// ─── Kanban ───────────────────────────────────────────────────
+var COLUMNS = [
+  { key: 'backlog', label: 'Backlog' },
+  { key: 'in_progress', label: 'In Progress' },
+  { key: 'review', label: 'Review' },
+  { key: 'done', label: 'Done' },
+];
+
+function renderKanbanCard(item, colIndex) {
+  var canLeft = colIndex > 0;
+  var canRight = colIndex < COLUMNS.length - 1;
+  return '<div class="bg-white border border-gray-200 rounded-lg p-3 space-y-2">' +
+    '<div class="flex items-start justify-between gap-2">' +
+      '<p class="text-sm font-medium text-gray-900 leading-tight">' + escHtml(item.title) + '</p>' +
+      '<button onclick="deleteCard(' + item.id + ')" class="text-gray-300 hover:text-red-500 text-xs shrink-0">✕</button>' +
+    '</div>' +
+    (item.description ? '<p class="text-xs text-gray-500 line-clamp-2">' + escHtml(item.description) + '</p>' : '') +
+    '<div class="flex flex-wrap gap-1 items-center">' +
+      priorityBadge(item.priority) +
+      '<span class="text-xs text-gray-400">' + assignedLabel(item.assigned_to) + '</span>' +
+      (item.version_target ? '<span class="text-xs text-gray-400">v' + item.version_target + '</span>' : '') +
+    '</div>' +
+    '<div class="flex gap-1 justify-end pt-1">' +
+      (canLeft ? '<button onclick="moveCard(' + item.id + ',\'' + COLUMNS[colIndex - 1].key + '\')" class="text-xs px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-100">←</button>' : '') +
+      (canRight ? '<button onclick="moveCard(' + item.id + ',\'' + COLUMNS[colIndex + 1].key + '\')" class="text-xs px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-100">→</button>' : '') +
+    '</div>' +
+  '</div>';
+}
+
+function renderKanban(data) {
+  var board = document.getElementById('kanban-board');
+  board.innerHTML = COLUMNS.map(function(col, idx) {
+    var items = data[col.key] || [];
+    return '<div class="flex flex-col gap-2">' +
+      '<div class="flex items-center justify-between mb-1">' +
+        '<h3 class="text-xs font-semibold uppercase tracking-wider text-gray-500">' + col.label + '</h3>' +
+        '<span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">' + items.length + '</span>' +
+      '</div>' +
+      '<div class="flex flex-col gap-2 min-h-16">' +
+        (items.length ? items.map(function(item) { return renderKanbanCard(item, idx); }).join('') : '<p class="text-xs text-gray-300 text-center py-4">Tom</p>') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function loadKanban() {
+  var loading = document.getElementById('kanban-loading');
+  var board = document.getElementById('kanban-board');
+  loading.classList.remove('hidden');
+  board.classList.add('hidden');
+
+  fetch(API + '/master/kanban', { headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      kanbanData = data;
+      loading.classList.add('hidden');
+      renderKanban(data);
+      board.classList.remove('hidden');
+    })
+    .catch(function() {
+      loading.textContent = 'Kunne ikke hente kanban.';
+    });
+}
+
+function moveCard(id, newCol) {
+  fetch(API + '/master/kanban/' + id, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify({ column_name: newCol })
+  }).then(function() { loadKanban(); });
+}
+
+function deleteCard(id) {
+  if (!confirm('Slet opgave?')) return;
+  fetch(API + '/master/kanban/' + id, { method: 'DELETE', headers: authHeaders() })
+    .then(function() { loadKanban(); });
+}
+
+function openAddCard() {
+  document.getElementById('add-card-form').classList.remove('hidden');
+  document.getElementById('card-title').focus();
+}
+
+function submitCard() {
+  var title = document.getElementById('card-title').value.trim();
+  if (!title) { alert('Titel er påkrævet'); return; }
+  var data = {
+    title: title,
+    description: document.getElementById('card-desc').value.trim() || null,
+    column_name: document.getElementById('card-column').value,
+    priority: document.getElementById('card-priority').value,
+    assigned_to: document.getElementById('card-assigned').value,
+    version_target: document.getElementById('card-version').value.trim() || null,
+  };
+  fetch(API + '/master/kanban', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.error) { alert(res.error); return; }
+      document.getElementById('add-card-form').classList.add('hidden');
+      document.getElementById('card-title').value = '';
+      document.getElementById('card-desc').value = '';
+      document.getElementById('card-version').value = '';
+      loadKanban();
+    })
+    .catch(function(e) { alert('Fejl: ' + e.message); });
+}
+
+// ─── AI Usage tab ─────────────────────────────────────────────
+function renderMiniChart(usageRows) {
+  if (!usageRows || !usageRows.length) return '<p class="text-xs text-gray-400">Ingen data</p>';
+  var max = Math.max.apply(null, usageRows.map(function(r) { return Number(r.tokens) || 0; })) || 1;
+  var bars = usageRows.slice(-14).map(function(r) {
+    var h = Math.max(2, Math.round((Number(r.tokens) / max) * 40));
+    return '<div title="' + r.day + ': ' + fmt(r.tokens) + ' tokens" style="height:' + h + 'px" class="bg-blue-400 rounded-sm w-3 mt-auto"></div>';
+  }).join('');
+  return '<div class="flex items-end gap-0.5 h-12">' + bars + '</div>';
+}
+
+function loadAiUsage() {
+  var loading = document.getElementById('ai-loading');
+  var content = document.getElementById('ai-content');
+  loading.classList.remove('hidden');
+  content.classList.add('hidden');
+
+  fetch(API + '/master/ai-usage', { headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(sites) {
+      loading.classList.add('hidden');
+      content.innerHTML = sites.map(function(site) {
+        var totalTokens = (site.usage || []).reduce(function(s, r) { return s + Number(r.tokens); }, 0);
+        var totalCost = (site.usage || []).reduce(function(s, r) { return s + Number(r.cost_usd); }, 0);
+        return '<div class="bg-white border border-gray-200 rounded-xl p-5">' +
+          '<div class="flex items-center justify-between mb-3">' +
+            '<div>' +
+              '<p class="font-semibold text-gray-900">' + site.site + '</p>' +
+              '<p class="text-xs text-gray-400">' + site.domain + '</p>' +
+            '</div>' +
+            '<div class="text-right">' +
+              '<p class="text-sm font-bold">' + fmt(totalTokens) + ' tokens</p>' +
+              '<p class="text-xs text-gray-500">' + fmtCost(totalCost) + ' (30 dage)</p>' +
+            '</div>' +
+          '</div>' +
+          renderMiniChart(site.usage) +
+          (site.error ? '<p class="text-xs text-red-400 mt-2">DB utilgængelig</p>' : '') +
+        '</div>';
+      }).join('') || '<p class="text-gray-400 text-sm">Ingen sites fundet.</p>';
+      content.classList.remove('hidden');
+    })
+    .catch(function() {
+      loading.textContent = 'Kunne ikke hente AI-forbrug.';
+    });
+}
+
+// ─── Utilities ────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Load initial tab
+loadSites();
+</script>
