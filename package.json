@@ -1,7 +1,7 @@
 {
   "name": "lavprishjemmeside.dk",
   "type": "module",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "scripts": {
     "generate-theme": "node scripts/generate-theme.mjs",
     "prebuild": "node scripts/generate-theme.mjs",

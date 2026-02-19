@@ -431,6 +431,9 @@ Set the **site domain** (e.g. `client.dk`) document root to **`~/client.dk/`** (
 3. Wait until the job is green.
 4. Open **https://client.dk** and **https://client.dk/admin/**.
 5. Log in with the admin email/password you set in B.5.
+6. Verify CMS version: run `git describe --tags` — should show e.g. `v1.0.0`.
+
+For future updates to this site, follow **`docs/UPSTREAM_UPDATES.md`**.
 
 ---
 
