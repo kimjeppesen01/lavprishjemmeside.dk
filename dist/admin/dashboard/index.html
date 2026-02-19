@@ -14,6 +14,8 @@
     })();
     </script> <div class="flex min-h-screen"> <!-- Sidebar --> <aside id="admin-sidebar" class="hidden w-64 bg-gray-900 text-gray-100 min-h-screen flex-col"> <div class="p-4 border-b border-gray-700"> <a href="/admin/dashboard/" class="text-lg font-bold text-white">LPH Admin</a> </div> <nav class="flex-1 p-4 space-y-1"> <a href="/admin/dashboard/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm">
 Oversigt
+</a> <a href="/admin/traffic/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm">
+📈 Trafik
 </a> <div class="pt-2 mt-2 border-t border-gray-700"> <p class="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">Webstedskonfig</p> <a href="/admin/pages/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm">
 Sider
 </a> <a href="/admin/styling/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm">
@@ -35,7 +37,7 @@ Publicer til live (~90 sek)
 </a> <a href="/admin/ai-assemble/" class="flex items-center gap-2 text-blue-600 hover:underline"> <span>⚡</span> AI Indholdsudvikler
 </a> </div> </div> </div> <!-- Metric cards --> <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <p class="text-sm text-gray-500 mb-1">Hændelser i alt</p> <p class="text-3xl font-bold" id="stat-events-total">&mdash;</p> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <p class="text-sm text-gray-500 mb-1">Hændelser i dag</p> <p class="text-3xl font-bold" id="stat-events-today">&mdash;</p> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <p class="text-sm text-gray-500 mb-1">Sessioner i alt</p> <p class="text-3xl font-bold" id="stat-sessions-total">&mdash;</p> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <p class="text-sm text-gray-500 mb-1">Gns. sider pr. session</p> <p class="text-3xl font-bold" id="stat-avg-pages">&mdash;</p> </div> </div> <!-- Two-column: Top Events + Top Landing Pages --> <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <h2 class="text-lg font-semibold mb-4">Top hændelser</h2> <table class="w-full text-sm"> <thead> <tr class="text-left text-gray-500 border-b"> <th class="pb-2">Hændelse</th> <th class="pb-2">Type</th> <th class="pb-2 text-right">Antal</th> </tr> </thead> <tbody id="table-top-events"></tbody> </table> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <h2 class="text-lg font-semibold mb-4">Top landingssider</h2> <table class="w-full text-sm"> <thead> <tr class="text-left text-gray-500 border-b"> <th class="pb-2">Side</th> <th class="pb-2 text-right">Sessioner</th> </tr> </thead> <tbody id="table-top-pages"></tbody> </table> </div> </div> <!-- Recent events --> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <h2 class="text-lg font-semibold mb-4">Seneste hændelser</h2> <div class="overflow-x-auto"> <table class="w-full text-sm"> <thead> <tr class="text-left text-gray-500 border-b"> <th class="pb-2">Type</th> <th class="pb-2">Navn</th> <th class="pb-2">Side</th> <th class="pb-2">Tidspunkt</th> </tr> </thead> <tbody id="table-recent-events"></tbody> </table> </div> </div> </div> <script>
   (function() {
-    var API = 'https://api.lavprishjemmeside.dk';
+    var API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
     var token = localStorage.getItem('admin_token');
     if (!token) return;
 
@@ -173,7 +175,7 @@ Publicer til live (~90 sek)
       if (err.message === 'Unauthorized') return;
       document.getElementById('loading').classList.add('hidden');
       var msg = err.message === 'Failed to fetch'
-        ? 'Kunne ikke forbinde til API (api.lavprishjemmeside.dk). Tjek om serveren kører.'
+        ? ('Kunne ikke forbinde til API (' + API + '). Tjek om serveren kører.')
         : (err.message.indexOf('503') >= 0 ? err.message : 'Kunne ikke hente data: ' + err.message);
       document.getElementById('error-text').textContent = msg;
       document.getElementById('error').classList.remove('hidden');
