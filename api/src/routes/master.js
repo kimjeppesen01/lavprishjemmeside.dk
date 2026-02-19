@@ -4,6 +4,20 @@ const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const mysql = require('mysql2/promise');
 const fetch = (...args) => import('node-fetch').then(({ default: f }) => f(...args));
+const { spawn } = require('child_process');
+const crypto = require('crypto');
+
+// Active claude CLI processes keyed by taskId
+const activeTasks = new Map();
+
+// Known repo working directories on the server
+const REPO_DIRS = {
+  'lavprishjemmeside.dk': '/home/theartis/repositories/lavprishjemmeside.dk',
+  'ljdesignstudio.dk':    '/home/theartis/repositories/ljdesignstudio.dk',
+};
+
+// Path to the claude wrapper script (uses Node 22)
+const CLAUDE_BIN = '/home/theartis/local/bin/claude';
 
 // Auth for IAN Python agent (no JWT needed)
 function requireApiKey(req, res, next) {
@@ -294,6 +308,74 @@ router.get('/ai-usage', requireAuth, async (req, res) => {
     console.error('GET /master/ai-usage error:', err);
     res.status(500).json({ error: 'Failed to load AI usage' });
   }
+});
+
+// ─── Claude Code Runner ───────────────────────────────────────
+
+// POST /master/claude-run — spawn claude CLI and stream output via SSE
+router.post('/claude-run', requireAuth, (req, res) => {
+  const { prompt, repo } = req.body;
+  if (!prompt) return res.status(400).json({ error: 'prompt required' });
+
+  const cwd = REPO_DIRS[repo] || REPO_DIRS['lavprishjemmeside.dk'];
+  const taskId = crypto.randomUUID();
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Task-Id', taskId);
+  res.write(`data: ${JSON.stringify({ type: 'start', taskId, cwd })}\n\n`);
+
+  const proc = spawn(CLAUDE_BIN, ['--print', '--dangerously-skip-permissions', '-p', prompt], {
+    cwd,
+    env: {
+      ...process.env,
+      PATH: `/home/theartis/local/bin:/opt/alt/alt-nodejs22/root/usr/bin:${process.env.PATH || '/usr/local/bin:/usr/bin:/bin'}`,
+      HOME: '/home/theartis',
+    },
+  });
+
+  activeTasks.set(taskId, proc);
+  const killTimer = setTimeout(() => { proc.kill(); activeTasks.delete(taskId); }, 600_000);
+
+  proc.stdout.on('data', (d) => {
+    try { res.write(`data: ${JSON.stringify({ type: 'out', text: d.toString() })}\n\n`); } catch {}
+  });
+  proc.stderr.on('data', (d) => {
+    try { res.write(`data: ${JSON.stringify({ type: 'err', text: d.toString() })}\n\n`); } catch {}
+  });
+  proc.on('close', (code) => {
+    clearTimeout(killTimer);
+    activeTasks.delete(taskId);
+    try {
+      res.write(`data: ${JSON.stringify({ type: 'done', code })}\n\n`);
+      res.end();
+    } catch {}
+  });
+  proc.on('error', (err) => {
+    clearTimeout(killTimer);
+    activeTasks.delete(taskId);
+    try {
+      res.write(`data: ${JSON.stringify({ type: 'err', text: 'Failed to start claude: ' + err.message })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: 'done', code: 1 })}\n\n`);
+      res.end();
+    } catch {}
+  });
+
+  req.on('close', () => {
+    clearTimeout(killTimer);
+    proc.kill();
+    activeTasks.delete(taskId);
+  });
+});
+
+// DELETE /master/claude-run/:taskId — kill a running task
+router.delete('/claude-run/:taskId', requireAuth, (req, res) => {
+  const proc = activeTasks.get(req.params.taskId);
+  if (!proc) return res.status(404).json({ error: 'Task not found or already finished' });
+  proc.kill();
+  activeTasks.delete(req.params.taskId);
+  res.json({ ok: true });
 });
 
 module.exports = router;

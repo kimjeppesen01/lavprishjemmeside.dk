@@ -20,6 +20,9 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
     <button onclick="switchTab('ai')" id="tab-ai" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
       AI Usage
     </button>
+    <button onclick="switchTab('claude')" id="tab-claude" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+      Claude Code
+    </button>
   </div>
 
   <!-- ── Tab 1: Sites ────────────────────────────────────────── -->
@@ -141,6 +144,49 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
     <div id="ai-loading" class="text-center py-12 text-gray-400">Henter AI-forbrug…</div>
     <div id="ai-content" class="hidden space-y-6"></div>
   </div>
+
+  <!-- ── Tab 4: Claude Code Runner ──────────────────────────── -->
+  <div id="panel-claude" class="hidden">
+    <div class="bg-white border border-gray-200 rounded-xl p-5 mb-4">
+      <div class="flex flex-wrap gap-3 items-end mb-4">
+        <div>
+          <label class="text-xs text-gray-500 block mb-1">Repository</label>
+          <select id="claude-repo" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="lavprishjemmeside.dk">lavprishjemmeside.dk</option>
+            <option value="ljdesignstudio.dk">ljdesignstudio.dk</option>
+          </select>
+        </div>
+        <div class="flex-1 min-w-48">
+          <label class="text-xs text-gray-500 block mb-1">Model hint (optional prefix)</label>
+          <input id="claude-prefix" placeholder="e.g. !sonnet for heavy tasks" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-400" />
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="text-xs text-gray-500 block mb-1">Task / prompt</label>
+        <textarea id="claude-prompt" rows="5" placeholder="Describe the task for Claude Code…&#10;e.g. Run node api/run-schema.cjs and report any errors" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono resize-y"></textarea>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="runClaude()" id="claude-run-btn" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-medium">
+          ▶ Run
+        </button>
+        <button onclick="killClaude()" id="claude-kill" class="hidden px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 font-medium">
+          ■ Kill
+        </button>
+        <button onclick="clearOutput()" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Output terminal -->
+    <div class="bg-gray-950 rounded-xl border border-gray-800 p-4 min-h-64">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs text-gray-500 font-mono">Output</span>
+        <span id="claude-status" class="text-xs text-gray-500"></span>
+      </div>
+      <pre id="claude-output" class="text-sm font-mono whitespace-pre-wrap break-words overflow-auto max-h-[60vh] text-gray-300"></pre>
+    </div>
+  </div>
 </AdminLayout>
 
 <script define:vars={{ apiUrl }}>
@@ -156,7 +202,7 @@ function authHeaders() {
 
 // ─── Tab switching ─────────────────────────────────────────────
 function switchTab(tab) {
-  ['sites', 'agents', 'ai'].forEach(function(t) {
+  ['sites', 'agents', 'ai', 'claude'].forEach(function(t) {
     var panel = document.getElementById('panel-' + t);
     var btn = document.getElementById('tab-' + t);
     if (panel) panel.classList.toggle('hidden', t !== tab);
@@ -452,6 +498,97 @@ function loadAiUsage() {
     })
     .catch(function() {
       loading.textContent = 'Kunne ikke hente AI-forbrug.';
+    });
+}
+
+// ─── Claude Code Runner ───────────────────────────────────────
+var currentTaskId = null;
+
+function appendOutput(text, colorClass) {
+  var out = document.getElementById('claude-output');
+  var span = document.createElement('span');
+  span.className = colorClass || 'text-gray-300';
+  span.textContent = text;
+  out.appendChild(span);
+  out.scrollTop = out.scrollHeight;
+}
+
+function clearOutput() {
+  document.getElementById('claude-output').innerHTML = '';
+  document.getElementById('claude-status').textContent = '';
+}
+
+function setRunning(running) {
+  var runBtn = document.getElementById('claude-run-btn');
+  var killBtn = document.getElementById('claude-kill');
+  if (runBtn) runBtn.disabled = running;
+  if (killBtn) killBtn.classList.toggle('hidden', !running);
+  document.getElementById('claude-status').textContent = running ? 'Running…' : '';
+}
+
+function runClaude() {
+  var prefix = document.getElementById('claude-prefix').value.trim();
+  var body = document.getElementById('claude-prompt').value.trim();
+  if (!body) return;
+  var prompt = prefix ? prefix + ' ' + body : body;
+  var repo = document.getElementById('claude-repo').value;
+
+  clearOutput();
+  setRunning(true);
+  appendOutput('$ claude --print --dangerously-skip-permissions -p "' + prompt.slice(0, 60) + (prompt.length > 60 ? '…' : '') + '"\n', 'text-gray-500');
+
+  fetch(API + '/master/claude-run', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ prompt: prompt, repo: repo }),
+  }).then(function(res) {
+    currentTaskId = res.headers.get('X-Task-Id');
+    if (!res.body) {
+      appendOutput('Error: No response body (SSE not supported?)\n', 'text-red-400');
+      setRunning(false);
+      return;
+    }
+    var reader = res.body.getReader();
+    var decoder = new TextDecoder();
+    var buf = '';
+
+    function read() {
+      return reader.read().then(function(chunk) {
+        if (chunk.done) { setRunning(false); currentTaskId = null; return; }
+        buf += decoder.decode(chunk.value, { stream: true });
+        var lines = buf.split('\n');
+        buf = lines.pop();
+        lines.forEach(function(line) {
+          if (!line.startsWith('data: ')) return;
+          var raw = line.slice(6).trim();
+          if (!raw) return;
+          var ev;
+          try { ev = JSON.parse(raw); } catch { return; }
+          if (ev.type === 'out') appendOutput(ev.text, 'text-green-400');
+          if (ev.type === 'err') appendOutput(ev.text, 'text-amber-400');
+          if (ev.type === 'done') {
+            appendOutput('\n[Exited with code ' + ev.code + ']\n', ev.code === 0 ? 'text-blue-400' : 'text-red-400');
+            setRunning(false);
+            currentTaskId = null;
+          }
+        });
+        return read();
+      });
+    }
+    return read();
+  }).catch(function(err) {
+    appendOutput('Request failed: ' + err.message + '\n', 'text-red-400');
+    setRunning(false);
+  });
+}
+
+function killClaude() {
+  if (!currentTaskId) return;
+  fetch(API + '/master/claude-run/' + currentTaskId, { method: 'DELETE', headers: authHeaders() })
+    .then(function() {
+      appendOutput('\n[Killed by user]\n', 'text-amber-400');
+      setRunning(false);
+      currentTaskId = null;
     });
 }
 
