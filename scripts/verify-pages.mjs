@@ -3,8 +3,8 @@
  * Troubleshoot dynamic pages: verify API data, build output, and live URL.
  * Run: node scripts/verify-pages.mjs
  */
-const API = 'https://api.lavprishjemmeside.dk';
-const SITE = 'https://lavprishjemmeside.dk';
+const API = process.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+const SITE = process.env.PUBLIC_SITE_URL || 'https://lavprishjemmeside.dk';
 
 async function main() {
   console.log('=== Page verification ===\n');

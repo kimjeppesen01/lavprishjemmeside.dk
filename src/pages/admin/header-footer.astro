@@ -90,7 +90,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Fallback-tekst</label>
-              <input type="text" id="header_logo_text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="lavprishjemmeside.dk" maxlength="100">
+              <input type="text" id="header_logo_text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="ditdomæne.dk" maxlength="100">
             </div>
           </div>
         </section>
@@ -188,7 +188,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
   <script is:inline>
   (function() {
-    const API = 'https://api.lavprishjemmeside.dk';
+    const API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
     const token = localStorage.getItem('admin_token');
     if (!token) { window.location.href = '/admin/'; return; }
 
@@ -478,7 +478,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
       document.querySelector('input[name="header_layout"][value="' + (data.header_layout || 'regular') + '"]')?.click();
       document.getElementById('header_logo_url').value = data.header_logo_url || '/favicon.svg';
-      document.getElementById('header_logo_text').value = data.header_logo_text || 'lavprishjemmeside.dk';
+      document.getElementById('header_logo_text').value = data.header_logo_text || 'ditdomæne.dk';
       document.getElementById('header_mega_html').value = data.header_mega_html || '';
       document.getElementById('footer_copyright').value = data.footer_copyright || '';
 

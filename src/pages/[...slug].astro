@@ -233,7 +233,7 @@ function normalizeProps(slug: string, rawProps: any): any {
 
 export async function getStaticPaths() {
   try {
-    const API_URL = 'https://api.lavprishjemmeside.dk';
+    const API_URL = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
 
     // Fetch all published page components
     const response = await fetch(`${API_URL}/page-components/public?page=all`);

@@ -6,6 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const API_URL = process.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+const SITE_URL = process.env.PUBLIC_SITE_URL || 'https://lavprishjemmeside.dk';
 const THEME_FILE = path.join(__dirname, '../src/styles/theme.css');
 const FEATURES_FILE = path.join(__dirname, '../src/data/design-features.json');
 const HEADER_FOOTER_FILE = path.join(__dirname, '../src/data/header-footer.json');
@@ -13,15 +14,15 @@ const HEADER_FOOTER_FILE = path.join(__dirname, '../src/data/header-footer.json'
 const DEFAULT_HEADER_FOOTER = {
   header_layout: 'regular',
   header_logo_url: '/favicon.svg',
-  header_logo_text: 'lavprishjemmeside.dk',
+  header_logo_text: new URL(SITE_URL).hostname || 'lavprishjemmeside.dk',
   header_menu_1: [{ href: '/', label: 'Forside' }, { href: '/priser', label: 'Priser' }, { href: '/om-os', label: 'Om os' }, { href: '/kontakt', label: 'Kontakt' }],
   header_menu_2: [{ href: '/kontakt', label: 'Få et tilbud' }],
   header_mega_html: null,
   header_mega_menu: null,
   footer_columns: [
-    { title: 'lavprishjemmeside.dk', text: 'Professionelle hjemmesider til lav pris for danske virksomheder.' },
+    { title: new URL(SITE_URL).hostname || 'lavprishjemmeside.dk', text: 'Professionelle hjemmesider til lav pris for danske virksomheder.' },
     { title: 'Sider', links: [{ href: '/', label: 'Forside' }, { href: '/priser', label: 'Priser' }, { href: '/om-os', label: 'Om os' }, { href: '/kontakt', label: 'Kontakt' }] },
-    { title: 'Kontakt', links: [{ href: 'mailto:info@lavprishjemmeside.dk', label: 'info@lavprishjemmeside.dk' }] },
+    { title: 'Kontakt', links: [{ href: `mailto:info@${new URL(SITE_URL).hostname}`, label: `info@${new URL(SITE_URL).hostname}` }] },
   ],
   footer_copyright: null,
 };
@@ -137,6 +138,23 @@ async function generateTheme() {
     fs.writeFileSync(HEADER_FOOTER_FILE, JSON.stringify(DEFAULT_HEADER_FOOTER, null, 2), 'utf-8');
     console.log(`✓ Generated ${HEADER_FOOTER_FILE} (with defaults)`);
   }
+
+  // Write public/.htaccess with CSP connect-src using API_URL (multi-domain)
+  const htaccessPath = path.join(__dirname, '../public/.htaccess');
+  const htaccessContent = `# Security headers (Future_implementations.md)
+# Requires mod_headers (enabled on cPanel/LiteSpeed by default)
+
+<IfModule mod_headers.c>
+  Header set X-Frame-Options "DENY"
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  # CSP: allow self, GA, Google Fonts, inline styles (Tailwind)
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ${API_URL} https://www.google-analytics.com"
+</IfModule>
+`;
+  fs.writeFileSync(htaccessPath, htaccessContent, 'utf-8');
+  console.log(`✓ Generated ${htaccessPath}`);
 }
 
 function buildCSS(tokens) {

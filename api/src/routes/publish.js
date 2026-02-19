@@ -23,20 +23,20 @@ router.post('/', requireAuth, publishRateLimiter, async (req, res) => {
       return res.status(500).json({ error: 'GitHub PAT ikke konfigureret' });
     }
 
-    // Trigger GitHub Actions workflow_dispatch
-    const response = await fetch(
-      'https://api.github.com/repos/kimjeppesen01/lavprishjemmeside.dk/actions/workflows/deploy.yml/dispatches',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.GITHUB_PAT}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json',
-          'User-Agent': 'lavprishjemmeside.dk-api'
-        },
-        body: JSON.stringify({ ref: 'main' })
-      }
-    );
+    // Trigger GitHub Actions workflow_dispatch (repo from env for multi-domain)
+    const repo = process.env.GITHUB_REPO || 'kimjeppesen01/lavprishjemmeside.dk';
+    const [owner, repoName] = repo.includes('/') ? repo.split('/') : [repo, 'lavprishjemmeside.dk'];
+    const workflowUrl = `https://api.github.com/repos/${owner}/${repoName}/actions/workflows/deploy.yml/dispatches`;
+    const response = await fetch(workflowUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.GITHUB_PAT}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+        'User-Agent': process.env.CORS_ORIGIN ? new URL(process.env.CORS_ORIGIN).hostname + '-api' : 'lavprishjemmeside.dk-api'
+      },
+      body: JSON.stringify({ ref: 'main' })
+    });
 
     if (!response.ok) {
       const errorText = await response.text();

@@ -262,7 +262,7 @@ router.post('/page-advanced', requireAuth, aiRateLimiter, async (req, res) => {
  * Returns an array of schema.org objects.
  */
 function buildSchemaMarkup(pagePath, seoData, components) {
-  const siteUrl = 'https://www.lavprishjemmeside.dk';
+  const siteUrl = process.env.CORS_ORIGIN || 'https://lavprishjemmeside.dk';
   const schemas = [];
 
   // 1. BreadcrumbList — always included

@@ -210,7 +210,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
   <script is:inline>
   (function() {
-    const API = 'https://api.lavprishjemmeside.dk';
+    const API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
     const token = localStorage.getItem('admin_token');
 
     if (!token) {

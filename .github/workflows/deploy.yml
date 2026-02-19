@@ -8,6 +8,8 @@ on:
 permissions:
   contents: write
 
+# Multi-domain: set repository vars (optional) — PUBLIC_SITE_URL, PUBLIC_API_URL, DEPLOY_REPO_PATH, DEPLOY_SITE_ROOT. Defaults keep lavprishjemmeside.dk behaviour.
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -27,6 +29,9 @@ jobs:
 
       - name: Build Astro site
         run: npm run build
+        env:
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://lavprishjemmeside.dk' }}
+          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk' }}
 
       - name: Commit built files
         run: |
@@ -44,9 +49,11 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd ~/repositories/lavprishjemmeside.dk
+            REPO_PATH="${{ vars.DEPLOY_REPO_PATH || 'repositories/lavprishjemmeside.dk' }}"
+            SITE_ROOT="${{ vars.DEPLOY_SITE_ROOT || 'lavprishjemmeside.dk' }}"
+            cd ~/$REPO_PATH
             git fetch origin
             git reset --hard origin/main
-            cp -Rf dist/* ~/lavprishjemmeside.dk/
+            cp -Rf dist/* ~/$SITE_ROOT/
             cd api && npm install --production
             mkdir -p tmp && touch tmp/restart.txt

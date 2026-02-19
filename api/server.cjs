@@ -18,6 +18,7 @@ const aiGenerateRoutes = require('./src/routes/ai-generate');
 const aiPromptSettingsRoutes = require('./src/routes/ai-prompt-settings');
 const publishRoutes = require('./src/routes/publish');
 const mediaRoutes = require('./src/routes/media');
+const trafficRoutes = require('./src/routes/traffic');
 const { requestLogger } = require('./src/middleware/logger');
 
 const app = express();
@@ -46,6 +47,7 @@ app.use('/ai-generate', aiGenerateRoutes);
 app.use('/ai-prompt-settings', aiPromptSettingsRoutes);
 app.use('/publish', publishRoutes);
 app.use('/media', mediaRoutes);
+app.use('/traffic', trafficRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

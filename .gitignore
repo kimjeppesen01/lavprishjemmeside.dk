@@ -27,3 +27,12 @@ pnpm-debug.log*
 # Pexels runtime/generated
 api/state/
 api/manifests/
+
+# Personal-agent (IAN)
+personal-agent/.env
+personal-agent/.venv
+personal-agent/__pycache__
+personal-agent/.pytest_cache
+personal-agent/.ruff_cache
+personal-agent/audit/logs/*.log
+personal-agent/data/*.db

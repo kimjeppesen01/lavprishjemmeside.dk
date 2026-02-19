@@ -3,13 +3,18 @@ const router = express.Router();
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 
+const DEFAULT_HOSTNAME = process.env.CORS_ORIGIN ? (() => { try { return new URL(process.env.CORS_ORIGIN).hostname; } catch (_) { return 'lavprishjemmeside.dk'; } })() : 'lavprishjemmeside.dk';
+
 const DEFAULT_MENU_1 = [{ href: '/', label: 'Forside' }, { href: '/priser', label: 'Priser' }, { href: '/om-os', label: 'Om os' }, { href: '/kontakt', label: 'Kontakt' }];
 const DEFAULT_MENU_2 = [{ href: '/kontakt', label: 'Få et tilbud' }];
-const DEFAULT_FOOTER = [
-  { title: 'lavprishjemmeside.dk', text: 'Professionelle hjemmesider til lav pris for danske virksomheder.' },
-  { title: 'Sider', links: [{ href: '/', label: 'Forside' }, { href: '/priser', label: 'Priser' }, { href: '/om-os', label: 'Om os' }, { href: '/kontakt', label: 'Kontakt' }] },
-  { title: 'Kontakt', links: [{ href: 'mailto:info@lavprishjemmeside.dk', label: 'info@lavprishjemmeside.dk' }] },
-];
+function getDefaultFooter() {
+  return [
+    { title: DEFAULT_HOSTNAME, text: 'Professionelle hjemmesider til lav pris for danske virksomheder.' },
+    { title: 'Sider', links: [{ href: '/', label: 'Forside' }, { href: '/priser', label: 'Priser' }, { href: '/om-os', label: 'Om os' }, { href: '/kontakt', label: 'Kontakt' }] },
+    { title: 'Kontakt', links: [{ href: `mailto:info@${DEFAULT_HOSTNAME}`, label: `info@${DEFAULT_HOSTNAME}` }] },
+  ];
+}
+const DEFAULT_FOOTER = getDefaultFooter();
 
 function parseJsonField(val, fallback) {
   if (val == null || val === '') return fallback;
@@ -41,7 +46,7 @@ router.get('/', requireAuth, async (req, res) => {
       return res.json({
         header_layout: 'regular',
         header_logo_url: '/favicon.svg',
-        header_logo_text: 'lavprishjemmeside.dk',
+        header_logo_text: DEFAULT_HOSTNAME,
         header_menu_1: DEFAULT_MENU_1,
         header_menu_2: DEFAULT_MENU_2,
         header_mega_html: null,
@@ -72,7 +77,7 @@ router.get('/public', async (req, res) => {
       return res.json({
         header_layout: 'regular',
         header_logo_url: '/favicon.svg',
-        header_logo_text: 'lavprishjemmeside.dk',
+        header_logo_text: DEFAULT_HOSTNAME,
         header_menu_1: DEFAULT_MENU_1,
         header_menu_2: DEFAULT_MENU_2,
         header_mega_html: null,
@@ -95,7 +100,7 @@ router.get('/public', async (req, res) => {
     res.status(200).json({
       header_layout: 'regular',
       header_logo_url: '/favicon.svg',
-      header_logo_text: 'lavprishjemmeside.dk',
+      header_logo_text: DEFAULT_HOSTNAME,
       header_menu_1: DEFAULT_MENU_1,
       header_menu_2: DEFAULT_MENU_2,
       header_mega_html: null,
@@ -133,7 +138,7 @@ router.post('/update', requireAuth, async (req, res) => {
     const payload = {
       header_layout: header_layout ?? 'regular',
       header_logo_url: header_logo_url ?? '/favicon.svg',
-      header_logo_text: (header_logo_text ?? 'lavprishjemmeside.dk').slice(0, 100),
+      header_logo_text: (header_logo_text ?? DEFAULT_HOSTNAME).slice(0, 100),
       header_menu_1: JSON.stringify(menu1),
       header_menu_2: JSON.stringify(menu2),
       header_mega_html: header_mega_html ?? null,

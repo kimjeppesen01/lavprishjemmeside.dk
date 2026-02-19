@@ -257,7 +257,7 @@ const stickyColumnData = {
 };
 ---
 
-<Layout title="Component Test | lavprishjemmeside.dk">
+<Layout title={"Component Test | " + (typeof import.meta.env.PUBLIC_SITE_URL === 'string' && import.meta.env.PUBLIC_SITE_URL ? new URL(import.meta.env.PUBLIC_SITE_URL).hostname : 'lavprishjemmeside.dk')}>
   <main class="min-h-screen text-[var(--color-text-primary)]">
     <div class="section-bg-page"><section id="preview-breadcrumbs" class="scroll-mt-24"><Breadcrumbs {...breadcrumbData} /></section></div>
     <div class="section-bg-page"><section id="preview-hero-section" class="scroll-mt-24"><HeroSection {...heroData} /></section></div>

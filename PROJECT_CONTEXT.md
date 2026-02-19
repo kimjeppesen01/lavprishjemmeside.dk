@@ -180,11 +180,18 @@ lavprishjemmeside.dk/
 │   │   │   └── email.js             # Nodemailer + Resend SMTP transporter, sendEmail() helper
 │   │   ├── templates/
 │   │   │   └── passwordReset.js     # Danish HTML/text email template for password reset
-│   │   ├── schema.sql               # Database schema (5 tables + admin user seed)
-│   │   ├── schema_password_reset.sql # Password reset tokens table
-│   │   └── schema_indexes.sql       # Production indexes (idx_last_activity, idx_created_at_action)
+│   │   ├── schema.sql               # Base schema; schema_phase6.sql (components), schema_password_reset.sql
+│   │   ├── seed_components_v2.sql   # Full component seed (run after schema_phase6)
+│   │   ├── seed_components_incremental.sql # Incremental updates when DB already seeded
+│   │   └── schema_indexes.sql       # Production indexes
 │   └── tmp/
 │       └── restart.txt              # Touched to signal app restart
+├── personal-agent/                  # IAN (Slack AI)
+│   ├── agent/
+│   ├── slack/
+│   ├── projects/
+│   │   └── lavprishjemmeside.md     # Product context for client channels
+│   └── .env                         # SLACK_*, ANTHROPIC_*, SLACK_CLIENT_CHANNELS (gitignored)
 └── src/
     ├── styles/
     │   └── global.css               # Tailwind v4: `@import "tailwindcss";`
@@ -194,7 +201,9 @@ lavprishjemmeside.dk/
     ├── components/
     │   ├── Header.astro             # Nav bar
     │   ├── Footer.astro             # 3-column footer
-    │   └── Tracker.astro            # Event tracker (sendBeacon to API)
+    │   ├── Tracker.astro            # Event tracker (sendBeacon to API)
+    │   ├── OverlapImageSection.astro # Teal/white section, image overlap (bottomDivider: none/straight)
+    │   └── AlternatingFeatureList.astro # 2–4 overlap sections as one block; themes alternate
     └── pages/
         ├── index.astro              # Homepage (hero, features, CTA)
         └── admin/
@@ -531,14 +540,23 @@ script: |
 - **Phase 3**: Admin dashboard infrastructure — login page, overview dashboard, sessions API, AdminLayout with auth guard
 - **Phase 4**: Production infrastructure — rate limiting (5 login/15min, 100 events/15min), query caching (60s TTL), database indexes (sessions.last_activity, security_logs composite)
 - **Phase 5**: Email infrastructure & password reset — Resend API integration, forgot-password and reset-password pages, password_reset_tokens table (60-min expiry, rate limited 3/15min), Danish email templates (HTML + plain text), email enumeration prevention, auto-login after reset
-- **Phase 6**: Component library & page builder — 20 components registered (opener/trust/conversion/content/structure), schema-driven component editor with A/B selectors, boolean toggles, image pickers, repeatable array cards, AI page assembler, design/styling dashboard, dynamic static page rendering from DB
+- **Phase 6**: Component library & page builder — 27 components (opener/trust/conversion/content/structure), schema-driven component editor with A/B selectors, boolean toggles, image pickers, repeatable array cards, AI page assembler, design/styling dashboard, dynamic static page rendering from DB. **Overlap module**: AlternatingFeatureList (2–4 sections, teal/white), OverlapImageSection with `withinGroup`/`topOverlap`; no zigzag (bottomDivider: none/straight).
 
 ## Developer Documentation
 
 | Doc | Purpose |
 |---|---|
 | `docs/COMPONENT_EDITOR.md` | **Full reference for the schema-driven component editor** — schema format, field type mapping, form builder internals, save flow, media picker, adding new components |
+| `docs/PHASE_6_Component-Library-&-Styling-Dashboard_v2.md` | **Phase 6 original spec** — Design tokens, DB schema, AI assembly, admin UI. Status: COMPLETED (implementation diverged; see "Implementation vs Spec" in doc). |
 | `docs/GLOBAL_FEATURES.md` | Styling features (smooth scroll, korn-overlay, sideloader, sticky header) from Admin → Design & styling |
+| `docs/Future_implementations.md` | **Nice-to-have backlog** — Performance (CWV, CDN, caching), security headers, testing, PWA, i18n, analytics. Not critical for MVP. |
+| `docs/PHASE_7_AI_GENERATOR_SPEC_v2.md` | **Phase 7 Visual Page Builder** — Mockup → components/HTML via AI Vision. `/admin/byggeklodser`. OpenAI gpt-4o or Anthropic Claude. Full technical spec. |
+| `docs/SHOPPING_MODULE_PLAN.md` | **E-commerce module** — Product catalog, Quickpay, cart, checkout. 11 new tables, Danish localization, static product pages + client-side cart. Implementation plan with tickets. |
+| `docs/MULTI_DOMAIN_CMS_PLAN.md` | **Multi-domain deployment** — ZIP + 1-click setup, standalone template model, product vision, upstream updates. |
+| `docs/DEPLOY_NEW_DOMAIN.md` | **Deploy to new domain** — Step-by-step checklist (cPanel, MySQL, Node.js App, GitHub secrets/vars, schema order). |
+| `docs/UPSTREAM_UPDATES.md` | **Upstream updates** — How clients pull upstream, resolve conflicts, redeploy; keep only `api/.env` local. |
+| `docs/ROLLOUT_MANUAL.md` | **Rollout manual** — Complete step-by-step human instructions and exact prompts for 1-click setup, new domain (GitHub + cPanel), and main site deploy. |
+| `docs/IAN_PLAN.md` | **IAN client support AI** — Slack-based AI for client channels. Implementation, integration ideas (admin, AI-assembler, Shopping, Pro, multi-domain). |
 
 ---
 
@@ -556,13 +574,31 @@ Styling-funktioner (smooth scroll, korn-overlay, sideloader, klæbende header) s
 - **Public pages**: Priser, Om os, Kontakt
 - **SEO content optimization**
 
+## Planned Modules
+
+### Shopping Module (E-commerce)
+**Spec**: [docs/SHOPPING_MODULE_PLAN.md](docs/SHOPPING_MODULE_PLAN.md)
+
+Full e-commerce: product catalog, Quickpay (Dankort, Visa/MC, MobilePay), cart, checkout. Static product pages (SSG) + client-side cart (localStorage). 11 new DB tables (products, variants, orders, customers, shipping, discounts, etc.). Admin at `/admin/shop/` (products, orders, settings). Danish localization (øre pricing, moms, shipping). Integrates with existing media table and AI toolkit (`product-grid`, `shop-hero` components).
+
+### IAN — Client Support AI
+**Spec**: [docs/IAN_PLAN.md](docs/IAN_PLAN.md) | **Product context**: [personal-agent/projects/lavprishjemmeside.md](personal-agent/projects/lavprishjemmeside.md)
+
+IAN lives in `personal-agent/` within this repo. Slack-based AI that monitors client channels and answers product questions. Stays silent when owner chats directly with clients. Run: `cd personal-agent && source .venv/bin/activate && python -m agent.main`. Supports multi-client via `SLACK_CLIENT_CHANNELS`. Integration ideas: admin widget, AI-assembler link, product-context sync, future Shopping/Pro/multi-domain support — see IAN_PLAN.md.
+
+### Future Implementations (Nice-to-Have)
+**Spec**: [docs/Future_implementations.md](docs/Future_implementations.md)
+
+Deferred items: WCAG audit (AI will handle), Core Web Vitals tracking, error monitoring (Sentry), performance budget, testing suite, PWA, i18n. Security headers recommended before white-label launch. Pragmatic: build MVP fast, add as needed.
+
 ---
 
 ## Phase 6: Component Library & Page Builder (Implemented)
 
 **Status: LIVE** — core functionality complete, actively being extended.
 
-**Full technical reference:** `docs/COMPONENT_EDITOR.md`
+**Spec (original plan)**: [docs/PHASE_6_Component-Library-&-Styling-Dashboard_v2.md](docs/PHASE_6_Component-Library-&-Styling-Dashboard_v2.md) — marked COMPLETED; implementation diverged (27 components vs 18 planned).  
+**Full technical reference:** [docs/COMPONENT_EDITOR.md](docs/COMPONENT_EDITOR.md)
 
 ### Architecture
 
@@ -575,19 +611,19 @@ Database-driven content + static generation:
 
 | Table | Purpose |
 |---|---|
-| `components` | Template library — 20 components with `schema_fields` JSON, `default_content`, category ENUM |
+| `components` | Template library — 27 components with `schema_fields` JSON, `default_content`, category ENUM |
 | `page_components` | Content instances per page — `content` JSON, `sort_order`, `is_published` |
 | `design_settings` | Color palette, typography, border radius, shadow style (one row per site) |
 | `theme_presets` | Business / Vibrant / Minimalistic full-config presets |
 
-### Component library (20 components)
+### Component library (27 components)
 
 | Category | Components |
 |---|---|
 | `opener` | hero-section |
-| `trust` | stats-banner, testimonials-carousel, team-grid, logo-cloud |
+| `trust` | stats-banner, testimonials-carousel, team-grid, trust-badges-section, logo-cloud |
 | `conversion` | cta-section, pricing-table, comparison-table, contact-form, newsletter-signup |
-| `content` | features-grid, icon-cards, content-image-split, video-embed, timeline, faq-accordion, gallery-grid, product-carousel, sticky-column-section |
+| `content` | problem-section, how-it-works-section, case-studies-section, overlap-image-section, overlap-cards-section, alternating-feature-list, features-grid, icon-cards, content-image-split, video-embed, timeline, product-carousel, sticky-column-section, bento-grid-section, tabs-section, modal-section, founders-note-section, integrations-section |
 | `structure` | breadcrumbs |
 
 ### Key files
@@ -598,7 +634,8 @@ Database-driven content + static generation:
 | `src/pages/[...slug].astro` | Dynamic static page renderer — reads `page_components` from DB at build time |
 | `api/src/routes/components.js` | `GET /components` — returns component library (note: `schema_fields` aliased as `default_props`) |
 | `api/src/routes/page-components.js` | CRUD for page component instances + publish endpoint |
-| `api/src/seed_components_v2.sql` | **Authoritative seed** for all 20 components with correct `schema_fields` — run in phpMyAdmin after `schema_phase6.sql` |
+| `api/src/seed_components_v2.sql` | **Authoritative seed** for all 27 components — run in phpMyAdmin after `schema_phase6.sql` |
+| `api/src/seed_components_incremental.sql` | **Here-and-now incremental** — run when DB already seeded; applies latest component updates (overlap module, zigzag removal) |
 | `api/src/schema_phase6.sql` | Defines all Phase 6 tables |
 
 ### Critical: schema_fields aliasing
@@ -611,6 +648,7 @@ Database-driven content + static generation:
 |---|---|
 | `/admin/pages/` | Page builder — add/edit/reorder/delete components per page, SEO meta, publish |
 | `/admin/components/` | Component catalog — browse library, view documentation |
+| `/admin/components/preview/[slug]` | Component preview (e.g. alternating-feature-list) |
 | `/admin/styling/` | Design system — color pickers, theme presets, shape/shadow controls |
 | `/admin/media/` | Media library — upload and browse images |
 | `/admin/ai-assemble/` | AI page assembler — generate full pages from a prompt |
@@ -626,13 +664,13 @@ Database-driven content + static generation:
 
 ### Phase 7: AI Building Block Generator (Premium Feature)
 
-> **Full Technical Specification**: See [PHASE_7_AI_GENERATOR_SPEC.md](PHASE_7_AI_GENERATOR_SPEC.md)
+> **Full Technical Specification**: See [docs/PHASE_7_AI_GENERATOR_SPEC_v2.md](docs/PHASE_7_AI_GENERATOR_SPEC_v2.md)
 
-**Feature**: AI-powered component generator using OpenAI Vision API (`gpt-4o`) to convert design mockups into production-ready, brand-aligned Tailwind HTML.
+**Status**: Plan — ready for implementation (2–3 weeks). Depends on Phase 6.
 
-**Location**: `/admin/byggeklodser` (Danish for "building blocks") - protected admin area
+**Feature**: AI-powered visual page builder. Upload design mockups → AI (OpenAI gpt-4o or Anthropic Claude) maps to existing components or generates custom HTML using site design tokens.
 
-**Key Innovation**: Context Library (RAG for UI) - feeds the AI your actual design system to prevent generic output.
+**Key Innovation**: Dynamic AI context — `/ai/context` loads design tokens from DB + component docs at request time. No hardcoded styles; AI always uses current brand.
 
 **Core Value**:
 - Converts design mockups to code in seconds (vs hours manual coding)
@@ -647,17 +685,12 @@ Database-driven content + static generation:
 4. HTML is sanitized and returned to frontend
 5. User previews in iframe, copies code, or saves as component template
 
-**Architecture Highlights**:
-- **Backend**: Express route (`api/src/routes/ai-generator.cjs`) with Multer file upload
-- **Context Library**: `api/src/ai-context/` directory (colors-typography.md, buttons.html, cards.html, etc.)
-- **Frontend**: Astro page with drag-and-drop upload, preview/code tabs
-- **Security**: JWT auth, rate limiting (10/hour), HTML sanitization (DOMPurify), usage tracking
-- **Database**: New `ai_generations` table for quota enforcement and cost tracking
-
-**Monetization**:
-- Free tier: 5 generations/month
-- Premium: Unlimited generations
-- Cost per generation: ~$0.03 USD (OpenAI gpt-4o pricing)
+**Architecture Highlights** (see full spec for implementation):
+- **Backend**: `api/src/routes/ai-generate.js` — Multer upload, OpenAI gpt-4o or Anthropic Claude Vision
+- **Dynamic context**: `/ai/context` — design tokens from DB + component-docs at request time
+- **Output modes**: PRIMARY = `page_components[]` (maps to existing components); SECONDARY = custom HTML with CSS variables
+- **Shared infra**: `ai_usage` table (operation: `visual_generation`), `aiRateLimiter` (10/hour with Phase 6)
+- **Frontend**: `/admin/byggeklodser` — upload mockup, preview iframe with design tokens, save to page builder
 
 **Implementation Checklist**: See full spec for detailed 3-week implementation plan with testing strategy
 
@@ -867,7 +900,7 @@ npm run build  # Must succeed before git push
 ✅ **Working:**
 - All admin pages functional
 - AI generator creates pages in database
-- Component library complete (18 components)
+- Component library complete (27 components)
 - Dynamic page rendering from database (`[...slug].astro` restored)
 - `normalizeProps()` thin safety net + component safe defaults
 - AI prompt includes exact TypeScript schemas
@@ -876,6 +909,16 @@ npm run build  # Must succeed before git push
 
 ❌ **Edge cases:**
 - Dynamic pages: 0 generated when API unreachable at build time (fetch fails)
+
+---
+
+## Recent Work (2025–2026): Overlap Module & Zigzag Removal
+
+**AlternatingFeatureList** — New parent component for 2–4 OverlapImageSection blocks as one coherent module. Themes alternate teal/white, image placement alternates left/right, images overlap into the next section.
+
+**OverlapImageSection** — Extended with `withinGroup` (omit spacer when in group) and `topOverlap` (padding for previous image overlap). Zigzag divider removed; `bottomDivider` now `none` or `straight` only.
+
+**Seed workflow** — `seed_components_incremental.sql` for incremental updates when `seed_components_v2.sql` was already run. Uses JSON_OBJECT() to satisfy schema_fields CHECK constraint. Keep both files in sync when changing components.
 
 ---
 

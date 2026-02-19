@@ -1,6 +1,6 @@
 <script is:inline>
 (function() {
-  const API = 'https://api.lavprishjemmeside.dk';
+  const API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
 
   // Generate or retrieve session ID
   function getSessionId() {

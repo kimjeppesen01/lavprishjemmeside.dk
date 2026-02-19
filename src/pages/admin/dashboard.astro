@@ -133,7 +133,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
   <script is:inline>
   (function() {
-    var API = 'https://api.lavprishjemmeside.dk';
+    var API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
     var token = localStorage.getItem('admin_token');
     if (!token) return;
 
@@ -271,7 +271,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       if (err.message === 'Unauthorized') return;
       document.getElementById('loading').classList.add('hidden');
       var msg = err.message === 'Failed to fetch'
-        ? 'Kunne ikke forbinde til API (api.lavprishjemmeside.dk). Tjek om serveren kører.'
+        ? ('Kunne ikke forbinde til API (' + API + '). Tjek om serveren kører.')
         : (err.message.indexOf('503') >= 0 ? err.message : 'Kunne ikke hente data: ' + err.message);
       document.getElementById('error-text').textContent = msg;
       document.getElementById('error').classList.remove('hidden');

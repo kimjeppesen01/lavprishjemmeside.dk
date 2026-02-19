@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="Siden blev ikke fundet | lavprishjemmeside.dk" description="Den side du leder efter eksisterer ikke.">
+<Layout title={"Siden blev ikke fundet | " + (typeof import.meta.env.PUBLIC_SITE_URL === 'string' && import.meta.env.PUBLIC_SITE_URL ? new URL(import.meta.env.PUBLIC_SITE_URL).hostname : 'lavprishjemmeside.dk')} description="Den side du leder efter eksisterer ikke.">
 
   <main class="flex-1 flex flex-col items-center justify-center px-4 py-20 text-center">
     <p class="text-6xl font-bold text-[var(--color-primary)]">404</p>

@@ -14,16 +14,17 @@ interface Props {
 
 const { title, description = "Få en professionel hjemmeside til lav pris. Vi bygger moderne, hurtige og SEO-optimerede hjemmesider for danske virksomheder.", schemaMarkup = [], ogImage } = Astro.props;
 
-const site = typeof Astro.site === 'string' ? Astro.site : 'https://lavprishjemmeside.dk';
+const site = typeof Astro.site === 'string' ? Astro.site : (import.meta.env.PUBLIC_SITE_URL || 'https://lavprishjemmeside.dk');
 const canonicalUrl = new URL(Astro.url.pathname, site).href;
 const resolvedOgImage = ogImage || new URL('/favicon.svg', site).href;
+const siteName = new URL(site).hostname || 'lavprishjemmeside.dk';
 
 const baseSchemas = [
   {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     '@id': site + '/#website',
-    name: 'lavprishjemmeside.dk',
+    name: siteName,
     url: site,
     description: description,
     inLanguage: 'da',
@@ -32,14 +33,14 @@ const baseSchemas = [
     '@context': 'https://schema.org/',
     '@type': 'Organization',
     '@id': site + '/#organization',
-    name: 'Lavprishjemmeside.dk',
+    name: siteName,
     url: site,
-    description: 'Lavprishjemmeside.dk er et dansk webbureau beliggende i Fredericia. Vi specialiserer os i at levere professionelle, responsive og konverteringsoptimerede hjemmesider til overkommelige priser.',
+    description: siteName + ' er et dansk webbureau beliggende i Fredericia. Vi specialiserer os i at levere professionelle, responsive og konverteringsoptimerede hjemmesider til overkommelige priser.',
     foundingDate: '2026',
     areaServed: { '@type': 'Country', name: 'Denmark' },
     contactPoint: {
       '@type': 'ContactPoint',
-      email: 'info@lavprishjemmeside.dk',
+      email: 'info@' + siteName,
       contactType: 'customer service',
       availableLanguage: ['da', 'en']
     },
@@ -75,7 +76,7 @@ const allSchemas = [...baseSchemas, ...schemaMarkup];
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={resolvedOgImage} />
     <meta property="og:locale" content="da_DK" />
-    <meta property="og:site_name" content="lavprishjemmeside.dk" />
+    <meta property="og:site_name" content={siteName} />
 
     <!-- Font optimization: preconnect + Inter with font-display=swap -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

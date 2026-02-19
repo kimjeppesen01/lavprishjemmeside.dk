@@ -86,7 +86,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
                   <div class="flex gap-2">
                     <input type="text" id="seo-og-image"
                       class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                      placeholder="https://lavprishjemmeside.dk/uploads/..." />
+                      placeholder="(uploads URL from API)" />
                     <button onclick="openMediaPickerForSeo()" class="px-3 py-2 bg-blue-100 hover:bg-blue-200 border border-blue-300 text-blue-700 rounded-lg text-sm">Vælg</button>
                   </div>
                 </div>
@@ -193,7 +193,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
   <script is:inline>
   (function() {
-    const API = 'https://api.lavprishjemmeside.dk';
+    const API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
     const token = localStorage.getItem('admin_token');
 
     if (!token) {

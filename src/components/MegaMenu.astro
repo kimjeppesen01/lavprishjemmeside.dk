@@ -18,7 +18,8 @@ interface Props {
   ctaLinks?: Array<{ href: string; label: string }>;
 }
 
-const { menu = [], logoUrl = '/favicon.svg', logoText = 'lavprishjemmeside.dk', ctaLinks = [] } = Astro.props;
+const siteName = typeof import.meta.env.PUBLIC_SITE_URL === 'string' && import.meta.env.PUBLIC_SITE_URL ? new URL(import.meta.env.PUBLIC_SITE_URL).hostname : 'lavprishjemmeside.dk';
+const { menu = [], logoUrl = '/favicon.svg', logoText = siteName, ctaLinks = [] } = Astro.props;
 
 // Ensure we have at least one category for the dropdown to work
 const menuItems = Array.isArray(menu) && menu.length > 0

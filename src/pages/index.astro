@@ -103,7 +103,7 @@ let pageComponents: any[] = [];
 let pageMeta: { meta_title?: string; meta_description?: string; schema_markup?: any } | null = null;
 
 try {
-  const API_URL = 'https://api.lavprishjemmeside.dk';
+  const API_URL = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
   const [componentsRes, metaRes] = await Promise.all([
     fetch(`${API_URL}/page-components/public?page=/`),
     fetch(`${API_URL}/page-components/public-meta?page=/`),

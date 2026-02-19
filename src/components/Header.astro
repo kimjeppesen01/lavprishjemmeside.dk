@@ -6,7 +6,7 @@ import MegaMenu from './MegaMenu.astro';
 const stickyClass = designFeatures.stickyHeader ? 'sticky top-0 z-40' : '';
 const layout = headerFooter.header_layout || 'regular';
 const logoUrl = headerFooter.header_logo_url || '/favicon.svg';
-const logoText = headerFooter.header_logo_text || 'lavprishjemmeside.dk';
+const logoText = headerFooter.header_logo_text || (typeof import.meta.env.PUBLIC_SITE_URL === 'string' && import.meta.env.PUBLIC_SITE_URL ? new URL(import.meta.env.PUBLIC_SITE_URL).hostname : 'lavprishjemmeside.dk');
 const menu1 = Array.isArray(headerFooter.header_menu_1) ? headerFooter.header_menu_1 : [];
 const menu2 = Array.isArray(headerFooter.header_menu_2) ? headerFooter.header_menu_2 : [];
 const megaHtml = headerFooter.header_mega_html;
