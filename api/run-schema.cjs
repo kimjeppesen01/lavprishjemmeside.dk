@@ -15,6 +15,7 @@ const SCHEMA_ORDER = [
   'schema_media.sql',
   'schema_page_meta.sql',
   'schema_ai_prompt_settings.sql',
+  'schema_design_features.sql',
   'schema_indexes.sql',
 ];
 const SEED_FILE = 'seed_components_v2.sql';
