@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
 ---
 
 <AdminLayout title="Trafik">
@@ -217,9 +218,9 @@ GOOGLE_GA4_PROPERTY_ID=123456789</pre>
   </div>
 </AdminLayout>
 
-<script is:inline>
+<script define:vars={{ apiUrl }}>
 (function() {
-  var API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+  var API = apiUrl;
   var token = localStorage.getItem('admin_token');
   var currentDays = 28;
   var scData = null;

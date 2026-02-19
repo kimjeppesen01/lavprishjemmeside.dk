@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
 ---
 
 <AdminLayout title="Log ind">
@@ -31,9 +32,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     </div>
   </div>
 
-  <script is:inline>
+  <script define:vars={{ apiUrl }}>
   (function() {
-    var API = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+    var API = apiUrl;
     var form = document.getElementById('login-form');
     var errorMsg = document.getElementById('error-msg');
     var submitBtn = document.getElementById('submit-btn');
