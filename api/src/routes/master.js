@@ -443,7 +443,9 @@ router.post('/claude-auth-start', requireAuth, (req, res) => {
   spawnEnv.HOME = '/home/theartis';
   spawnEnv.CLAUDE_CONFIG_DIR = account_dir;
 
-  const proc = spawn(CLAUDE_BIN, ['auth', 'login'], {
+  // Use `script` to allocate a pseudo-TTY — claude auth login reads the code from /dev/tty,
+  // not from stdin. Running under `script` makes proc.stdin feed into the child's /dev/tty.
+  const proc = spawn('script', ['-q', '/dev/null', '-c', `${CLAUDE_BIN} auth login`], {
     env: spawnEnv,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
@@ -511,8 +513,9 @@ router.post('/claude-auth-code', requireAuth, (req, res) => {
   proc.stderr.on('data', (d) => { extraOutput += stripAnsi(d.toString()); });
 
   try {
+    // Write the code as a line (simulates user typing + Enter in the PTY terminal)
     proc.stdin.write(code.trim() + '\n');
-    proc.stdin.end();
+    // Do NOT call stdin.end() — the process continues to exchange the token without needing EOF
   } catch (err) {
     return res.status(500).json({ error: 'Failed to submit code: ' + err.message });
   }
