@@ -371,6 +371,14 @@ router.post('/claude-run', requireAuth, (req, res) => {
   spawnEnv.HOME = '/home/theartis';
   spawnEnv.CLAUDE_CONFIG_DIR = account_dir || '/home/theartis/.claude';
   spawnEnv.GH_TOKEN = process.env.GITHUB_PAT || ''; // enables git push + gh CLI
+  // Inject OAuth token directly — claude recognises CLAUDE_CODE_OAUTH_TOKEN natively,
+  // bypassing any credentials file format issues
+  try {
+    const creds = JSON.parse(fs.readFileSync(path.join(spawnEnv.CLAUDE_CONFIG_DIR, '.credentials.json'), 'utf8'));
+    const tok = creds?.claudeAiOauth?.accessToken || creds?.accessToken?.token || null;
+    if (tok) spawnEnv.CLAUDE_CODE_OAUTH_TOKEN = tok;
+  } catch {}
+
   // Suppress update checks and non-essential traffic so claude doesn't block on interactive prompts
   spawnEnv.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = '1';
   spawnEnv.DISABLE_AUTOUPDATER = '1';
@@ -550,17 +558,55 @@ router.post('/claude-auth-code', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'No access_token in response', detail: JSON.stringify(tokens).slice(0, 300) });
   }
 
-  // Build credentials in the format the claude CLI expects
-  const now = Date.now();
-  const expiresIn = (tokens.expires_in || 86400) * 1000;
+  // Build credentials in the exact format the claude CLI reads:
+  // { claudeAiOauth: { accessToken (string), refreshToken, expiresAt (ms), scopes, subscriptionType, rateLimitTier } }
+  const scopes = (tokens.scope || '').split(' ').filter(Boolean);
+  const expiresAt = Date.now() + (tokens.expires_in || 86400) * 1000;
+
+  // Fetch user profile to get subscription info and populate oauthAccount in .claude.json
+  let subscriptionType = null;
+  let rateLimitTier    = null;
+  let profileEmail     = null;
+  try {
+    const profileRes = await fetch('https://api.anthropic.com/api/oauth/profile', {
+      headers: { 'Authorization': `Bearer ${tokens.access_token}`, 'Content-Type': 'application/json' },
+    });
+    if (profileRes.ok) {
+      const p = await profileRes.json();
+      profileEmail  = p.account?.email || null;
+      rateLimitTier = p.organization?.rate_limit_tier || null;
+      const orgTypeMap = { claude_max: 'max', claude_pro: 'pro', claude_enterprise: 'enterprise', claude_team: 'team' };
+      subscriptionType = orgTypeMap[p.organization?.organization_type] || null;
+
+      // Write oauthAccount to .claude.json so claude knows the user details
+      const claudeJsonPath = path.join(account_dir, '.claude.json');
+      let cfg = {};
+      try { cfg = JSON.parse(fs.readFileSync(claudeJsonPath, 'utf8')); } catch {}
+      cfg.oauthAccount = {
+        accountUuid:           p.account?.uuid,
+        emailAddress:          p.account?.email,
+        organizationUuid:      p.organization?.uuid,
+        displayName:           p.account?.display_name || null,
+        hasExtraUsageEnabled:  p.organization?.has_extra_usage_enabled ?? false,
+        billingType:           p.organization?.billing_type || null,
+        accountCreatedAt:      p.account?.created_at,
+        subscriptionCreatedAt: p.organization?.subscription_created_at || null,
+      };
+      fs.writeFileSync(claudeJsonPath, JSON.stringify(cfg, null, 2), { mode: 0o600 });
+    }
+  } catch (err) {
+    console.warn('[claude-auth] profile fetch failed:', err.message); // non-fatal
+  }
+
   const credentials = {
-    accessToken: {
-      token:                tokens.access_token,
-      expiresOnTimestamp:   now + expiresIn,
-      refreshAfterTimestamp: now + Math.floor(expiresIn * 0.9),
-      tokenType:            'Bearer',
+    claudeAiOauth: {
+      accessToken:      tokens.access_token,
+      refreshToken:     tokens.refresh_token || null,
+      expiresAt,
+      scopes,
+      subscriptionType,
+      rateLimitTier,
     },
-    refreshToken: tokens.refresh_token || null,
   };
 
   // Write credentials to the config directory
@@ -572,14 +618,16 @@ router.post('/claude-auth-code', requireAuth, async (req, res) => {
     return res.status(500).json({ error: 'Failed to write credentials: ' + err.message });
   }
 
+  const displayEmail = profileEmail ? ` (${profileEmail})` : '';
   authSession = null;
-  res.json({ ok: true, output: `Authentication successful. Token saved to ${account_dir}/.credentials.json` });
+  res.json({ ok: true, output: `Authentication successful${displayEmail}. Token saved to ${account_dir}/.credentials.json` });
 });
 
 // GET /master/claude-auth-status?account_dir=... — check if credentials exist and are valid
 router.get('/claude-auth-status', requireAuth, (req, res) => {
   const account_dir = req.query.account_dir || '/home/theartis/.claude';
-  const credPath = path.join(account_dir, '.credentials.json');
+  const credPath    = path.join(account_dir, '.credentials.json');
+  const cfgPath     = path.join(account_dir, '.claude.json');
 
   let creds;
   try {
@@ -588,22 +636,24 @@ router.get('/claude-auth-status', requireAuth, (req, res) => {
     return res.json({ authenticated: false });
   }
 
-  const token = creds?.accessToken?.token;
-  const expiresOn = creds?.accessToken?.expiresOnTimestamp;
-  const expired = expiresOn ? Date.now() > expiresOn : false;
+  // Support both the correct format (claudeAiOauth) and the old wrong format (accessToken object)
+  const oauth    = creds?.claudeAiOauth;
+  const token    = oauth?.accessToken || creds?.accessToken?.token || null;
+  const expiresOn = oauth?.expiresAt   || creds?.accessToken?.expiresOnTimestamp || null;
+  const expired  = expiresOn ? Date.now() > expiresOn : false;
 
   if (!token) return res.json({ authenticated: false });
 
-  // Try to decode JWT payload to extract email/name
+  // Read email/name from .claude.json oauthAccount (populated during auth)
   let email = null;
-  let name = null;
+  let name  = null;
   try {
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
-    email = payload.email || payload.sub || null;
-    name  = payload.name || null;
-  } catch { /* opaque token — skip */ }
+    const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+    email = cfg?.oauthAccount?.emailAddress || null;
+    name  = cfg?.oauthAccount?.displayName  || null;
+  } catch {}
 
-  res.json({ authenticated: !expired, expired, email, name });
+  res.json({ authenticated: !expired, expired, email, name, subscriptionType: oauth?.subscriptionType || null });
 });
 
 module.exports = router;
