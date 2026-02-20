@@ -671,6 +671,12 @@ function runClaude() {
     var buf = '';
     var statusEl = document.getElementById('claude-status');
 
+    var hitLimit = false;
+
+    function isLimitMsg(text) {
+      return /hit.{0,30}limit|usage.?limit|rate.?limit|overloaded|too many|resets\s+\w+\s+\d/i.test(text);
+    }
+
     function read() {
       return reader.read().then(function(chunk) {
         if (chunk.done) { setRunning(false); currentTaskId = null; return; }
@@ -683,14 +689,30 @@ function runClaude() {
           if (!raw) return;
           var ev;
           try { ev = JSON.parse(raw); } catch { return; }
-          if (ev.type === 'out') appendOutput(ev.text, 'text-green-400');
+          if (ev.type === 'out') {
+            if (isLimitMsg(ev.text)) {
+              hitLimit = true;
+              appendOutput(ev.text, 'text-purple-400');
+              if (statusEl) statusEl.textContent = 'Usage limit reached';
+            } else {
+              appendOutput(ev.text, 'text-green-400');
+            }
+          }
           if (ev.type === 'err') {
-            var isLimit = /usage.?limit|rate.?limit|overloaded|too many/i.test(ev.text);
-            appendOutput(ev.text, isLimit ? 'text-purple-400' : 'text-amber-400');
-            if (isLimit && statusEl) statusEl.textContent = 'Usage limit reached — try again later';
+            if (isLimitMsg(ev.text)) {
+              hitLimit = true;
+              appendOutput(ev.text, 'text-purple-400');
+              if (statusEl) statusEl.textContent = 'Usage limit reached';
+            } else {
+              appendOutput(ev.text, 'text-amber-400');
+            }
           }
           if (ev.type === 'done') {
-            appendOutput('\n[Exited with code ' + ev.code + ']\n', ev.code === 0 ? 'text-blue-400' : 'text-red-400');
+            if (hitLimit) {
+              appendOutput('\n⚠ Claude Pro daily limit reached. Check the message above for reset time.\n', 'text-purple-400');
+            } else {
+              appendOutput('\n[Exited with code ' + ev.code + ']\n', ev.code === 0 ? 'text-blue-400' : 'text-red-400');
+            }
             setRunning(false);
             currentTaskId = null;
           }
