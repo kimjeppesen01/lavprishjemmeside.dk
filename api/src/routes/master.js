@@ -481,31 +481,76 @@ router.post('/claude-auth-code', requireAuth, async (req, res) => {
 
   const { codeVerifier, account_dir } = authSession;
 
-  // The callback page may bundle code#verifier — split if present, use our verifier always
-  const authCode = rawCode.trim().split('#')[0];
+  // Callback page may show "code#code_verifier" — split carefully and trim all parts
+  const parts = rawCode.trim().split('#');
+  const authCode      = parts[0].trim();
+  // If the pasted text includes a verifier, prefer it (callback page may embed a different one
+  // than what we generated, depending on how the state is used). Fallback to our stored verifier.
+  const pastedVerifier   = parts[1] ? parts[1].trim() : null;
+  const effectiveVerifier = pastedVerifier || codeVerifier;
 
+  if (!authCode) {
+    authSession = null;
+    return res.status(400).json({ error: 'Auth code is empty after parsing — did you paste the correct value?' });
+  }
+
+  // Try form-encoded first (OAuth 2.0 spec, RFC 6749 §4.1.3).
+  // If the endpoint rejects it, fall back to JSON (what the CLI source uses).
   let tokenRes;
+  const tokenParams = {
+    grant_type:    'authorization_code',
+    code:          authCode,
+    code_verifier: effectiveVerifier,
+    client_id:     CLAUDE_OAUTH.CLIENT_ID,
+    redirect_uri:  CLAUDE_OAUTH.REDIRECT_URI,
+  };
+
   try {
     tokenRes = await fetch(CLAUDE_OAUTH.TOKEN_URL, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        grant_type:    'authorization_code',
-        code:          authCode,
-        code_verifier: codeVerifier,
-        client_id:     CLAUDE_OAUTH.CLIENT_ID,
-        redirect_uri:  CLAUDE_OAUTH.REDIRECT_URI,
-      }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    new URLSearchParams(tokenParams).toString(),
     });
   } catch (err) {
     authSession = null;
     return res.status(502).json({ error: 'Token exchange request failed: ' + err.message });
   }
 
+  // If form-encoded gives a format error, retry with JSON (CLI behaviour)
+  if (tokenRes.status === 400) {
+    const formBody = await tokenRes.text().catch(() => '');
+    let jsonRes;
+    try {
+      jsonRes = await fetch(CLAUDE_OAUTH.TOKEN_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(tokenParams),
+      });
+    } catch (err2) {
+      authSession = null;
+      return res.status(502).json({ error: 'Token exchange failed (both form and JSON): ' + err2.message, formDetail: formBody.slice(0, 200) });
+    }
+    if (!jsonRes.ok) {
+      const jsonBody = await jsonRes.text().catch(() => '');
+      authSession = null;
+      return res.status(400).json({
+        error: `Token exchange failed (${jsonRes.status}) — tried both form-encoded and JSON`,
+        detail: jsonBody.slice(0, 300),
+        formDetail: formBody.slice(0, 200),
+        debug: { authCodeLen: authCode.length, verifierLen: effectiveVerifier.length, usedPastedVerifier: !!pastedVerifier },
+      });
+    }
+    tokenRes = jsonRes;
+  }
+
   if (!tokenRes.ok) {
     const body = await tokenRes.text().catch(() => '');
     authSession = null;
-    return res.status(400).json({ error: `Token exchange failed (${tokenRes.status})`, detail: body.slice(0, 300) });
+    return res.status(400).json({
+      error: `Token exchange failed (${tokenRes.status})`,
+      detail: body.slice(0, 300),
+      debug: { authCodeLen: authCode.length, verifierLen: effectiveVerifier.length, usedPastedVerifier: !!pastedVerifier },
+    });
   }
 
   let tokens;
