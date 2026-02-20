@@ -166,9 +166,13 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
         </div>
         <div>
           <label class="text-xs text-gray-500 block mb-1">Account</label>
-          <select id="claude-account" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          <select id="claude-account" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" onchange="loadAuthStatus()">
             <option value="/home/theartis/.claude">Default</option>
           </select>
+          <div class="flex items-center gap-1.5 mt-1.5">
+            <span id="auth-dot" class="inline-block w-2 h-2 rounded-full bg-gray-300 flex-shrink-0"></span>
+            <span id="auth-label" class="text-xs text-gray-400 truncate">Checking…</span>
+          </div>
         </div>
         <div>
           <label class="text-xs text-gray-500 block mb-1">Timeout</label>
@@ -565,11 +569,45 @@ function loadClaudeAccounts() {
     .then(function(r) { return r.json(); })
     .then(function(accounts) {
       var sel = document.getElementById('claude-account');
-      if (sel) sel.innerHTML = accounts.map(function(a) {
-        return '<option value="' + a.configDir + '">' + a.label + '</option>';
-      }).join('');
+      if (sel) {
+        sel.innerHTML = accounts.map(function(a) {
+          return '<option value="' + a.configDir + '">' + a.label + '</option>';
+        }).join('');
+      }
+      loadAuthStatus();
     })
-    .catch(function() {});
+    .catch(function() { loadAuthStatus(); });
+}
+
+function loadAuthStatus() {
+  var sel = document.getElementById('claude-account');
+  var dot = document.getElementById('auth-dot');
+  var label = document.getElementById('auth-label');
+  if (!sel || !dot || !label) return;
+  var account_dir = sel.value;
+  fetch(API + '/master/claude-auth-status?account_dir=' + encodeURIComponent(account_dir), { headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(s) {
+      if (s.authenticated) {
+        dot.className = 'inline-block w-2 h-2 rounded-full bg-green-500 flex-shrink-0';
+        var display = s.email || s.name || 'Authenticated';
+        label.textContent = display;
+        label.className = 'text-xs text-green-700 truncate';
+      } else if (s.expired) {
+        dot.className = 'inline-block w-2 h-2 rounded-full bg-amber-400 flex-shrink-0';
+        label.textContent = 'Token expired — re-authenticate';
+        label.className = 'text-xs text-amber-600 truncate';
+      } else {
+        dot.className = 'inline-block w-2 h-2 rounded-full bg-gray-300 flex-shrink-0';
+        label.textContent = 'Not authenticated';
+        label.className = 'text-xs text-gray-400 truncate';
+      }
+    })
+    .catch(function() {
+      dot.className = 'inline-block w-2 h-2 rounded-full bg-gray-300 flex-shrink-0';
+      label.textContent = 'Status unknown';
+      label.className = 'text-xs text-gray-400 truncate';
+    });
 }
 
 function appendOutput(text, colorClass) {
@@ -765,6 +803,7 @@ function submitAuthCode() {
         statusEl.textContent = 'Authenticated! Claude Code will now use your Claude Pro account.';
         statusEl.className = 'text-xs mt-2 text-green-600';
         loadClaudeAccounts();
+        loadAuthStatus();
       } else {
         out.textContent = '✗ ' + j.error + (j.detail ? '\n' + j.detail : '');
         out.classList.remove('hidden');

@@ -371,6 +371,12 @@ router.post('/claude-run', requireAuth, (req, res) => {
   spawnEnv.HOME = '/home/theartis';
   spawnEnv.CLAUDE_CONFIG_DIR = account_dir || '/home/theartis/.claude';
   spawnEnv.GH_TOKEN = process.env.GITHUB_PAT || ''; // enables git push + gh CLI
+  // Suppress update checks and non-essential traffic so claude doesn't block on interactive prompts
+  spawnEnv.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = '1';
+  spawnEnv.DISABLE_AUTOUPDATER = '1';
+  spawnEnv.NO_UPDATE_NOTIFIER = '1';
+  spawnEnv.CI = '1'; // suppress interactive prompts in many CLI tools
+  spawnEnv.TERM = 'dumb';
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -385,6 +391,7 @@ router.post('/claude-run', requireAuth, (req, res) => {
   const proc = spawn(CLAUDE_BIN, ['--print', '--dangerously-skip-permissions', '--model', modelId, '-p', prompt], {
     cwd,
     env: spawnEnv,
+    stdio: ['ignore', 'pipe', 'pipe'], // stdin → /dev/null prevents blocking on TTY reads
   });
 
   activeTasks.set(taskId, proc);
@@ -394,25 +401,30 @@ router.post('/claude-run', requireAuth, (req, res) => {
     runningTaskId = null;
   }, timeoutMs);
 
+  // Heartbeat: keep SSE alive and visible to LiteSpeed every 5s
+  const heartbeat = setInterval(() => {
+    try { res.write(': keepalive\n\n'); } catch { clearInterval(heartbeat); }
+  }, 5000);
+
+  const cleanup = () => { clearTimeout(killTimer); clearInterval(heartbeat); activeTasks.delete(taskId); runningTaskId = null; };
+
   proc.stdout.on('data', (d) => {
     try { res.write(`data: ${JSON.stringify({ type: 'out', text: stripAnsi(d.toString()) })}\n\n`); } catch {}
   });
   proc.stderr.on('data', (d) => {
-    try { res.write(`data: ${JSON.stringify({ type: 'err', text: stripAnsi(d.toString()) })}\n\n`); } catch {}
+    const txt = stripAnsi(d.toString());
+    console.error(`[claude-run ${taskId}] stderr:`, txt.trim());
+    try { res.write(`data: ${JSON.stringify({ type: 'err', text: txt })}\n\n`); } catch {}
   });
   proc.on('close', (code) => {
-    clearTimeout(killTimer);
-    activeTasks.delete(taskId);
-    runningTaskId = null;
+    cleanup();
     try {
       res.write(`data: ${JSON.stringify({ type: 'done', code })}\n\n`);
       res.end();
     } catch {}
   });
   proc.on('error', (err) => {
-    clearTimeout(killTimer);
-    activeTasks.delete(taskId);
-    runningTaskId = null;
+    cleanup();
     try {
       res.write(`data: ${JSON.stringify({ type: 'err', text: 'Failed to start claude: ' + err.message })}\n\n`);
       res.write(`data: ${JSON.stringify({ type: 'done', code: 1 })}\n\n`);
@@ -421,10 +433,8 @@ router.post('/claude-run', requireAuth, (req, res) => {
   });
 
   req.on('close', () => {
-    clearTimeout(killTimer);
+    cleanup();
     proc.kill();
-    activeTasks.delete(taskId);
-    runningTaskId = null;
   });
 });
 
@@ -564,6 +574,36 @@ router.post('/claude-auth-code', requireAuth, async (req, res) => {
 
   authSession = null;
   res.json({ ok: true, output: `Authentication successful. Token saved to ${account_dir}/.credentials.json` });
+});
+
+// GET /master/claude-auth-status?account_dir=... — check if credentials exist and are valid
+router.get('/claude-auth-status', requireAuth, (req, res) => {
+  const account_dir = req.query.account_dir || '/home/theartis/.claude';
+  const credPath = path.join(account_dir, '.credentials.json');
+
+  let creds;
+  try {
+    creds = JSON.parse(fs.readFileSync(credPath, 'utf8'));
+  } catch {
+    return res.json({ authenticated: false });
+  }
+
+  const token = creds?.accessToken?.token;
+  const expiresOn = creds?.accessToken?.expiresOnTimestamp;
+  const expired = expiresOn ? Date.now() > expiresOn : false;
+
+  if (!token) return res.json({ authenticated: false });
+
+  // Try to decode JWT payload to extract email/name
+  let email = null;
+  let name = null;
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+    email = payload.email || payload.sub || null;
+    name  = payload.name || null;
+  } catch { /* opaque token — skip */ }
+
+  res.json({ authenticated: !expired, expired, email, name });
 });
 
 module.exports = router;
