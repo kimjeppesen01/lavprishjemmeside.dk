@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireMaster } = require('../middleware/auth');
+const { claudeRunRateLimiter } = require('../middleware/rateLimit');
 const mysql = require('mysql2/promise');
 const fetch = (...args) => import('node-fetch').then(({ default: f }) => f(...args));
 const { spawn } = require('child_process');
@@ -25,11 +26,177 @@ let runningTaskId = null;
 // Interactive auth session (claude auth login) — persists between SSE disconnect and code submission
 let authSession = null;
 
-// Known repo working directories on the server
-const REPO_DIRS = {
-  'lavprishjemmeside.dk': '/home/theartis/repositories/lavprishjemmeside.dk',
-  'ljdesignstudio.dk':    '/home/theartis/repositories/ljdesignstudio.dk',
-};
+// Repo path convention: /home/theartis/repositories/<domain>
+const REPO_BASE = '/home/theartis/repositories';
+const CONTEXT_FILE_EXTENSIONS = new Set(['.md', '.txt']);
+const CONTEXT_FILE_MAX_COUNT = 12;
+const CONTEXT_FILE_MAX_BYTES_PER_FILE = 80 * 1024;
+const CONTEXT_FILE_MAX_CHARS_PER_FILE = 12000;
+const CONTEXT_FILE_MAX_TOTAL_CHARS = 90000;
+
+async function getSitesRepoMap() {
+  const [rows] = await pool.query('SELECT id, name, domain, api_url, admin_url FROM sites WHERE is_active = 1 ORDER BY id ASC');
+  const map = {};
+  const list = [];
+  for (const r of rows) {
+    const repoPath = `${REPO_BASE}/${r.domain}`;
+    map[r.domain] = repoPath;
+    map[String(r.id)] = repoPath;
+    list.push({ id: r.id, name: r.name, domain: r.domain, repo_path: repoPath, api_url: r.api_url, admin_url: r.admin_url });
+  }
+  return { map, list };
+}
+
+function resolveRepoCwd(repo, repoMap) {
+  return repoMap[repo] || repoMap['lavprishjemmeside.dk'];
+}
+
+function fileMtime(filePath) {
+  try {
+    return fs.statSync(filePath).mtime.toISOString();
+  } catch {
+    return null;
+  }
+}
+
+function safeWalkMarkdownFiles(rootDir, repoRoot, out, maxFiles = 250) {
+  if (!rootDir) return;
+  if (!fs.existsSync(rootDir)) return;
+  let entries = [];
+  try {
+    entries = fs.readdirSync(rootDir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    if (out.length >= maxFiles) return;
+    const fullPath = path.join(rootDir, entry.name);
+    if (entry.isDirectory()) {
+      safeWalkMarkdownFiles(fullPath, repoRoot, out, maxFiles);
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    const ext = path.extname(entry.name).toLowerCase();
+    if (!CONTEXT_FILE_EXTENSIONS.has(ext)) continue;
+    const rel = path.relative(repoRoot, fullPath);
+    if (!rel || rel.startsWith('..')) continue;
+    out.push({
+      path: rel.split(path.sep).join('/'),
+      modified_at: fileMtime(fullPath),
+    });
+  }
+}
+
+function listContextFilesForRepo(repoRoot) {
+  const files = [];
+  const roots = [
+    repoRoot,
+    path.join(repoRoot, 'docs'),
+    path.join(repoRoot, 'api', 'src', 'component-docs'),
+    path.join(repoRoot, 'personal-agent', 'docs'),
+  ];
+  for (const dir of roots) {
+    safeWalkMarkdownFiles(dir, repoRoot, files);
+  }
+  const unique = new Map();
+  for (const file of files) {
+    if (!unique.has(file.path)) unique.set(file.path, file);
+  }
+  return Array.from(unique.values())
+    .sort((a, b) => a.path.localeCompare(b.path))
+    .slice(0, 500);
+}
+
+function buildDocContextBlock(cwd, contextFiles) {
+  if (!Array.isArray(contextFiles) || contextFiles.length === 0) {
+    return { block: '', used: [], skipped: [] };
+  }
+
+  const seen = new Set();
+  const selected = [];
+  for (const p of contextFiles) {
+    if (typeof p !== 'string') continue;
+    const trimmed = p.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    selected.push(trimmed);
+  }
+  if (selected.length > CONTEXT_FILE_MAX_COUNT) {
+    selected.length = CONTEXT_FILE_MAX_COUNT;
+  }
+
+  const used = [];
+  const skipped = [];
+  let totalChars = 0;
+  const snippets = [];
+
+  for (const relInput of selected) {
+    const relNorm = path.posix.normalize(relInput);
+    if (relNorm.startsWith('/') || relNorm.startsWith('..')) {
+      skipped.push({ path: relInput, reason: 'invalid_path' });
+      continue;
+    }
+    const ext = path.extname(relNorm).toLowerCase();
+    if (!CONTEXT_FILE_EXTENSIONS.has(ext)) {
+      skipped.push({ path: relInput, reason: 'unsupported_extension' });
+      continue;
+    }
+
+    const abs = path.resolve(cwd, relNorm);
+    const relFromCwd = path.relative(cwd, abs);
+    if (relFromCwd.startsWith('..')) {
+      skipped.push({ path: relInput, reason: 'outside_repo' });
+      continue;
+    }
+
+    let stat;
+    try {
+      stat = fs.statSync(abs);
+    } catch {
+      skipped.push({ path: relInput, reason: 'not_found' });
+      continue;
+    }
+    if (!stat.isFile()) {
+      skipped.push({ path: relInput, reason: 'not_file' });
+      continue;
+    }
+    if (stat.size > CONTEXT_FILE_MAX_BYTES_PER_FILE) {
+      skipped.push({ path: relInput, reason: 'file_too_large' });
+      continue;
+    }
+
+    let content = '';
+    try {
+      content = fs.readFileSync(abs, 'utf8');
+    } catch {
+      skipped.push({ path: relInput, reason: 'read_error' });
+      continue;
+    }
+
+    const clipped = content.slice(0, CONTEXT_FILE_MAX_CHARS_PER_FILE);
+    if (totalChars + clipped.length > CONTEXT_FILE_MAX_TOTAL_CHARS) {
+      skipped.push({ path: relInput, reason: 'total_limit_reached' });
+      continue;
+    }
+    totalChars += clipped.length;
+    used.push(relNorm);
+    snippets.push(
+      `\n--- BEGIN FILE: ${relNorm} ---\n` +
+      clipped +
+      (content.length > clipped.length ? '\n[...truncated...]' : '') +
+      `\n--- END FILE: ${relNorm} ---\n`
+    );
+  }
+
+  if (!snippets.length) return { block: '', used, skipped };
+
+  const block = [
+    '[Selected documentation context follows. Treat these files as authoritative project context for this task.]',
+    ...snippets,
+  ].join('\n');
+
+  return { block, used, skipped };
+}
 
 // Path to the claude wrapper script (uses Node 22)
 const CLAUDE_BIN = '/home/theartis/local/bin/claude';
@@ -55,6 +222,49 @@ function requireApiKey(req, res, next) {
   next();
 }
 
+// Audit: log every /master/* request (user, path, method, ip, optional meta)
+function getClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) return String(forwarded).split(',')[0].trim();
+  return req.ip || req.connection?.remoteAddress || null;
+}
+
+async function logMasterAudit(req, meta = {}) {
+  const combined = { ...(req.masterAuditMeta || {}), ...meta };
+  try {
+    await pool.query(
+      'INSERT INTO master_audit_log (user_id, email, path, method, meta, ip) VALUES (?, ?, ?, ?, ?, ?)',
+      [
+        req.user?.id ?? null,
+        req.user?.email ?? null,
+        (req.originalUrl || req.url || req.path || '').slice(0, 255),
+        req.method,
+        Object.keys(combined).length ? JSON.stringify(combined) : null,
+        getClientIp(req),
+      ]
+    );
+  } catch (err) {
+    console.error('master_audit_log insert error:', err.message);
+  }
+}
+
+router.use((req, res, next) => {
+  req.masterAuditMeta = {};
+  res.on('finish', () => { logMasterAudit(req).catch(() => {}); });
+  next();
+});
+
+// Optional: restrict /master/* to specific IPs (MASTER_ALLOWED_IPS comma-separated)
+const MASTER_ALLOWED_IPS = process.env.MASTER_ALLOWED_IPS
+  ? process.env.MASTER_ALLOWED_IPS.split(',').map((s) => s.trim()).filter(Boolean)
+  : null;
+router.use((req, res, next) => {
+  if (!MASTER_ALLOWED_IPS || MASTER_ALLOWED_IPS.length === 0) return next();
+  const ip = getClientIp(req);
+  if (ip && MASTER_ALLOWED_IPS.includes(ip)) return next();
+  return res.status(403).json({ error: 'Access denied', code: 'IP_NOT_ALLOWED' });
+});
+
 // Open a short-lived connection to a remote site DB
 async function siteConn(site) {
   return mysql.createConnection({
@@ -66,10 +276,28 @@ async function siteConn(site) {
   });
 }
 
+// ─── Master check (no requireMaster — so non-master can learn they lack access) ───
+
+// GET /master/me — returns is_master for current user (used by frontend to redirect /admin/master)
+router.get('/me', requireAuth, (req, res) => {
+  res.json({ is_master: req.user.role === 'master' });
+});
+
+// GET /master/claude-repos — list repos for Claude tab (from sites table, convention path)
+router.get('/claude-repos', requireAuth, requireMaster, async (req, res) => {
+  try {
+    const { list } = await getSitesRepoMap();
+    res.json(list.map(({ id, name, domain, repo_path }) => ({ id, name, domain, repo_path })));
+  } catch (err) {
+    console.error('GET /master/claude-repos error:', err);
+    res.status(500).json({ error: 'Failed to load repos' });
+  }
+});
+
 // ─── Sites ────────────────────────────────────────────────────────────────────
 
 // GET /master/sites — list all sites with live stats
-router.get('/sites', requireAuth, async (req, res) => {
+router.get('/sites', requireAuth, requireMaster, async (req, res) => {
   try {
     const [sites] = await pool.query('SELECT * FROM sites WHERE is_active = 1 ORDER BY id ASC');
 
@@ -148,7 +376,7 @@ router.get('/sites', requireAuth, async (req, res) => {
 });
 
 // POST /master/sites — register new site
-router.post('/sites', requireAuth, async (req, res) => {
+router.post('/sites', requireAuth, requireMaster, async (req, res) => {
   const { name, domain, api_url, admin_url, version, db_name, db_user, db_password, db_host } = req.body;
   if (!name || !domain || !api_url || !admin_url) {
     return res.status(400).json({ error: 'name, domain, api_url, admin_url required' });
@@ -167,7 +395,7 @@ router.post('/sites', requireAuth, async (req, res) => {
 });
 
 // PUT /master/sites/:id — update site record
-router.put('/sites/:id', requireAuth, async (req, res) => {
+router.put('/sites/:id', requireAuth, requireMaster, async (req, res) => {
   const { name, domain, api_url, admin_url, version, db_name, db_user, db_password, db_host, is_active } = req.body;
   try {
     await pool.query(
@@ -184,7 +412,7 @@ router.put('/sites/:id', requireAuth, async (req, res) => {
 // ─── Kanban ───────────────────────────────────────────────────────────────────
 
 // GET /master/kanban — all items grouped by column
-router.get('/kanban', requireAuth, async (req, res) => {
+router.get('/kanban', requireAuth, requireMaster, async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM kanban_items ORDER BY column_name, sort_order ASC, id ASC');
     const grouped = { backlog: [], in_progress: [], review: [], done: [] };
@@ -203,7 +431,7 @@ router.post('/kanban', [
   (req, res, next) => {
     const key = req.headers['x-api-key'];
     if (process.env.MASTER_API_KEY && key === process.env.MASTER_API_KEY) return next();
-    requireAuth(req, res, next);
+    requireAuth(req, res, () => requireMaster(req, res, next));
   }
 ], async (req, res) => {
   const { title, description, column_name, priority, assigned_to, version_target, sort_order } = req.body;
@@ -225,7 +453,7 @@ router.put('/kanban/:id', [
   (req, res, next) => {
     const key = req.headers['x-api-key'];
     if (process.env.MASTER_API_KEY && key === process.env.MASTER_API_KEY) return next();
-    requireAuth(req, res, next);
+    requireAuth(req, res, () => requireMaster(req, res, next));
   }
 ], async (req, res) => {
   const { title, description, column_name, priority, assigned_to, version_target, sort_order } = req.body;
@@ -250,7 +478,7 @@ router.put('/kanban/:id', [
 });
 
 // DELETE /master/kanban/:id
-router.delete('/kanban/:id', requireAuth, async (req, res) => {
+router.delete('/kanban/:id', requireAuth, requireMaster, async (req, res) => {
   try {
     await pool.query('DELETE FROM kanban_items WHERE id=?', [req.params.id]);
     res.json({ ok: true });
@@ -290,7 +518,7 @@ router.post('/ian-heartbeat', requireApiKey, async (req, res) => {
 });
 
 // GET /master/ian-status — latest heartbeat per agent type
-router.get('/ian-status', requireAuth, async (req, res) => {
+router.get('/ian-status', requireAuth, requireMaster, async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM ian_heartbeat ORDER BY agent_type ASC');
     res.json(rows);
@@ -301,7 +529,7 @@ router.get('/ian-status', requireAuth, async (req, res) => {
 });
 
 // GET /master/ai-usage — aggregate ai_usage from all active sites
-router.get('/ai-usage', requireAuth, async (req, res) => {
+router.get('/ai-usage', requireAuth, requireMaster, async (req, res) => {
   try {
     const [sites] = await pool.query('SELECT * FROM sites WHERE is_active = 1 AND db_name IS NOT NULL');
     const results = [];
@@ -341,7 +569,7 @@ router.get('/ai-usage', requireAuth, async (req, res) => {
 
 // GET /master/claude-accounts — list available Claude.ai account sessions
 // Uses CLAUDE_CONFIG_DIR_<NAME> env vars; always includes the default ~/.claude session
-router.get('/claude-accounts', requireAuth, (req, res) => {
+router.get('/claude-accounts', requireAuth, requireMaster, (req, res) => {
   const accounts = [{ label: 'Default', configDir: '/home/theartis/.claude' }];
   Object.keys(process.env)
     .filter(k => k.startsWith('CLAUDE_CONFIG_DIR_') && process.env[k])
@@ -352,17 +580,116 @@ router.get('/claude-accounts', requireAuth, (req, res) => {
   res.json(accounts);
 });
 
+// GET /master/claude-context-files?repo=<domain|id> — list markdown/txt docs available for context
+router.get('/claude-context-files', requireAuth, requireMaster, async (req, res) => {
+  let repoMap;
+  try {
+    const out = await getSitesRepoMap();
+    repoMap = out.map;
+  } catch (err) {
+    console.error('claude-context-files getSitesRepoMap:', err);
+    return res.status(500).json({ error: 'Failed to load sites' });
+  }
+
+  const repo = req.query.repo;
+  const cwd = resolveRepoCwd(repo, repoMap);
+  if (!cwd) return res.status(400).json({ error: 'Invalid repo; use a site domain or id from claude-repos' });
+  try {
+    fs.accessSync(cwd, fs.constants.R_OK);
+  } catch {
+    return res.status(400).json({ error: `Repo path not found or not readable: ${cwd}` });
+  }
+
+  try {
+    const files = listContextFilesForRepo(cwd);
+    res.json({ repo, cwd, files });
+  } catch (err) {
+    console.error('GET /master/claude-context-files error:', err);
+    res.status(500).json({ error: 'Failed to list context files' });
+  }
+});
+
 // POST /master/claude-run — spawn claude CLI and stream output via SSE
 // Uses Claude Pro account login (NOT ANTHROPIC_API_KEY) — same auth as VS Code
-router.post('/claude-run', requireAuth, (req, res) => {
-  const { prompt, repo, model, account_dir, timeout_min } = req.body;
+router.post('/claude-run', requireAuth, requireMaster, claudeRunRateLimiter, async (req, res) => {
+  const { prompt, repo, model, account_dir, timeout_min, context_files, kanban_item_id } = req.body;
   if (!prompt) return res.status(400).json({ error: 'prompt required' });
   if (runningTaskId) return res.status(409).json({ error: 'A task is already running', taskId: runningTaskId });
 
-  const cwd = REPO_DIRS[repo] || REPO_DIRS['lavprishjemmeside.dk'];
+  let repoMap, sitesList;
+  try {
+    const out = await getSitesRepoMap();
+    repoMap = out.map;
+    sitesList = out.list;
+  } catch (err) {
+    console.error('claude-run getSitesRepoMap:', err);
+    return res.status(500).json({ error: 'Failed to load sites' });
+  }
+
+  const cwd = resolveRepoCwd(repo, repoMap);
+  if (!cwd) return res.status(400).json({ error: 'Invalid repo; use a site domain or id from claude-repos' });
+  try {
+    fs.accessSync(cwd, fs.constants.R_OK);
+  } catch {
+    return res.status(400).json({ error: `Repo path not found or not readable: ${cwd}` });
+  }
+
   const modelId = MODEL_MAP[model] || MODEL_MAP.sonnet;
   const taskId = crypto.randomUUID();
+  const { block: docContextBlock, used: usedDocs, skipped: skippedDocs } = buildDocContextBlock(cwd, context_files);
+
+  let kanbanTaskBlock = '';
+  let kanbanItem = null;
+  if (kanban_item_id !== undefined && kanban_item_id !== null && String(kanban_item_id).trim() !== '') {
+    const kanbanId = Number(kanban_item_id);
+    if (Number.isFinite(kanbanId) && kanbanId > 0) {
+      try {
+        const [rows] = await pool.query(
+          'SELECT id, title, description, column_name, priority, assigned_to, version_target FROM kanban_items WHERE id = ? LIMIT 1',
+          [kanbanId]
+        );
+        if (rows.length) {
+          kanbanItem = rows[0];
+          kanbanTaskBlock = [
+            '[Kanban task context]',
+            `id: ${kanbanItem.id}`,
+            `title: ${kanbanItem.title}`,
+            `column: ${kanbanItem.column_name}`,
+            `priority: ${kanbanItem.priority}`,
+            `assigned_to: ${kanbanItem.assigned_to || 'n/a'}`,
+            `version_target: ${kanbanItem.version_target || 'n/a'}`,
+            `description: ${kanbanItem.description || ''}`,
+            'Use this task as the primary scope unless the user prompt explicitly overrides it.',
+          ].join('\n');
+        }
+      } catch (err) {
+        console.error('claude-run kanban lookup error:', err.message);
+      }
+    }
+  }
+
+  req.masterAuditMeta = {
+    repo: repo || null,
+    taskId,
+    prompt_length: (prompt && prompt.length) || 0,
+    prompt_preview: (typeof prompt === 'string' ? prompt.slice(0, 200) : ''),
+    context_files_used: usedDocs,
+    context_files_skipped: skippedDocs,
+    kanban_item_id: kanbanItem ? kanbanItem.id : null,
+  };
   const timeoutMs = Math.min(Math.max((parseInt(timeout_min) || 10), 1), 60) * 60_000;
+
+  const contextBlock = [
+    '[Context: You are working in the repository for one of the following sites. All sites use the same CMS codebase; each has its own DB and deploy.',
+    'Sites: ' + sitesList.map((s) => `${s.name} (${s.domain}) api=${s.api_url} admin=${s.admin_url} repo=${s.repo_path}`).join(' | '),
+    `Current repo for this task: ${repo} (${cwd})]`,
+  ].join('\n');
+  const fullPrompt = [
+    contextBlock,
+    kanbanTaskBlock,
+    docContextBlock,
+    typeof prompt === 'string' ? prompt : String(prompt),
+  ].filter(Boolean).join('\n\n');
 
   // Build spawn env: delete ANTHROPIC_API_KEY so Claude Code uses account OAuth login
   const spawnEnv = { ...process.env };
@@ -394,9 +721,9 @@ router.post('/claude-run', requireAuth, (req, res) => {
   res.flushHeaders();
 
   runningTaskId = taskId;
-  res.write(`data: ${JSON.stringify({ type: 'start', taskId, cwd, model: modelId })}\n\n`);
+  res.write(`data: ${JSON.stringify({ type: 'start', taskId, cwd, model: modelId, context_files_used: usedDocs, kanban_item_id: kanbanItem ? kanbanItem.id : null })}\n\n`);
 
-  const proc = spawn(CLAUDE_BIN, ['--print', '--dangerously-skip-permissions', '--model', modelId, '-p', prompt], {
+  const proc = spawn(CLAUDE_BIN, ['--print', '--dangerously-skip-permissions', '--model', modelId, '-p', fullPrompt], {
     cwd,
     env: spawnEnv,
     stdio: ['ignore', 'pipe', 'pipe'], // stdin → /dev/null prevents blocking on TTY reads
@@ -447,7 +774,7 @@ router.post('/claude-run', requireAuth, (req, res) => {
 });
 
 // DELETE /master/claude-run/:taskId — kill a running task
-router.delete('/claude-run/:taskId', requireAuth, (req, res) => {
+router.delete('/claude-run/:taskId', requireAuth, requireMaster, (req, res) => {
   const proc = activeTasks.get(req.params.taskId);
   if (!proc) return res.status(404).json({ error: 'Task not found or already finished' });
   proc.kill();
@@ -460,7 +787,7 @@ router.delete('/claude-run/:taskId', requireAuth, (req, res) => {
 // The server generates code_verifier/challenge, builds the authorization URL, stores the session,
 // and returns the URL. The user opens it in their browser, authorizes, and copies the auth code.
 // This bypasses the claude auth login spawn entirely (avoids TTY issues + claude.ai network block).
-router.post('/claude-auth-start', requireAuth, (req, res) => {
+router.post('/claude-auth-start', requireAuth, requireMaster, (req, res) => {
   // Kill any dangling auth session
   if (authSession) authSession = null;
 
@@ -494,7 +821,7 @@ router.post('/claude-auth-start', requireAuth, (req, res) => {
 //   - Just the auth code (if from the text field on the callback page)
 //   - "authcode#code_verifier" (if the callback page bundles both — older CLI behaviour)
 // We always use the code_verifier we generated in claude-auth-start.
-router.post('/claude-auth-code', requireAuth, async (req, res) => {
+router.post('/claude-auth-code', requireAuth, requireMaster, async (req, res) => {
   const { code: rawCode } = req.body || {};
   if (!rawCode) return res.status(400).json({ error: 'code required' });
   if (!authSession) return res.status(404).json({ error: 'No active auth session — click Start Auth first' });
@@ -624,7 +951,7 @@ router.post('/claude-auth-code', requireAuth, async (req, res) => {
 });
 
 // GET /master/claude-auth-status?account_dir=... — check if credentials exist and are valid
-router.get('/claude-auth-status', requireAuth, (req, res) => {
+router.get('/claude-auth-status', requireAuth, requireMaster, (req, res) => {
   const account_dir = req.query.account_dir || '/home/theartis/.claude';
   const credPath    = path.join(account_dir, '.credentials.json');
   const cfgPath     = path.join(account_dir, '.claude.json');

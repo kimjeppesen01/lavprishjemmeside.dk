@@ -9,7 +9,7 @@ function requireAuth(req, res, next) {
   try {
     const token = header.slice(7);
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    if (payload.role !== 'admin') {
+    if (payload.role !== 'admin' && payload.role !== 'master') {
       return res.status(403).json({ error: 'Admin access required' });
     }
     req.user = payload;
@@ -19,4 +19,12 @@ function requireAuth(req, res, next) {
   }
 }
 
-module.exports = { requireAuth };
+/** Must run after requireAuth. Restricts access to users with role === 'master' (e.g. /admin/master and /master/*). */
+function requireMaster(req, res, next) {
+  if (!req.user || req.user.role !== 'master') {
+    return res.status(403).json({ error: 'Master access required', code: 'MASTER_REQUIRED' });
+  }
+  next();
+}
+
+module.exports = { requireAuth, requireMaster };

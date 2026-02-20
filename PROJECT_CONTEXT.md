@@ -300,6 +300,17 @@ The admin dashboard lives within the main Astro site (NOT a separate subdomain),
 |------|------|---------|
 | Login | `/admin/` | Email + password form, stores JWT in localStorage |
 | Dashboard | `/admin/dashboard/` | 4 metric cards + 3 data tables |
+| Master Hub | `/admin/master/` | Multi-site control, Claude Code runner, Kanban, AI usage (master role only) |
+
+### Claude Code integration (Master Hub)
+
+The **Claude Code** tab in Master Hub runs the Claude CLI on the server from the browser: a master user picks a repo (from the `sites` table), enters a prompt, and sees live CLI output via SSE. Claude runs with **full autonomy** (no permission allow-list) and receives an injected **all-domains** context block every run.
+
+- **Access**: Only `role = 'master'` can open `/admin/master` or call `/master/*` APIs. The frontend hides the "Master Hub" link for non-master users and redirects direct visits to the dashboard with "Kun master-brugere har adgang".
+- **Safeguards**: Master-only middleware; audit log (`master_audit_log`) for every `/master/*` request; rate limit on `POST /master/claude-run` (default 10/hour per user, `MASTER_CLAUDE_RUN_LIMIT`); optional `MASTER_ALLOWED_IPS` IP allow-list.
+- **Schema**: Run `api/src/schema_master_role.sql` (add `master` to `users.role`) and `api/src/schema_master_audit.sql` (create `master_audit_log`). Assign `role = 'master'` to a user to grant access.
+
+**Full reference:** For architecture, API endpoints, OAuth setup, env vars, troubleshooting, and file locations, see **[docs/CLAUDE_CODE_INTEGRATION.md](docs/CLAUDE_CODE_INTEGRATION.md)**.
 
 ### Dashboard Overview Shows
 - **4 metric cards**: Hændelser i alt, Hændelser i dag, Sessioner i alt, Gns. sider pr. session

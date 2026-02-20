@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Master Hub — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.tTVtZehP.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Master Hub — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.uHPGZ_It.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -12,7 +12,7 @@
         return;
       }
     })();
-    </script> <div class="flex min-h-screen"> <!-- Sidebar --> <aside id="admin-sidebar" class="hidden w-64 bg-gray-900 text-gray-100 min-h-screen flex-col"> <div class="p-4 border-b border-gray-700"> <a href="/admin/dashboard/" class="text-lg font-bold text-white">LPH Admin</a> </div> <nav class="flex-1 p-4 space-y-1"> <a href="/admin/master/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm font-medium">
+    </script> <div class="flex min-h-screen"> <!-- Sidebar --> <aside id="admin-sidebar" class="hidden w-64 bg-gray-900 text-gray-100 min-h-screen flex-col"> <div class="p-4 border-b border-gray-700"> <a href="/admin/dashboard/" class="text-lg font-bold text-white">LPH Admin</a> </div> <nav class="flex-1 p-4 space-y-1"> <a href="/admin/master/" id="master-hub-link" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm font-medium">
 Master Hub
 </a> <div class="border-t border-gray-700 my-1"></div> <a href="/admin/dashboard/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm">
 Oversigt
@@ -32,7 +32,19 @@ AI-assembler
 Log ud
 </button> </div> </aside> <!-- Main content --> <div class="flex-1 flex flex-col"> <!-- Top bar --> <header id="admin-header" class="hidden bg-white border-b border-gray-200 px-6 py-3 items-center justify-between"> <button id="mobile-menu-btn" class="lg:hidden text-gray-600 text-sm">
 &#9776; Menu
-</button> <div class="flex-1"></div> <span id="admin-email" class="text-sm text-gray-500"></span> </header> <!-- Page content --> <main class="flex-1 p-6">  <div class="flex items-center justify-between mb-6"> <h1 class="text-2xl font-bold">Master Hub</h1> <span class="text-xs text-gray-400">lavprishjemmeside.dk only</span> </div>  <div class="flex gap-1 border-b border-gray-200 mb-6"> <button onclick="switchTab('sites')" id="tab-sites" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-blue-600 text-blue-700">
+</button> <div class="flex-1"></div> <span id="admin-email" class="text-sm text-gray-500"></span> </header> <!-- Page content --> <main class="flex-1 p-6">  <script>
+    (function() {
+      try {
+        var token = localStorage.getItem('admin_token');
+        if (!token) return;
+        var payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.role !== 'master') {
+          window.location.replace('/admin/dashboard/?message=master_required');
+          return;
+        }
+      } catch(e) {}
+    })();
+  </script> <div class="flex items-center justify-between mb-6"> <h1 class="text-2xl font-bold">Master Hub</h1> <span class="text-xs text-gray-400">lavprishjemmeside.dk only</span> </div>  <div class="flex gap-1 border-b border-gray-200 mb-6"> <button onclick="switchTab('sites')" id="tab-sites" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-blue-600 text-blue-700">
 Sites
 </button> <button onclick="switchTab('agents')" id="tab-agents" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
 Agents &amp; Kanban
@@ -40,8 +52,14 @@ Agents &amp; Kanban
 AI Usage
 </button> <button onclick="switchTab('claude')" id="tab-claude" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
 Claude Code
-</button> </div>  <div id="panel-sites"> <div id="sites-loading" class="text-center py-12 text-gray-400">Henter sites…</div> <div id="sites-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm mb-4"></div> <div id="sites-grid" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-5"></div> <div class="mt-6 pt-4 border-t border-gray-200"> <details> <summary class="text-sm font-medium text-gray-600 cursor-pointer hover:text-gray-900">+ Registrer nyt site</summary> <form id="add-site-form" class="mt-4 bg-white border border-gray-200 rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-4"> <div> <label class="text-xs text-gray-500 block mb-1">Navn</label> <input name="name" placeholder="Min Kunde A/S" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">Domain</label> <input name="domain" placeholder="minkunde.dk" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">API URL</label> <input name="api_url" placeholder="https://api.minkunde.dk" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">Admin URL</label> <input name="admin_url" placeholder="https://minkunde.dk/admin/" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">DB Name</label> <input name="db_name" placeholder="theartis_minkunde" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">DB User</label> <input name="db_user" placeholder="theartis_minkunde" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">DB Password</label> <input name="db_password" type="password" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div class="md:col-span-2 flex justify-end"> <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Gem site</button> </div> </form> </details> </div> </div>  <div id="panel-agents" class="hidden"> <!-- IAN agent status cards --> <div class="mb-6"> <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">IAN Agent Status</h2> <div id="agent-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4"> <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div> <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div> <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div> </div> </div> <!-- Kanban board --> <div class="mb-4 flex items-center justify-between"> <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider">Kanban Board</h2> <button onclick="openAddCard()" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">+ Tilføj opgave</button> </div> <!-- Add card form (hidden by default) --> <div id="add-card-form" class="hidden bg-white border border-blue-200 rounded-xl p-5 mb-5 grid grid-cols-1 md:grid-cols-2 gap-4"> <div> <label class="text-xs text-gray-500 block mb-1">Titel *</label> <input id="card-title" placeholder="Opgavetitel" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">Kolonne</label> <select id="card-column" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="backlog">Backlog</option> <option value="in_progress">In Progress</option> <option value="review">Review</option> <option value="done">Done</option> </select> </div> <div class="md:col-span-2"> <label class="text-xs text-gray-500 block mb-1">Beskrivelse</label> <textarea id="card-desc" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea> </div> <div> <label class="text-xs text-gray-500 block mb-1">Prioritet</label> <select id="card-priority" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="low">Low</option> <option value="medium" selected>Medium</option> <option value="high">High</option> <option value="critical">Critical</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Tildelt</label> <select id="card-assigned" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="human">Human</option> <option value="haiku">Haiku</option> <option value="sonnet">Sonnet</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Version target</label> <input id="card-version" placeholder="1.1.0" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div class="md:col-span-2 flex gap-2 justify-end"> <button onclick="document.getElementById('add-card-form').classList.add('hidden')" class="px-4 py-2 border border-gray-300 text-sm rounded-lg hover:bg-gray-50">Annuller</button> <button onclick="submitCard()" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Gem</button> </div> </div> <div id="kanban-loading" class="text-center py-12 text-gray-400">Henter kanban…</div> <div id="kanban-board" class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"></div> </div>  <div id="panel-ai" class="hidden"> <div id="ai-loading" class="text-center py-12 text-gray-400">Henter AI-forbrug…</div> <div id="ai-content" class="hidden space-y-6"></div> </div>  <div id="panel-claude" class="hidden"> <div class="bg-white border border-gray-200 rounded-xl p-5 mb-4"> <div class="flex flex-wrap gap-3 items-end mb-4"> <div> <label class="text-xs text-gray-500 block mb-1">Repository</label> <select id="claude-repo" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="lavprishjemmeside.dk">lavprishjemmeside.dk</option> <option value="ljdesignstudio.dk">ljdesignstudio.dk</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Model</label> <select id="claude-model" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="sonnet">Sonnet 4.6 (default)</option> <option value="haiku">Haiku 4.5 (fast / cheap)</option> <option value="opus">Opus 4.6 (powerful)</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Account</label> <select id="claude-account" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" onchange="loadAuthStatus()"> <option value="/home/theartis/.claude">Default</option> </select> <div class="flex items-center gap-1.5 mt-1.5"> <span id="auth-dot" class="inline-block w-2 h-2 rounded-full bg-gray-300 flex-shrink-0"></span> <span id="auth-label" class="text-xs text-gray-400 truncate">Checking…</span> </div> </div> <div> <label class="text-xs text-gray-500 block mb-1">Timeout</label> <select id="claude-timeout" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="10">10 min</option> <option value="30">30 min</option> <option value="60">60 min</option> </select> </div> </div> <div class="mb-3"> <label class="text-xs text-gray-500 block mb-1">Task / prompt</label> <textarea id="claude-prompt" rows="5" placeholder="Describe the task for Claude Code…
-e.g. Run node api/run-schema.cjs and report any errors" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono resize-y"></textarea> </div> <div class="flex gap-2 flex-wrap"> <button onclick="runClaude()" id="claude-run-btn" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-medium">
+</button> </div>  <div id="panel-sites"> <div id="sites-loading" class="text-center py-12 text-gray-400">Henter sites…</div> <div id="sites-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm mb-4"></div> <div id="sites-grid" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-5"></div> <div class="mt-6 pt-4 border-t border-gray-200"> <details> <summary class="text-sm font-medium text-gray-600 cursor-pointer hover:text-gray-900">+ Registrer nyt site</summary> <form id="add-site-form" class="mt-4 bg-white border border-gray-200 rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-4"> <div> <label class="text-xs text-gray-500 block mb-1">Navn</label> <input name="name" placeholder="Min Kunde A/S" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">Domain</label> <input name="domain" placeholder="minkunde.dk" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">API URL</label> <input name="api_url" placeholder="https://api.minkunde.dk" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">Admin URL</label> <input name="admin_url" placeholder="https://minkunde.dk/admin/" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">DB Name</label> <input name="db_name" placeholder="theartis_minkunde" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">DB User</label> <input name="db_user" placeholder="theartis_minkunde" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">DB Password</label> <input name="db_password" type="password" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div class="md:col-span-2 flex justify-end"> <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Gem site</button> </div> </form> </details> </div> </div>  <div id="panel-agents" class="hidden"> <!-- IAN agent status cards --> <div class="mb-6"> <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">IAN Agent Status</h2> <div id="agent-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4"> <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div> <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div> <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div> </div> </div> <!-- Kanban board --> <div class="mb-4 flex items-center justify-between"> <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider">Kanban Board</h2> <button onclick="openAddCard()" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">+ Tilføj opgave</button> </div> <!-- Add card form (hidden by default) --> <div id="add-card-form" class="hidden bg-white border border-blue-200 rounded-xl p-5 mb-5 grid grid-cols-1 md:grid-cols-2 gap-4"> <div> <label class="text-xs text-gray-500 block mb-1">Titel *</label> <input id="card-title" placeholder="Opgavetitel" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">Kolonne</label> <select id="card-column" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="backlog">Backlog</option> <option value="in_progress">In Progress</option> <option value="review">Review</option> <option value="done">Done</option> </select> </div> <div class="md:col-span-2"> <label class="text-xs text-gray-500 block mb-1">Beskrivelse</label> <textarea id="card-desc" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea> </div> <div> <label class="text-xs text-gray-500 block mb-1">Prioritet</label> <select id="card-priority" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="low">Low</option> <option value="medium" selected>Medium</option> <option value="high">High</option> <option value="critical">Critical</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Tildelt</label> <select id="card-assigned" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="human">Human</option> <option value="haiku">Haiku</option> <option value="sonnet">Sonnet</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Version target</label> <input id="card-version" placeholder="1.1.0" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div class="md:col-span-2 flex gap-2 justify-end"> <button onclick="document.getElementById('add-card-form').classList.add('hidden')" class="px-4 py-2 border border-gray-300 text-sm rounded-lg hover:bg-gray-50">Annuller</button> <button onclick="submitCard()" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Gem</button> </div> </div> <div id="kanban-loading" class="text-center py-12 text-gray-400">Henter kanban…</div> <div id="kanban-board" class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"></div> </div>  <div id="panel-ai" class="hidden"> <div id="ai-loading" class="text-center py-12 text-gray-400">Henter AI-forbrug…</div> <div id="ai-content" class="hidden space-y-6"></div> </div>  <div id="panel-claude" class="hidden"> <div class="bg-white border border-gray-200 rounded-xl p-5 mb-4"> <div class="flex flex-wrap gap-3 items-end mb-4"> <div> <label class="text-xs text-gray-500 block mb-1">Repository</label> <select id="claude-repo" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" onchange="onClaudeRepoChange()"> <option value="">Henter repos…</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Model</label> <select id="claude-model" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="sonnet">Sonnet 4.6 (default)</option> <option value="haiku">Haiku 4.5 (fast / cheap)</option> <option value="opus">Opus 4.6 (powerful)</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Account</label> <select id="claude-account" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" onchange="loadAuthStatus()"> <option value="/home/theartis/.claude">Default</option> </select> <div class="flex items-center gap-1.5 mt-1.5"> <span id="auth-dot" class="inline-block w-2 h-2 rounded-full bg-gray-300 flex-shrink-0"></span> <span id="auth-label" class="text-xs text-gray-400 truncate">Checking…</span> </div> </div> <div> <label class="text-xs text-gray-500 block mb-1">Timeout</label> <select id="claude-timeout" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="10">10 min</option> <option value="30">30 min</option> <option value="60">60 min</option> </select> </div> <div class="min-w-64"> <label class="text-xs text-gray-500 block mb-1">Kanban task (optional)</label> <select id="claude-kanban-task" class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full"> <option value="">Ingen (fri prompt)</option> </select> </div> </div> <div class="mb-3"> <label class="text-xs text-gray-500 block mb-1">Task / prompt</label> <textarea id="claude-prompt" rows="5" placeholder="Describe the task for Claude Code…
+e.g. Run node api/run-schema.cjs and report any errors" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono resize-y"></textarea> <div class="mt-2 flex items-center gap-2"> <button onclick="insertKanbanTaskInPrompt()" class="px-3 py-1.5 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-gray-50">
+Indsæt valgt task i prompt
+</button> <button onclick="loadClaudeKanbanTasks()" class="px-3 py-1.5 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-gray-50">
+Opdater tasks
+</button> </div> </div> <div class="mb-4 border border-gray-200 rounded-lg p-3 bg-gray-50"> <div class="flex items-center justify-between gap-3 mb-2"> <label class="text-xs text-gray-600 font-medium">Dokument-kontekst</label> <span id="claude-context-count" class="text-xs text-gray-500">0 valgt</span> </div> <div class="flex flex-wrap gap-2 mb-2"> <input id="claude-context-filter" type="text" placeholder="Filtrer docs (fx seo, deploy, component)" class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs min-w-72" oninput="renderClaudeContextFiles()"> <button onclick="selectAllFilteredContextDocs()" class="px-3 py-1.5 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-white">Vælg filtrerede</button> <button onclick="clearContextDocSelection()" class="px-3 py-1.5 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-white">Ryd valg</button> <button onclick="loadClaudeContextFiles()" class="px-3 py-1.5 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-white">Opdater docs</button> </div> <div id="claude-context-files" class="bg-white border border-gray-200 rounded-lg p-2 max-h-52 overflow-auto text-xs text-gray-600">
+Vælg repository for at hente docs…
+</div> </div> <div class="flex gap-2 flex-wrap"> <button onclick="runClaude()" id="claude-run-btn" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-medium">
 ▶ Run
 </button> <button onclick="killClaude()" id="claude-kill" class="hidden px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 font-medium">
 ■ Kill
@@ -62,13 +80,17 @@ Generate Auth URL
       if (sidebar) { sidebar.classList.remove('hidden'); sidebar.classList.add('lg:flex'); }
       if (header) { header.classList.remove('hidden'); header.classList.add('flex'); }
 
-      // Show admin email from JWT
+      // Show admin email from JWT; hide Master Hub for non-master
       try {
         var token = localStorage.getItem('admin_token');
         if (token) {
           var payload = JSON.parse(atob(token.split('.')[1]));
           var emailEl = document.getElementById('admin-email');
           if (emailEl) emailEl.textContent = payload.email || '';
+          var masterLink = document.getElementById('master-hub-link');
+          if (masterLink && payload.role !== 'master') {
+            masterLink.style.display = 'none';
+          }
         }
       } catch(e) {}
 
@@ -110,6 +132,8 @@ Generate Auth URL
 var API = apiUrl;
 var activeTab = 'sites';
 var kanbanData = {};
+var claudeContextFiles = [];
+var claudeSelectedContext = {};
 
 // ─── Auth helper ──────────────────────────────────────────────
 function authHeaders() {
@@ -134,7 +158,7 @@ function switchTab(tab) {
   if (tab === 'sites') loadSites();
   if (tab === 'agents') { loadAgents(); loadKanban(); }
   if (tab === 'ai') loadAiUsage();
-  if (tab === 'claude') loadClaudeAccounts();
+  if (tab === 'claude') { loadClaudeRepos(); loadClaudeAccounts(); loadClaudeKanbanTasks(); }
 }
 
 // ─── Sites tab ────────────────────────────────────────────────
@@ -422,6 +446,172 @@ function loadAiUsage() {
 // ─── Claude Code Runner ───────────────────────────────────────
 var currentTaskId = null;
 
+function loadClaudeRepos() {
+  var sel = document.getElementById('claude-repo');
+  if (!sel) return;
+  fetch(API + '/master/claude-repos', { headers: authHeaders() })
+    .then(function(r) {
+      if (!r.ok) throw new Error(r.status === 403 ? 'Kun master-brugere' : 'Kunne ikke hente repos');
+      return r.json();
+    })
+    .then(function(repos) {
+      sel.innerHTML = repos.map(function(r) {
+        return '<option value="' + r.domain + '">' + r.name + ' (' + r.domain + ')</option>';
+      }).join('');
+      if (repos.length && !sel.value) sel.selectedIndex = 0;
+      onClaudeRepoChange();
+    })
+    .catch(function(e) {
+      sel.innerHTML = '<option value="">Fejl: ' + (e.message || 'Kunne ikke hente') + '</option>';
+    });
+}
+
+function onClaudeRepoChange() {
+  loadClaudeContextFiles();
+}
+
+function loadClaudeKanbanTasks() {
+  var sel = document.getElementById('claude-kanban-task');
+  if (!sel) return;
+  fetch(API + '/master/kanban', { headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var cols = ['backlog', 'in_progress', 'review'];
+      var options = ['<option value="">Ingen (fri prompt)</option>'];
+      cols.forEach(function(col) {
+        var items = (data[col] || []);
+        items.forEach(function(item) {
+          var label = '[' + col + '] #' + item.id + ' ' + escHtml(item.title);
+          options.push('<option value="' + item.id + '">' + label + '</option>');
+        });
+      });
+      sel.innerHTML = options.join('');
+    })
+    .catch(function() {
+      sel.innerHTML = '<option value="">Kunne ikke hente tasks</option>';
+    });
+}
+
+function loadClaudeContextFiles() {
+  var repoSel = document.getElementById('claude-repo');
+  var wrap = document.getElementById('claude-context-files');
+  if (!repoSel || !wrap) return;
+  var repo = repoSel.value;
+  if (!repo) {
+    wrap.textContent = 'Vælg repository for at hente docs…';
+    return;
+  }
+  wrap.textContent = 'Henter docs…';
+  fetch(API + '/master/claude-context-files?repo=' + encodeURIComponent(repo), { headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) {
+        wrap.textContent = 'Fejl: ' + data.error;
+        return;
+      }
+      claudeContextFiles = data.files || [];
+      renderClaudeContextFiles();
+    })
+    .catch(function(e) {
+      wrap.textContent = 'Fejl: ' + e.message;
+    });
+}
+
+function renderClaudeContextFiles() {
+  var wrap = document.getElementById('claude-context-files');
+  var filterInput = document.getElementById('claude-context-filter');
+  if (!wrap) return;
+  var q = (filterInput && filterInput.value || '').trim().toLowerCase();
+  var filtered = claudeContextFiles.filter(function(file) {
+    return !q || file.path.toLowerCase().indexOf(q) !== -1;
+  });
+  if (!filtered.length) {
+    wrap.innerHTML = '<p class="text-gray-400">Ingen docs matcher filteret.</p>';
+    updateContextCount();
+    return;
+  }
+  wrap.innerHTML = filtered.map(function(file) {
+    var checked = claudeSelectedContext[file.path] ? 'checked' : '';
+    return (
+      '<label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-gray-50">' +
+        '<input type="checkbox" data-doc-path="' + file.path + '" ' + checked + ' onchange="toggleContextDoc(this)" />' +
+        '<span class="font-mono text-[11px] text-gray-700">' + escHtml(file.path) + '</span>' +
+      '</label>'
+    );
+  }).join('');
+  updateContextCount();
+}
+
+function toggleContextDoc(el) {
+  if (!el) return;
+  var p = el.getAttribute('data-doc-path');
+  if (!p) return;
+  if (el.checked) claudeSelectedContext[p] = true;
+  else delete claudeSelectedContext[p];
+  updateContextCount();
+}
+
+function selectedContextDocPaths() {
+  return Object.keys(claudeSelectedContext).filter(function(p) { return !!claudeSelectedContext[p]; });
+}
+
+function updateContextCount() {
+  var countEl = document.getElementById('claude-context-count');
+  if (!countEl) return;
+  var n = selectedContextDocPaths().length;
+  countEl.textContent = n + ' valgt';
+}
+
+function selectAllFilteredContextDocs() {
+  var filterInput = document.getElementById('claude-context-filter');
+  var q = (filterInput && filterInput.value || '').trim().toLowerCase();
+  claudeContextFiles.forEach(function(file) {
+    if (!q || file.path.toLowerCase().indexOf(q) !== -1) claudeSelectedContext[file.path] = true;
+  });
+  renderClaudeContextFiles();
+}
+
+function clearContextDocSelection() {
+  claudeSelectedContext = {};
+  renderClaudeContextFiles();
+}
+
+function insertKanbanTaskInPrompt() {
+  var taskSel = document.getElementById('claude-kanban-task');
+  var promptEl = document.getElementById('claude-prompt');
+  if (!taskSel || !promptEl) return;
+  var taskId = taskSel.value;
+  if (!taskId) {
+    alert('Vælg en kanban task først.');
+    return;
+  }
+  fetch(API + '/master/kanban', { headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var all = [].concat(data.backlog || [], data.in_progress || [], data.review || [], data.done || []);
+      var task = all.find(function(t) { return String(t.id) === String(taskId); });
+      if (!task) {
+        alert('Task blev ikke fundet.');
+        return;
+      }
+      var parts = [
+        'Task scope (from kanban):',
+        '#'+ task.id + ' ' + task.title,
+        'Column: ' + task.column_name,
+        'Priority: ' + task.priority,
+        'Assigned: ' + (task.assigned_to || 'n/a'),
+        task.version_target ? ('Version target: ' + task.version_target) : '',
+        task.description ? ('Description:\n' + task.description) : '',
+        '',
+      ].filter(Boolean);
+      promptEl.value = parts.join('\n') + promptEl.value;
+      promptEl.focus();
+    })
+    .catch(function(e) {
+      alert('Kunne ikke hente task: ' + e.message);
+    });
+}
+
 function loadClaudeAccounts() {
   fetch(API + '/master/claude-accounts', { headers: authHeaders() })
     .then(function(r) { return r.json(); })
@@ -501,16 +691,28 @@ function runClaude() {
   var model       = document.getElementById('claude-model').value;
   var account_dir = document.getElementById('claude-account').value;
   var timeout_min = parseInt(document.getElementById('claude-timeout').value) || 10;
+  var kanban_item_id = document.getElementById('claude-kanban-task').value || null;
+  var context_files = selectedContextDocPaths();
 
   clearOutput();
   setRunning(true);
   appendOutput('$ claude --model ' + model + ' --print --dangerously-skip-permissions\n', 'text-gray-500');
   appendOutput('  repo: ' + repo + ' | account: ' + account_dir + ' | timeout: ' + timeout_min + 'min\n\n', 'text-gray-600');
+  if (kanban_item_id) appendOutput('  kanban task: #' + kanban_item_id + '\n', 'text-gray-600');
+  if (context_files.length) appendOutput('  context docs: ' + context_files.length + '\n\n', 'text-gray-600');
 
   fetch(API + '/master/claude-run', {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ prompt: body, repo: repo, model: model, account_dir: account_dir, timeout_min: timeout_min }),
+    body: JSON.stringify({
+      prompt: body,
+      repo: repo,
+      model: model,
+      account_dir: account_dir,
+      timeout_min: timeout_min,
+      context_files: context_files,
+      kanban_item_id: kanban_item_id,
+    }),
   }).then(function(res) {
     if (res.status === 409) {
       return res.json().then(function(j) {
@@ -554,6 +756,14 @@ function runClaude() {
               if (statusEl) statusEl.textContent = 'Usage limit reached';
             } else {
               appendOutput(ev.text, 'text-green-400');
+            }
+          }
+          if (ev.type === 'start') {
+            if (ev.context_files_used && ev.context_files_used.length) {
+              appendOutput('[Context docs loaded]\n- ' + ev.context_files_used.join('\n- ') + '\n\n', 'text-blue-300');
+            }
+            if (ev.kanban_item_id) {
+              appendOutput('[Kanban task linked] #' + ev.kanban_item_id + '\n\n', 'text-blue-300');
             }
           }
           if (ev.type === 'err') {
@@ -713,6 +923,14 @@ window.runClaude = runClaude;
 window.killClaude = killClaude;
 window.clearOutput = clearOutput;
 window.loadClaudeAccounts = loadClaudeAccounts;
+window.loadClaudeKanbanTasks = loadClaudeKanbanTasks;
+window.insertKanbanTaskInPrompt = insertKanbanTaskInPrompt;
+window.onClaudeRepoChange = onClaudeRepoChange;
+window.loadClaudeContextFiles = loadClaudeContextFiles;
+window.renderClaudeContextFiles = renderClaudeContextFiles;
+window.toggleContextDoc = toggleContextDoc;
+window.selectAllFilteredContextDocs = selectAllFilteredContextDocs;
+window.clearContextDocSelection = clearContextDocSelection;
 window.openAuthPanel = openAuthPanel;
 window.closeAuthPanel = closeAuthPanel;
 window.startClaudeAuth = startClaudeAuth;

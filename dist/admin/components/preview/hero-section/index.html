@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Forhåndsvis: Hero Section — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.tTVtZehP.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Forhåndsvis: Hero Section — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.uHPGZ_It.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -12,7 +12,7 @@
         return;
       }
     })();
-    </script> <div class="flex min-h-screen"> <!-- Sidebar --> <aside id="admin-sidebar" class="hidden w-64 bg-gray-900 text-gray-100 min-h-screen flex-col"> <div class="p-4 border-b border-gray-700"> <a href="/admin/dashboard/" class="text-lg font-bold text-white">LPH Admin</a> </div> <nav class="flex-1 p-4 space-y-1"> <a href="/admin/master/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm font-medium">
+    </script> <div class="flex min-h-screen"> <!-- Sidebar --> <aside id="admin-sidebar" class="hidden w-64 bg-gray-900 text-gray-100 min-h-screen flex-col"> <div class="p-4 border-b border-gray-700"> <a href="/admin/dashboard/" class="text-lg font-bold text-white">LPH Admin</a> </div> <nav class="flex-1 p-4 space-y-1"> <a href="/admin/master/" id="master-hub-link" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm font-medium">
 Master Hub
 </a> <div class="border-t border-gray-700 my-1"></div> <a href="/admin/dashboard/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm">
 Oversigt
@@ -48,13 +48,17 @@ version=split </span> </div> <div class="section-bg-page"> <header class="relati
       if (sidebar) { sidebar.classList.remove('hidden'); sidebar.classList.add('lg:flex'); }
       if (header) { header.classList.remove('hidden'); header.classList.add('flex'); }
 
-      // Show admin email from JWT
+      // Show admin email from JWT; hide Master Hub for non-master
       try {
         var token = localStorage.getItem('admin_token');
         if (token) {
           var payload = JSON.parse(atob(token.split('.')[1]));
           var emailEl = document.getElementById('admin-email');
           if (emailEl) emailEl.textContent = payload.email || '';
+          var masterLink = document.getElementById('master-hub-link');
+          if (masterLink && payload.role !== 'master') {
+            masterLink.style.display = 'none';
+          }
         }
       } catch(e) {}
 

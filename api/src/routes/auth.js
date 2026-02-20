@@ -71,9 +71,9 @@ router.post('/register', requireAuth, async (req, res) => {
   }
 });
 
-// GET /auth/me — check current token
+// GET /auth/me — check current token (includes is_master for Master Hub access)
 router.get('/me', requireAuth, async (req, res) => {
-  res.json({ user: req.user });
+  res.json({ user: req.user, is_master: req.user.role === 'master' });
 });
 
 // POST /auth/forgot-password — request password reset

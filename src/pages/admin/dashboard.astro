@@ -4,6 +4,17 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
 ---
 
 <AdminLayout title="Oversigt">
+  <div id="master-required-banner" class="hidden mb-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800" role="alert">
+    Kun master-brugere har adgang til Master Hub.
+  </div>
+  <script is:inline>
+    (function() {
+      if (typeof window !== 'undefined' && window.location.search.indexOf('message=master_required') !== -1) {
+        var el = document.getElementById('master-required-banner');
+        if (el) el.classList.remove('hidden');
+      }
+    })();
+  </script>
   <!-- Loading state -->
   <div id="loading" class="text-center py-12 text-gray-500">Henter data...</div>
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Oversigt — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.tTVtZehP.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Oversigt — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.uHPGZ_It.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -12,7 +12,7 @@
         return;
       }
     })();
-    </script> <div class="flex min-h-screen"> <!-- Sidebar --> <aside id="admin-sidebar" class="hidden w-64 bg-gray-900 text-gray-100 min-h-screen flex-col"> <div class="p-4 border-b border-gray-700"> <a href="/admin/dashboard/" class="text-lg font-bold text-white">LPH Admin</a> </div> <nav class="flex-1 p-4 space-y-1"> <a href="/admin/master/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm font-medium">
+    </script> <div class="flex min-h-screen"> <!-- Sidebar --> <aside id="admin-sidebar" class="hidden w-64 bg-gray-900 text-gray-100 min-h-screen flex-col"> <div class="p-4 border-b border-gray-700"> <a href="/admin/dashboard/" class="text-lg font-bold text-white">LPH Admin</a> </div> <nav class="flex-1 p-4 space-y-1"> <a href="/admin/master/" id="master-hub-link" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm font-medium">
 Master Hub
 </a> <div class="border-t border-gray-700 my-1"></div> <a href="/admin/dashboard/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm">
 Oversigt
@@ -32,7 +32,16 @@ AI-assembler
 Log ud
 </button> </div> </aside> <!-- Main content --> <div class="flex-1 flex flex-col"> <!-- Top bar --> <header id="admin-header" class="hidden bg-white border-b border-gray-200 px-6 py-3 items-center justify-between"> <button id="mobile-menu-btn" class="lg:hidden text-gray-600 text-sm">
 &#9776; Menu
-</button> <div class="flex-1"></div> <span id="admin-email" class="text-sm text-gray-500"></span> </header> <!-- Page content --> <main class="flex-1 p-6">   <div id="loading" class="text-center py-12 text-gray-500">Henter data...</div>  <div id="error" class="hidden text-center py-12"> <p class="text-red-600 mb-4" id="error-text"></p> <button onclick="window.location.reload()" class="text-blue-600 underline">Prøv igen</button> </div>  <div id="dashboard" class="hidden"> <div class="flex flex-wrap items-center justify-between gap-4 mb-6"> <h1 class="text-2xl font-bold">Oversigt</h1> <button id="dashboard-publish-btn" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-sm">
+</button> <div class="flex-1"></div> <span id="admin-email" class="text-sm text-gray-500"></span> </header> <!-- Page content --> <main class="flex-1 p-6">  <div id="master-required-banner" class="hidden mb-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800" role="alert">
+Kun master-brugere har adgang til Master Hub.
+</div> <script>
+    (function() {
+      if (typeof window !== 'undefined' && window.location.search.indexOf('message=master_required') !== -1) {
+        var el = document.getElementById('master-required-banner');
+        if (el) el.classList.remove('hidden');
+      }
+    })();
+  </script>  <div id="loading" class="text-center py-12 text-gray-500">Henter data...</div>  <div id="error" class="hidden text-center py-12"> <p class="text-red-600 mb-4" id="error-text"></p> <button onclick="window.location.reload()" class="text-blue-600 underline">Prøv igen</button> </div>  <div id="dashboard" class="hidden"> <div class="flex flex-wrap items-center justify-between gap-4 mb-6"> <h1 class="text-2xl font-bold">Oversigt</h1> <button id="dashboard-publish-btn" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-sm">
 Publicer til live (~90 sek)
 </button> </div> <!-- Settings overview: Pages + Global + Media & SEO --> <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8"> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <div class="flex items-center justify-between mb-4"> <h2 class="text-lg font-semibold text-gray-900">Sider</h2> <a href="/admin/pages/" class="text-sm text-blue-600 hover:underline">Rediger →</a> </div> <div id="settings-pages" class="space-y-2 text-sm"> <p class="text-gray-500">Henter...</p> </div> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <div class="flex items-center justify-between mb-4"> <h2 class="text-lg font-semibold text-gray-900">Globale indstillinger</h2> <div class="flex gap-3"> <a href="/admin/styling/" class="text-sm text-blue-600 hover:underline">Design →</a> <a href="/admin/header-footer/" class="text-sm text-blue-600 hover:underline">Header →</a> </div> </div> <div id="settings-global" class="space-y-2 text-sm"> <p class="text-gray-500">Henter...</p> </div> </div> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"> <div class="flex items-center justify-between mb-4"> <h2 class="text-lg font-semibold text-gray-900">Indhold & SEO</h2> </div> <div class="space-y-3 text-sm"> <a href="/admin/media/" class="flex items-center gap-2 text-blue-600 hover:underline"> <span>🖼</span> Mediebibliotek
 </a> <a href="/admin/pages/" class="flex items-center gap-2 text-blue-600 hover:underline"> <span>🔍</span> SEO for sider
@@ -221,13 +230,17 @@ Publicer til live (~90 sek)
       if (sidebar) { sidebar.classList.remove('hidden'); sidebar.classList.add('lg:flex'); }
       if (header) { header.classList.remove('hidden'); header.classList.add('flex'); }
 
-      // Show admin email from JWT
+      // Show admin email from JWT; hide Master Hub for non-master
       try {
         var token = localStorage.getItem('admin_token');
         if (token) {
           var payload = JSON.parse(atob(token.split('.')[1]));
           var emailEl = document.getElementById('admin-email');
           if (emailEl) emailEl.textContent = payload.email || '';
+          var masterLink = document.getElementById('master-hub-link');
+          if (masterLink && payload.role !== 'master') {
+            masterLink.style.display = 'none';
+          }
         }
       } catch(e) {}
 

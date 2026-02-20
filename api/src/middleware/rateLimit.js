@@ -53,9 +53,23 @@ const aiRateLimiter = rateLimit({
   skip: (req) => !req.user?.id // Skip rate limit if not authenticated
 });
 
+// Master Hub: stricter limit for POST /master/claude-run (per user per hour)
+const claudeRunRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: parseInt(process.env.MASTER_CLAUDE_RUN_LIMIT, 10) || 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({ error: 'For mange Claude-kørsler. Prøv igen om en time.', code: 'CLAUDE_RUN_RATE_LIMIT' });
+  },
+  keyGenerator: (req) => (req.user?.id ? `claude:${req.user.id}` : req.ip || 'anonymous'),
+  skip: (req) => !req.user?.id,
+});
+
 module.exports = {
   loginRateLimiter,
   eventRateLimiter,
   passwordResetRateLimiter,
-  aiRateLimiter
+  aiRateLimiter,
+  claudeRunRateLimiter,
 };
