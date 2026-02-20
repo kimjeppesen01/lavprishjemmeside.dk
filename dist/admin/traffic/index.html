@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Trafik â€” Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.uHPGZ_It.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Trafik â€” Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.BOIzpXMX.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -101,18 +101,24 @@ GOOGLE_GA4_PROPERTY_ID=123456789</pre> <p class="text-xs text-amber-600 mt-2">GÃ
       });
     })();
     </script>  </body></html> <script>(function(){const apiUrl = "https://api.lavprishjemmeside.dk";
+const siteUrl = "https://lavprishjemmeside.dk";
 
 (function() {
   var API = apiUrl;
+  var SITE_URL = siteUrl;
   var token = localStorage.getItem('admin_token');
   var currentDays = 28;
   var scData = null;
   var gaData = null;
 
   function authFetch(url) {
+    var controller = new AbortController();
+    var timer = setTimeout(function() { controller.abort(); }, 20000);
     return fetch(url, {
+      signal: controller.signal,
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(function(res) {
+      clearTimeout(timer);
       if (res.status === 401 || res.status === 403) {
         localStorage.removeItem('admin_token');
         window.location.href = '/admin/';
@@ -120,6 +126,10 @@ GOOGLE_GA4_PROPERTY_ID=123456789</pre> <p class="text-xs text-amber-600 mt-2">GÃ
       }
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.json();
+    }).catch(function(err) {
+      clearTimeout(timer);
+      if (err && err.name === 'AbortError') throw new Error('Timeout while loading data');
+      throw err;
     });
   }
 
@@ -214,8 +224,7 @@ GOOGLE_GA4_PROPERTY_ID=123456789</pre> <p class="text-xs text-amber-600 mt-2">GÃ
         // Pages table
         var pBody = document.getElementById('sc-pages-body');
         pBody.innerHTML = data.pages.map(function(p) {
-          var siteOrigin = import.meta.env.PUBLIC_SITE_URL || 'https://lavprishjemmeside.dk';
-          var path = p.page.replace(siteOrigin, '') || '/';
+          var path = p.page.replace(SITE_URL, '') || '/';
           return '<tr class="hover:bg-gray-50">' +
             tdCell(path) +
             tdCell(fmtNum(p.clicks), true) +
