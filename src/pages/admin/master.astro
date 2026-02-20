@@ -156,9 +156,27 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
             <option value="ljdesignstudio.dk">ljdesignstudio.dk</option>
           </select>
         </div>
-        <div class="flex-1 min-w-48">
-          <label class="text-xs text-gray-500 block mb-1">Model hint (optional prefix)</label>
-          <input id="claude-prefix" placeholder="e.g. !sonnet for heavy tasks" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-400" />
+        <div>
+          <label class="text-xs text-gray-500 block mb-1">Model</label>
+          <select id="claude-model" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="sonnet">Sonnet 4.6 (default)</option>
+            <option value="haiku">Haiku 4.5 (fast / cheap)</option>
+            <option value="opus">Opus 4.6 (powerful)</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 block mb-1">Account</label>
+          <select id="claude-account" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="/home/theartis/.claude">Default</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 block mb-1">Timeout</label>
+          <select id="claude-timeout" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="10">10 min</option>
+            <option value="30">30 min</option>
+            <option value="60">60 min</option>
+          </select>
         </div>
       </div>
       <div class="mb-3">
@@ -217,6 +235,7 @@ function switchTab(tab) {
   if (tab === 'sites') loadSites();
   if (tab === 'agents') { loadAgents(); loadKanban(); }
   if (tab === 'ai') loadAiUsage();
+  if (tab === 'claude') loadClaudeAccounts();
 }
 
 // ─── Sites tab ────────────────────────────────────────────────
@@ -504,12 +523,28 @@ function loadAiUsage() {
 // ─── Claude Code Runner ───────────────────────────────────────
 var currentTaskId = null;
 
+function loadClaudeAccounts() {
+  fetch(API + '/master/claude-accounts', { headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(accounts) {
+      var sel = document.getElementById('claude-account');
+      if (sel) sel.innerHTML = accounts.map(function(a) {
+        return '<option value="' + a.configDir + '">' + a.label + '</option>';
+      }).join('');
+    })
+    .catch(function() {});
+}
+
 function appendOutput(text, colorClass) {
   var out = document.getElementById('claude-output');
   var span = document.createElement('span');
   span.className = colorClass || 'text-gray-300';
   span.textContent = text;
   out.appendChild(span);
+  // Trim oldest output if too long
+  if (out.children.length > 5000) {
+    for (var i = 0; i < 1000; i++) { if (out.firstChild) out.removeChild(out.firstChild); }
+  }
   out.scrollTop = out.scrollHeight;
 }
 
@@ -527,21 +562,29 @@ function setRunning(running) {
 }
 
 function runClaude() {
-  var prefix = document.getElementById('claude-prefix').value.trim();
   var body = document.getElementById('claude-prompt').value.trim();
   if (!body) return;
-  var prompt = prefix ? prefix + ' ' + body : body;
-  var repo = document.getElementById('claude-repo').value;
+  var repo        = document.getElementById('claude-repo').value;
+  var model       = document.getElementById('claude-model').value;
+  var account_dir = document.getElementById('claude-account').value;
+  var timeout_min = parseInt(document.getElementById('claude-timeout').value) || 10;
 
   clearOutput();
   setRunning(true);
-  appendOutput('$ claude --print --dangerously-skip-permissions -p "' + prompt.slice(0, 60) + (prompt.length > 60 ? '…' : '') + '"\n', 'text-gray-500');
+  appendOutput('$ claude --model ' + model + ' --print --dangerously-skip-permissions\n', 'text-gray-500');
+  appendOutput('  repo: ' + repo + ' | account: ' + account_dir + ' | timeout: ' + timeout_min + 'min\n\n', 'text-gray-600');
 
   fetch(API + '/master/claude-run', {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ prompt: prompt, repo: repo }),
+    body: JSON.stringify({ prompt: body, repo: repo, model: model, account_dir: account_dir, timeout_min: timeout_min }),
   }).then(function(res) {
+    if (res.status === 409) {
+      return res.json().then(function(j) {
+        appendOutput('Error: ' + j.error + '\n', 'text-red-400');
+        setRunning(false);
+      });
+    }
     currentTaskId = res.headers.get('X-Task-Id');
     if (!res.body) {
       appendOutput('Error: No response body (SSE not supported?)\n', 'text-red-400');
@@ -551,6 +594,7 @@ function runClaude() {
     var reader = res.body.getReader();
     var decoder = new TextDecoder();
     var buf = '';
+    var statusEl = document.getElementById('claude-status');
 
     function read() {
       return reader.read().then(function(chunk) {
@@ -565,7 +609,11 @@ function runClaude() {
           var ev;
           try { ev = JSON.parse(raw); } catch { return; }
           if (ev.type === 'out') appendOutput(ev.text, 'text-green-400');
-          if (ev.type === 'err') appendOutput(ev.text, 'text-amber-400');
+          if (ev.type === 'err') {
+            var isLimit = /usage.?limit|rate.?limit|overloaded|too many/i.test(ev.text);
+            appendOutput(ev.text, isLimit ? 'text-purple-400' : 'text-amber-400');
+            if (isLimit && statusEl) statusEl.textContent = 'Usage limit reached — try again later';
+          }
           if (ev.type === 'done') {
             appendOutput('\n[Exited with code ' + ev.code + ']\n', ev.code === 0 ? 'text-blue-400' : 'text-red-400');
             setRunning(false);
@@ -606,6 +654,7 @@ window.deleteCard = deleteCard;
 window.runClaude = runClaude;
 window.killClaude = killClaude;
 window.clearOutput = clearOutput;
+window.loadClaudeAccounts = loadClaudeAccounts;
 
 // Load initial tab
 loadSites();

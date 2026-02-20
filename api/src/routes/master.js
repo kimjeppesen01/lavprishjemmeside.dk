@@ -9,6 +9,8 @@ const crypto = require('crypto');
 
 // Active claude CLI processes keyed by taskId
 const activeTasks = new Map();
+// Concurrency lock — one claude task at a time per server instance
+let runningTaskId = null;
 
 // Known repo working directories on the server
 const REPO_DIRS = {
@@ -18,6 +20,18 @@ const REPO_DIRS = {
 
 // Path to the claude wrapper script (uses Node 22)
 const CLAUDE_BIN = '/home/theartis/local/bin/claude';
+
+// Model ID mapping for Claude Code CLI --model flag
+const MODEL_MAP = {
+  haiku:  'claude-haiku-4-5-20251001',
+  sonnet: 'claude-sonnet-4-6',
+  opus:   'claude-opus-4-6',
+};
+
+// Strip ANSI escape codes from CLI output before sending to browser
+function stripAnsi(s) {
+  return s.replace(/\x1b\[[0-9;]*[mGKHFJA-Da-z]/g, '');
+}
 
 // Auth for IAN Python agent (no JWT needed)
 function requireApiKey(req, res, next) {
@@ -312,41 +326,69 @@ router.get('/ai-usage', requireAuth, async (req, res) => {
 
 // ─── Claude Code Runner ───────────────────────────────────────
 
+// GET /master/claude-accounts — list available Claude.ai account sessions
+// Uses CLAUDE_CONFIG_DIR_<NAME> env vars; always includes the default ~/.claude session
+router.get('/claude-accounts', requireAuth, (req, res) => {
+  const accounts = [{ label: 'Default', configDir: '/home/theartis/.claude' }];
+  Object.keys(process.env)
+    .filter(k => k.startsWith('CLAUDE_CONFIG_DIR_') && process.env[k])
+    .forEach(k => accounts.push({
+      label: k.replace('CLAUDE_CONFIG_DIR_', ''),
+      configDir: process.env[k],
+    }));
+  res.json(accounts);
+});
+
 // POST /master/claude-run — spawn claude CLI and stream output via SSE
+// Uses Claude Pro account login (NOT ANTHROPIC_API_KEY) — same auth as VS Code
 router.post('/claude-run', requireAuth, (req, res) => {
-  const { prompt, repo } = req.body;
+  const { prompt, repo, model, account_dir, timeout_min } = req.body;
   if (!prompt) return res.status(400).json({ error: 'prompt required' });
+  if (runningTaskId) return res.status(409).json({ error: 'A task is already running', taskId: runningTaskId });
 
   const cwd = REPO_DIRS[repo] || REPO_DIRS['lavprishjemmeside.dk'];
+  const modelId = MODEL_MAP[model] || MODEL_MAP.sonnet;
   const taskId = crypto.randomUUID();
+  const timeoutMs = Math.min(Math.max((parseInt(timeout_min) || 10), 1), 60) * 60_000;
+
+  // Build spawn env: delete ANTHROPIC_API_KEY so Claude Code uses account OAuth login
+  const spawnEnv = { ...process.env };
+  delete spawnEnv.ANTHROPIC_API_KEY;
+  spawnEnv.PATH = `/home/theartis/local/bin:/opt/alt/alt-nodejs22/root/usr/bin:${process.env.PATH || '/usr/local/bin:/usr/bin:/bin'}`;
+  spawnEnv.HOME = '/home/theartis';
+  spawnEnv.CLAUDE_CONFIG_DIR = account_dir || '/home/theartis/.claude';
+  spawnEnv.GH_TOKEN = process.env.GITHUB_PAT || ''; // enables git push + gh CLI
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Task-Id', taskId);
-  res.write(`data: ${JSON.stringify({ type: 'start', taskId, cwd })}\n\n`);
 
-  const proc = spawn(CLAUDE_BIN, ['--print', '--dangerously-skip-permissions', '-p', prompt], {
+  runningTaskId = taskId;
+  res.write(`data: ${JSON.stringify({ type: 'start', taskId, cwd, model: modelId })}\n\n`);
+
+  const proc = spawn(CLAUDE_BIN, ['--print', '--dangerously-skip-permissions', '--model', modelId, '-p', prompt], {
     cwd,
-    env: {
-      ...process.env,
-      PATH: `/home/theartis/local/bin:/opt/alt/alt-nodejs22/root/usr/bin:${process.env.PATH || '/usr/local/bin:/usr/bin:/bin'}`,
-      HOME: '/home/theartis',
-    },
+    env: spawnEnv,
   });
 
   activeTasks.set(taskId, proc);
-  const killTimer = setTimeout(() => { proc.kill(); activeTasks.delete(taskId); }, 600_000);
+  const killTimer = setTimeout(() => {
+    proc.kill();
+    activeTasks.delete(taskId);
+    runningTaskId = null;
+  }, timeoutMs);
 
   proc.stdout.on('data', (d) => {
-    try { res.write(`data: ${JSON.stringify({ type: 'out', text: d.toString() })}\n\n`); } catch {}
+    try { res.write(`data: ${JSON.stringify({ type: 'out', text: stripAnsi(d.toString()) })}\n\n`); } catch {}
   });
   proc.stderr.on('data', (d) => {
-    try { res.write(`data: ${JSON.stringify({ type: 'err', text: d.toString() })}\n\n`); } catch {}
+    try { res.write(`data: ${JSON.stringify({ type: 'err', text: stripAnsi(d.toString()) })}\n\n`); } catch {}
   });
   proc.on('close', (code) => {
     clearTimeout(killTimer);
     activeTasks.delete(taskId);
+    runningTaskId = null;
     try {
       res.write(`data: ${JSON.stringify({ type: 'done', code })}\n\n`);
       res.end();
@@ -355,6 +397,7 @@ router.post('/claude-run', requireAuth, (req, res) => {
   proc.on('error', (err) => {
     clearTimeout(killTimer);
     activeTasks.delete(taskId);
+    runningTaskId = null;
     try {
       res.write(`data: ${JSON.stringify({ type: 'err', text: 'Failed to start claude: ' + err.message })}\n\n`);
       res.write(`data: ${JSON.stringify({ type: 'done', code: 1 })}\n\n`);
@@ -366,6 +409,7 @@ router.post('/claude-run', requireAuth, (req, res) => {
     clearTimeout(killTimer);
     proc.kill();
     activeTasks.delete(taskId);
+    runningTaskId = null;
   });
 });
 
@@ -375,6 +419,7 @@ router.delete('/claude-run/:taskId', requireAuth, (req, res) => {
   if (!proc) return res.status(404).json({ error: 'Task not found or already finished' });
   proc.kill();
   activeTasks.delete(req.params.taskId);
+  runningTaskId = null;
   res.json({ ok: true });
 });
 

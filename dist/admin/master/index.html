@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Master Hub — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.phjBuXxQ.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Master Hub — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.qq4otZpN.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -40,7 +40,7 @@ Agents &amp; Kanban
 AI Usage
 </button> <button onclick="switchTab('claude')" id="tab-claude" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
 Claude Code
-</button> </div>  <div id="panel-sites"> <div id="sites-loading" class="text-center py-12 text-gray-400">Henter sites…</div> <div id="sites-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm mb-4"></div> <div id="sites-grid" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-5"></div> <div class="mt-6 pt-4 border-t border-gray-200"> <details> <summary class="text-sm font-medium text-gray-600 cursor-pointer hover:text-gray-900">+ Registrer nyt site</summary> <form id="add-site-form" class="mt-4 bg-white border border-gray-200 rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-4"> <div> <label class="text-xs text-gray-500 block mb-1">Navn</label> <input name="name" placeholder="Min Kunde A/S" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">Domain</label> <input name="domain" placeholder="minkunde.dk" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">API URL</label> <input name="api_url" placeholder="https://api.minkunde.dk" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">Admin URL</label> <input name="admin_url" placeholder="https://minkunde.dk/admin/" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">DB Name</label> <input name="db_name" placeholder="theartis_minkunde" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">DB User</label> <input name="db_user" placeholder="theartis_minkunde" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">DB Password</label> <input name="db_password" type="password" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div class="md:col-span-2 flex justify-end"> <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Gem site</button> </div> </form> </details> </div> </div>  <div id="panel-agents" class="hidden"> <!-- IAN agent status cards --> <div class="mb-6"> <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">IAN Agent Status</h2> <div id="agent-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4"> <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div> <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div> <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div> </div> </div> <!-- Kanban board --> <div class="mb-4 flex items-center justify-between"> <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider">Kanban Board</h2> <button onclick="openAddCard()" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">+ Tilføj opgave</button> </div> <!-- Add card form (hidden by default) --> <div id="add-card-form" class="hidden bg-white border border-blue-200 rounded-xl p-5 mb-5 grid grid-cols-1 md:grid-cols-2 gap-4"> <div> <label class="text-xs text-gray-500 block mb-1">Titel *</label> <input id="card-title" placeholder="Opgavetitel" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">Kolonne</label> <select id="card-column" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="backlog">Backlog</option> <option value="in_progress">In Progress</option> <option value="review">Review</option> <option value="done">Done</option> </select> </div> <div class="md:col-span-2"> <label class="text-xs text-gray-500 block mb-1">Beskrivelse</label> <textarea id="card-desc" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea> </div> <div> <label class="text-xs text-gray-500 block mb-1">Prioritet</label> <select id="card-priority" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="low">Low</option> <option value="medium" selected>Medium</option> <option value="high">High</option> <option value="critical">Critical</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Tildelt</label> <select id="card-assigned" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="human">Human</option> <option value="haiku">Haiku</option> <option value="sonnet">Sonnet</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Version target</label> <input id="card-version" placeholder="1.1.0" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div class="md:col-span-2 flex gap-2 justify-end"> <button onclick="document.getElementById('add-card-form').classList.add('hidden')" class="px-4 py-2 border border-gray-300 text-sm rounded-lg hover:bg-gray-50">Annuller</button> <button onclick="submitCard()" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Gem</button> </div> </div> <div id="kanban-loading" class="text-center py-12 text-gray-400">Henter kanban…</div> <div id="kanban-board" class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"></div> </div>  <div id="panel-ai" class="hidden"> <div id="ai-loading" class="text-center py-12 text-gray-400">Henter AI-forbrug…</div> <div id="ai-content" class="hidden space-y-6"></div> </div>  <div id="panel-claude" class="hidden"> <div class="bg-white border border-gray-200 rounded-xl p-5 mb-4"> <div class="flex flex-wrap gap-3 items-end mb-4"> <div> <label class="text-xs text-gray-500 block mb-1">Repository</label> <select id="claude-repo" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="lavprishjemmeside.dk">lavprishjemmeside.dk</option> <option value="ljdesignstudio.dk">ljdesignstudio.dk</option> </select> </div> <div class="flex-1 min-w-48"> <label class="text-xs text-gray-500 block mb-1">Model hint (optional prefix)</label> <input id="claude-prefix" placeholder="e.g. !sonnet for heavy tasks" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-400"> </div> </div> <div class="mb-3"> <label class="text-xs text-gray-500 block mb-1">Task / prompt</label> <textarea id="claude-prompt" rows="5" placeholder="Describe the task for Claude Code…
+</button> </div>  <div id="panel-sites"> <div id="sites-loading" class="text-center py-12 text-gray-400">Henter sites…</div> <div id="sites-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm mb-4"></div> <div id="sites-grid" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-5"></div> <div class="mt-6 pt-4 border-t border-gray-200"> <details> <summary class="text-sm font-medium text-gray-600 cursor-pointer hover:text-gray-900">+ Registrer nyt site</summary> <form id="add-site-form" class="mt-4 bg-white border border-gray-200 rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-4"> <div> <label class="text-xs text-gray-500 block mb-1">Navn</label> <input name="name" placeholder="Min Kunde A/S" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">Domain</label> <input name="domain" placeholder="minkunde.dk" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">API URL</label> <input name="api_url" placeholder="https://api.minkunde.dk" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">Admin URL</label> <input name="admin_url" placeholder="https://minkunde.dk/admin/" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">DB Name</label> <input name="db_name" placeholder="theartis_minkunde" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">DB User</label> <input name="db_user" placeholder="theartis_minkunde" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">DB Password</label> <input name="db_password" type="password" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div class="md:col-span-2 flex justify-end"> <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Gem site</button> </div> </form> </details> </div> </div>  <div id="panel-agents" class="hidden"> <!-- IAN agent status cards --> <div class="mb-6"> <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">IAN Agent Status</h2> <div id="agent-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4"> <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div> <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div> <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div> </div> </div> <!-- Kanban board --> <div class="mb-4 flex items-center justify-between"> <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider">Kanban Board</h2> <button onclick="openAddCard()" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">+ Tilføj opgave</button> </div> <!-- Add card form (hidden by default) --> <div id="add-card-form" class="hidden bg-white border border-blue-200 rounded-xl p-5 mb-5 grid grid-cols-1 md:grid-cols-2 gap-4"> <div> <label class="text-xs text-gray-500 block mb-1">Titel *</label> <input id="card-title" placeholder="Opgavetitel" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div> <label class="text-xs text-gray-500 block mb-1">Kolonne</label> <select id="card-column" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="backlog">Backlog</option> <option value="in_progress">In Progress</option> <option value="review">Review</option> <option value="done">Done</option> </select> </div> <div class="md:col-span-2"> <label class="text-xs text-gray-500 block mb-1">Beskrivelse</label> <textarea id="card-desc" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea> </div> <div> <label class="text-xs text-gray-500 block mb-1">Prioritet</label> <select id="card-priority" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="low">Low</option> <option value="medium" selected>Medium</option> <option value="high">High</option> <option value="critical">Critical</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Tildelt</label> <select id="card-assigned" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="human">Human</option> <option value="haiku">Haiku</option> <option value="sonnet">Sonnet</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Version target</label> <input id="card-version" placeholder="1.1.0" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"> </div> <div class="md:col-span-2 flex gap-2 justify-end"> <button onclick="document.getElementById('add-card-form').classList.add('hidden')" class="px-4 py-2 border border-gray-300 text-sm rounded-lg hover:bg-gray-50">Annuller</button> <button onclick="submitCard()" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Gem</button> </div> </div> <div id="kanban-loading" class="text-center py-12 text-gray-400">Henter kanban…</div> <div id="kanban-board" class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"></div> </div>  <div id="panel-ai" class="hidden"> <div id="ai-loading" class="text-center py-12 text-gray-400">Henter AI-forbrug…</div> <div id="ai-content" class="hidden space-y-6"></div> </div>  <div id="panel-claude" class="hidden"> <div class="bg-white border border-gray-200 rounded-xl p-5 mb-4"> <div class="flex flex-wrap gap-3 items-end mb-4"> <div> <label class="text-xs text-gray-500 block mb-1">Repository</label> <select id="claude-repo" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="lavprishjemmeside.dk">lavprishjemmeside.dk</option> <option value="ljdesignstudio.dk">ljdesignstudio.dk</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Model</label> <select id="claude-model" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="sonnet">Sonnet 4.6 (default)</option> <option value="haiku">Haiku 4.5 (fast / cheap)</option> <option value="opus">Opus 4.6 (powerful)</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Account</label> <select id="claude-account" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="/home/theartis/.claude">Default</option> </select> </div> <div> <label class="text-xs text-gray-500 block mb-1">Timeout</label> <select id="claude-timeout" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"> <option value="10">10 min</option> <option value="30">30 min</option> <option value="60">60 min</option> </select> </div> </div> <div class="mb-3"> <label class="text-xs text-gray-500 block mb-1">Task / prompt</label> <textarea id="claude-prompt" rows="5" placeholder="Describe the task for Claude Code…
 e.g. Run node api/run-schema.cjs and report any errors" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono resize-y"></textarea> </div> <div class="flex gap-2"> <button onclick="runClaude()" id="claude-run-btn" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-medium">
 ▶ Run
 </button> <button onclick="killClaude()" id="claude-kill" class="hidden px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 font-medium">
@@ -130,6 +130,7 @@ function switchTab(tab) {
   if (tab === 'sites') loadSites();
   if (tab === 'agents') { loadAgents(); loadKanban(); }
   if (tab === 'ai') loadAiUsage();
+  if (tab === 'claude') loadClaudeAccounts();
 }
 
 // ─── Sites tab ────────────────────────────────────────────────
@@ -417,12 +418,28 @@ function loadAiUsage() {
 // ─── Claude Code Runner ───────────────────────────────────────
 var currentTaskId = null;
 
+function loadClaudeAccounts() {
+  fetch(API + '/master/claude-accounts', { headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(accounts) {
+      var sel = document.getElementById('claude-account');
+      if (sel) sel.innerHTML = accounts.map(function(a) {
+        return '<option value="' + a.configDir + '">' + a.label + '</option>';
+      }).join('');
+    })
+    .catch(function() {});
+}
+
 function appendOutput(text, colorClass) {
   var out = document.getElementById('claude-output');
   var span = document.createElement('span');
   span.className = colorClass || 'text-gray-300';
   span.textContent = text;
   out.appendChild(span);
+  // Trim oldest output if too long
+  if (out.children.length > 5000) {
+    for (var i = 0; i < 1000; i++) { if (out.firstChild) out.removeChild(out.firstChild); }
+  }
   out.scrollTop = out.scrollHeight;
 }
 
@@ -440,21 +457,29 @@ function setRunning(running) {
 }
 
 function runClaude() {
-  var prefix = document.getElementById('claude-prefix').value.trim();
   var body = document.getElementById('claude-prompt').value.trim();
   if (!body) return;
-  var prompt = prefix ? prefix + ' ' + body : body;
-  var repo = document.getElementById('claude-repo').value;
+  var repo        = document.getElementById('claude-repo').value;
+  var model       = document.getElementById('claude-model').value;
+  var account_dir = document.getElementById('claude-account').value;
+  var timeout_min = parseInt(document.getElementById('claude-timeout').value) || 10;
 
   clearOutput();
   setRunning(true);
-  appendOutput('$ claude --print --dangerously-skip-permissions -p "' + prompt.slice(0, 60) + (prompt.length > 60 ? '…' : '') + '"\n', 'text-gray-500');
+  appendOutput('$ claude --model ' + model + ' --print --dangerously-skip-permissions\n', 'text-gray-500');
+  appendOutput('  repo: ' + repo + ' | account: ' + account_dir + ' | timeout: ' + timeout_min + 'min\n\n', 'text-gray-600');
 
   fetch(API + '/master/claude-run', {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ prompt: prompt, repo: repo }),
+    body: JSON.stringify({ prompt: body, repo: repo, model: model, account_dir: account_dir, timeout_min: timeout_min }),
   }).then(function(res) {
+    if (res.status === 409) {
+      return res.json().then(function(j) {
+        appendOutput('Error: ' + j.error + '\n', 'text-red-400');
+        setRunning(false);
+      });
+    }
     currentTaskId = res.headers.get('X-Task-Id');
     if (!res.body) {
       appendOutput('Error: No response body (SSE not supported?)\n', 'text-red-400');
@@ -464,6 +489,7 @@ function runClaude() {
     var reader = res.body.getReader();
     var decoder = new TextDecoder();
     var buf = '';
+    var statusEl = document.getElementById('claude-status');
 
     function read() {
       return reader.read().then(function(chunk) {
@@ -478,7 +504,11 @@ function runClaude() {
           var ev;
           try { ev = JSON.parse(raw); } catch { return; }
           if (ev.type === 'out') appendOutput(ev.text, 'text-green-400');
-          if (ev.type === 'err') appendOutput(ev.text, 'text-amber-400');
+          if (ev.type === 'err') {
+            var isLimit = /usage.?limit|rate.?limit|overloaded|too many/i.test(ev.text);
+            appendOutput(ev.text, isLimit ? 'text-purple-400' : 'text-amber-400');
+            if (isLimit && statusEl) statusEl.textContent = 'Usage limit reached — try again later';
+          }
           if (ev.type === 'done') {
             appendOutput('\n[Exited with code ' + ev.code + ']\n', ev.code === 0 ? 'text-blue-400' : 'text-red-400');
             setRunning(false);
@@ -519,6 +549,7 @@ window.deleteCard = deleteCard;
 window.runClaude = runClaude;
 window.killClaude = killClaude;
 window.clearOutput = clearOutput;
+window.loadClaudeAccounts = loadClaudeAccounts;
 
 // Load initial tab
 loadSites();
