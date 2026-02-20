@@ -6,6 +6,17 @@ const mysql = require('mysql2/promise');
 const fetch = (...args) => import('node-fetch').then(({ default: f }) => f(...args));
 const { spawn } = require('child_process');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+
+// Claude OAuth constants (extracted from claude CLI source)
+const CLAUDE_OAUTH = {
+  CLIENT_ID:    '9d1c250a-e61b-44d9-88ed-5944d1962f5e',
+  REDIRECT_URI: 'https://platform.claude.com/oauth/code/callback',
+  TOKEN_URL:    'https://platform.claude.com/v1/oauth/token',
+  AUTH_URL:     'https://claude.ai/oauth/authorize',
+  SCOPE:        'org:create_api_key user:profile user:inference user:sessions:claude_code user:mcp_servers',
+};
 
 // Active claude CLI processes keyed by taskId
 const activeTasks = new Map();
@@ -425,123 +436,115 @@ router.delete('/claude-run/:taskId', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-// POST /master/claude-auth-start — spawn "claude auth login", wait for the URL to appear in
-// output, then return JSON { url }. The process stays alive (waiting for stdin) so the user can
-// submit the auth code via /claude-auth-code. Plain JSON avoids LiteSpeed SSE buffering issues.
+// POST /master/claude-auth-start — generate PKCE OAuth URL without spawning claude auth login.
+// The server generates code_verifier/challenge, builds the authorization URL, stores the session,
+// and returns the URL. The user opens it in their browser, authorizes, and copies the auth code.
+// This bypasses the claude auth login spawn entirely (avoids TTY issues + claude.ai network block).
 router.post('/claude-auth-start', requireAuth, (req, res) => {
-  // Kill any existing dangling auth session
-  if (authSession && authSession.proc) {
-    try { authSession.proc.kill(); } catch {}
-    authSession = null;
-  }
+  // Kill any dangling auth session
+  if (authSession) authSession = null;
 
   const account_dir = (req.body && req.body.account_dir) || '/home/theartis/.claude';
 
-  const spawnEnv = { ...process.env };
-  delete spawnEnv.ANTHROPIC_API_KEY;
-  spawnEnv.PATH = `/home/theartis/local/bin:/opt/alt/alt-nodejs22/root/usr/bin:${process.env.PATH || '/usr/local/bin:/usr/bin:/bin'}`;
-  spawnEnv.HOME = '/home/theartis';
-  spawnEnv.CLAUDE_CONFIG_DIR = account_dir;
+  // Generate PKCE params
+  const codeVerifier  = crypto.randomBytes(32).toString('base64url');
+  const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+  const state         = crypto.randomBytes(16).toString('hex');
 
-  // Use `script` to allocate a pseudo-TTY — claude auth login reads the code from /dev/tty,
-  // not from stdin. Running under `script` makes proc.stdin feed into the child's /dev/tty.
-  const proc = spawn('script', ['-q', '/dev/null', '-c', `${CLAUDE_BIN} auth login`], {
-    env: spawnEnv,
-    stdio: ['pipe', 'pipe', 'pipe'],
+  // Build authorization URL (same as claude CLI does internally)
+  const params = new URLSearchParams({
+    code:                  'true',
+    client_id:             CLAUDE_OAUTH.CLIENT_ID,
+    response_type:         'code',
+    redirect_uri:          CLAUDE_OAUTH.REDIRECT_URI,
+    scope:                 CLAUDE_OAUTH.SCOPE,
+    code_challenge:        codeChallenge,
+    code_challenge_method: 'S256',
+    state,
   });
+  const url = `${CLAUDE_OAUTH.AUTH_URL}?${params.toString()}`;
 
-  authSession = { proc, account_dir };
+  authSession = { codeVerifier, account_dir, state };
 
-  let outputBuf = '';
-  let responded = false;
-
-  const timeout = setTimeout(() => {
-    if (!responded) {
-      responded = true;
-      res.status(504).json({ error: 'Timed out waiting for auth URL (15s). Is claude installed?' });
-    }
-    // Don't kill proc — user might still submit code
-  }, 15000);
-
-  function checkForUrl() {
-    const match = outputBuf.match(/https:\/\/claude\.ai\/oauth\/[^\s]+/);
-    if (match && !responded) {
-      responded = true;
-      clearTimeout(timeout);
-      res.json({ ok: true, url: match[0], account_dir });
-    }
-  }
-
-  proc.stdout.on('data', (d) => { outputBuf += stripAnsi(d.toString()); checkForUrl(); });
-  proc.stderr.on('data', (d) => { outputBuf += stripAnsi(d.toString()); checkForUrl(); });
-
-  proc.on('close', (code) => {
-    authSession = null;
-    clearTimeout(timeout);
-    if (!responded) {
-      responded = true;
-      if (code === 0) {
-        // Completed without needing a code (e.g. already logged in)
-        res.json({ ok: true, completed: true, account_dir });
-      } else {
-        res.status(500).json({ error: 'Auth process exited with code ' + code, output: outputBuf.slice(0, 500) });
-      }
-    }
-  });
-  proc.on('error', (err) => {
-    authSession = null;
-    clearTimeout(timeout);
-    if (!responded) {
-      responded = true;
-      res.status(500).json({ error: 'Failed to start claude auth: ' + err.message });
-    }
-  });
+  res.json({ ok: true, url, account_dir });
 });
 
-// POST /master/claude-auth-code — submit the authentication code into the waiting auth process stdin,
-// then wait for the process to complete and return the result (success or failure).
-router.post('/claude-auth-code', requireAuth, (req, res) => {
-  const { code } = req.body || {};
-  if (!code) return res.status(400).json({ error: 'code required' });
-  if (!authSession || !authSession.proc) return res.status(404).json({ error: 'No active auth session — click Start Auth first' });
+// POST /master/claude-auth-code — complete the OAuth flow by exchanging the auth code for tokens.
+// The "Authentication Code" copied from the callback page is either:
+//   - Just the auth code (if from the text field on the callback page)
+//   - "authcode#code_verifier" (if the callback page bundles both — older CLI behaviour)
+// We always use the code_verifier we generated in claude-auth-start.
+router.post('/claude-auth-code', requireAuth, async (req, res) => {
+  const { code: rawCode } = req.body || {};
+  if (!rawCode) return res.status(400).json({ error: 'code required' });
+  if (!authSession) return res.status(404).json({ error: 'No active auth session — click Start Auth first' });
 
-  const proc = authSession.proc;
-  let extraOutput = '';
+  const { codeVerifier, account_dir } = authSession;
 
-  // Capture any output after the code is submitted (success/failure message)
-  proc.stdout.on('data', (d) => { extraOutput += stripAnsi(d.toString()); });
-  proc.stderr.on('data', (d) => { extraOutput += stripAnsi(d.toString()); });
+  // The callback page may bundle code#verifier — split if present, use our verifier always
+  const authCode = rawCode.trim().split('#')[0];
 
+  let tokenRes;
   try {
-    // Write the code as a line (simulates user typing + Enter in the PTY terminal)
-    proc.stdin.write(code.trim() + '\n');
-    // Do NOT call stdin.end() — the process continues to exchange the token without needing EOF
+    tokenRes = await fetch(CLAUDE_OAUTH.TOKEN_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        grant_type:    'authorization_code',
+        code:          authCode,
+        code_verifier: codeVerifier,
+        client_id:     CLAUDE_OAUTH.CLIENT_ID,
+        redirect_uri:  CLAUDE_OAUTH.REDIRECT_URI,
+      }),
+    });
   } catch (err) {
-    return res.status(500).json({ error: 'Failed to submit code: ' + err.message });
+    authSession = null;
+    return res.status(502).json({ error: 'Token exchange request failed: ' + err.message });
   }
 
-  // Wait for the process to finish (token exchange should be fast, 30s max)
-  const killTimer = setTimeout(() => {
-    try { proc.kill(); } catch {}
-    if (!res.headersSent) res.status(504).json({ error: 'Timed out waiting for auth to complete' });
-  }, 30000);
-
-  proc.once('close', (exitCode) => {
-    clearTimeout(killTimer);
+  if (!tokenRes.ok) {
+    const body = await tokenRes.text().catch(() => '');
     authSession = null;
-    if (res.headersSent) return;
-    if (exitCode === 0) {
-      res.json({ ok: true, output: extraOutput.trim() || 'Authentication successful.' });
-    } else {
-      res.status(400).json({ error: 'Auth failed (exit ' + exitCode + ')', output: extraOutput.trim() });
-    }
-  });
+    return res.status(400).json({ error: `Token exchange failed (${tokenRes.status})`, detail: body.slice(0, 300) });
+  }
 
-  proc.once('error', (err) => {
-    clearTimeout(killTimer);
+  let tokens;
+  try {
+    tokens = await tokenRes.json();
+  } catch (err) {
     authSession = null;
-    if (!res.headersSent) res.status(500).json({ error: err.message });
-  });
+    return res.status(502).json({ error: 'Invalid JSON from token endpoint' });
+  }
+
+  if (!tokens.access_token) {
+    authSession = null;
+    return res.status(400).json({ error: 'No access_token in response', detail: JSON.stringify(tokens).slice(0, 300) });
+  }
+
+  // Build credentials in the format the claude CLI expects
+  const now = Date.now();
+  const expiresIn = (tokens.expires_in || 86400) * 1000;
+  const credentials = {
+    accessToken: {
+      token:                tokens.access_token,
+      expiresOnTimestamp:   now + expiresIn,
+      refreshAfterTimestamp: now + Math.floor(expiresIn * 0.9),
+      tokenType:            'Bearer',
+    },
+    refreshToken: tokens.refresh_token || null,
+  };
+
+  // Write credentials to the config directory
+  try {
+    fs.mkdirSync(account_dir, { recursive: true });
+    fs.writeFileSync(path.join(account_dir, '.credentials.json'), JSON.stringify(credentials, null, 2), { mode: 0o600 });
+  } catch (err) {
+    authSession = null;
+    return res.status(500).json({ error: 'Failed to write credentials: ' + err.message });
+  }
+
+  authSession = null;
+  res.json({ ok: true, output: `Authentication successful. Token saved to ${account_dir}/.credentials.json` });
 });
 
 module.exports = router;

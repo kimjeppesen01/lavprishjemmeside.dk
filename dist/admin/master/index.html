@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Master Hub — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.Cq40WjO0.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Master Hub — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.BLZnxSMC.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -49,9 +49,9 @@ e.g. Run node api/run-schema.cjs and report any errors" class="w-full border bor
 Clear
 </button> <button onclick="openAuthPanel()" class="ml-auto px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
 🔑 Auth Account
-</button> </div> </div> <!-- Auth panel (shown when "Auth Account" is clicked) --> <div id="claude-auth-panel" class="hidden bg-white border border-blue-200 rounded-xl p-5 mb-4"> <div class="flex items-center justify-between mb-3"> <p class="text-sm font-semibold text-gray-800">Authenticate Claude Account</p> <button onclick="closeAuthPanel()" class="text-gray-400 hover:text-gray-600 text-xs px-2 py-1 rounded hover:bg-gray-100">✕ Close</button> </div> <ol class="text-xs text-gray-500 mb-4 space-y-1 list-decimal list-inside"> <li>Select the account in the dropdown above, then click <strong>Start Auth</strong></li> <li>Visit the URL shown below in your browser and authorize</li> <li>The callback page shows: <em>"Authentication Code — Paste this into Claude Code:"</em></li> <li>Paste that code into the field below and click <strong>Submit Code</strong></li> </ol> <div class="flex gap-2 mb-3"> <button onclick="startClaudeAuth()" id="auth-start-btn" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 font-medium">
-Start Auth
-</button> <span id="auth-spinner" class="hidden text-xs text-gray-400 self-center">Waiting for auth process…</span> </div> <pre id="auth-output" class="text-xs font-mono bg-gray-950 text-green-400 rounded-lg p-3 min-h-12 max-h-64 overflow-auto whitespace-pre-wrap break-all mb-3 select-all cursor-text"></pre> <div class="flex gap-2"> <input id="auth-code-input" type="text" placeholder="Paste Authentication Code here…" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"> <button onclick="submitAuthCode()" class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 font-medium whitespace-nowrap">Submit Code</button> </div> <p id="auth-status" class="text-xs mt-2 text-gray-500"></p> </div> <!-- Output terminal --> <div class="bg-gray-950 rounded-xl border border-gray-800 p-4 min-h-64"> <div class="flex items-center justify-between mb-3"> <span class="text-xs text-gray-500 font-mono">Output</span> <span id="claude-status" class="text-xs text-gray-500"></span> </div> <pre id="claude-output" class="text-sm font-mono whitespace-pre-wrap break-words overflow-auto max-h-[60vh] text-gray-300"></pre> </div> </div>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
+</button> </div> </div> <!-- Auth panel (shown when "Auth Account" is clicked) --> <div id="claude-auth-panel" class="hidden bg-white border border-blue-200 rounded-xl p-5 mb-4"> <div class="flex items-center justify-between mb-3"> <p class="text-sm font-semibold text-gray-800">Authenticate Claude Account</p> <button onclick="closeAuthPanel()" class="text-gray-400 hover:text-gray-600 text-xs px-2 py-1 rounded hover:bg-gray-100">✕ Close</button> </div> <ol class="text-xs text-gray-500 mb-4 space-y-1 list-decimal list-inside"> <li>Select the account in the dropdown above, then click <strong>Generate Auth URL</strong></li> <li>Click the link that appears and authorize in your browser</li> <li>The callback page shows: <em>"Authentication Code — Paste this into Claude Code:"</em></li> <li>Paste that code into the field below and click <strong>Submit Code</strong></li> </ol> <div class="flex gap-2 mb-3"> <button onclick="startClaudeAuth()" id="auth-start-btn" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 font-medium">
+Generate Auth URL
+</button> <span id="auth-spinner" class="hidden text-xs text-gray-400 self-center">Generating…</span> </div> <div id="auth-url-box" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3 text-xs"> <p class="text-gray-500 mb-1">Open this URL in your browser to authorize:</p> <a id="auth-url-link" href="#" target="_blank" rel="noopener" class="text-blue-700 break-all hover:underline font-mono"></a> </div> <pre id="auth-output" class="hidden text-xs font-mono bg-gray-950 text-green-400 rounded-lg p-3 max-h-40 overflow-auto whitespace-pre-wrap break-all mb-3"></pre> <div class="flex gap-2"> <input id="auth-code-input" type="text" placeholder="Paste Authentication Code here…" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"> <button onclick="submitAuthCode()" class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 font-medium whitespace-nowrap">Submit Code</button> </div> <p id="auth-status" class="text-xs mt-2 text-gray-500"></p> </div> <!-- Output terminal --> <div class="bg-gray-950 rounded-xl border border-gray-800 p-4 min-h-64"> <div class="flex items-center justify-between mb-3"> <span class="text-xs text-gray-500 font-mono">Output</span> <span id="claude-status" class="text-xs text-gray-500"></span> </div> <pre id="claude-output" class="text-sm font-mono whitespace-pre-wrap break-words overflow-auto max-h-[60vh] text-gray-300"></pre> </div> </div>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
     (function() {
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
       if (path === '/admin') return;
@@ -550,10 +550,14 @@ function closeAuthPanel() {
 function startClaudeAuth() {
   var account_dir = document.getElementById('claude-account').value;
   var out = document.getElementById('auth-output');
+  var urlBox = document.getElementById('auth-url-box');
+  var urlLink = document.getElementById('auth-url-link');
   var statusEl = document.getElementById('auth-status');
   var spinner = document.getElementById('auth-spinner');
   var startBtn = document.getElementById('auth-start-btn');
-  out.textContent = 'Starting claude auth login…\nWaiting for URL (up to 15s)…\n';
+
+  out.classList.add('hidden');
+  urlBox.classList.add('hidden');
   statusEl.textContent = '';
   statusEl.className = 'text-xs mt-2 text-gray-500';
   startBtn.disabled = true;
@@ -569,35 +573,27 @@ function startClaudeAuth() {
       startBtn.disabled = false;
 
       if (j.error) {
-        out.textContent += '\nError: ' + j.error + (j.output ? '\n' + j.output : '');
+        out.textContent = 'Error: ' + j.error + (j.detail ? '\n' + j.detail : '');
+        out.classList.remove('hidden');
         statusEl.textContent = 'Failed — see output above';
         statusEl.className = 'text-xs mt-2 text-red-500';
         return;
       }
 
-      if (j.completed) {
-        out.textContent += '\nAlready authenticated — no code needed.';
-        statusEl.textContent = 'Already logged in!';
-        statusEl.className = 'text-xs mt-2 text-green-600';
-        loadClaudeAccounts();
-        return;
-      }
-
       if (j.url) {
-        out.textContent = 'Account: ' + j.account_dir + '\n\n'
-          + 'Visit this URL in your browser:\n\n'
-          + j.url + '\n\n'
-          + 'Authorize, then copy the Authentication Code\nfrom the callback page and paste it below.';
-        statusEl.textContent = 'URL ready — open it in your browser';
+        urlLink.href = j.url;
+        urlLink.textContent = j.url;
+        urlBox.classList.remove('hidden');
+        statusEl.textContent = 'URL ready — click the link above, authorize, then paste the code below';
         statusEl.className = 'text-xs mt-2 text-blue-600';
-        // Make the URL easy to copy — select it automatically
         document.getElementById('auth-code-input').focus();
       }
     })
     .catch(function(err) {
       spinner.classList.add('hidden');
       startBtn.disabled = false;
-      out.textContent += '\nRequest failed: ' + err.message;
+      out.textContent = 'Request failed: ' + err.message;
+      out.classList.remove('hidden');
       statusEl.textContent = 'Network error';
       statusEl.className = 'text-xs mt-2 text-red-500';
     });
@@ -626,12 +622,14 @@ function submitAuthCode() {
       spinner.classList.add('hidden');
       document.getElementById('auth-code-input').value = '';
       if (j.ok) {
-        out.textContent += '\n\n✓ ' + (j.output || 'Authentication successful.');
+        out.textContent = '✓ ' + (j.output || 'Authentication successful.');
+        out.classList.remove('hidden');
         statusEl.textContent = 'Authenticated! Claude Code will now use your Claude Pro account.';
         statusEl.className = 'text-xs mt-2 text-green-600';
         loadClaudeAccounts();
       } else {
-        out.textContent += '\n\n✗ ' + j.error + (j.output ? '\n' + j.output : '');
+        out.textContent = '✗ ' + j.error + (j.detail ? '\n' + j.detail : '');
+        out.classList.remove('hidden');
         statusEl.textContent = 'Authentication failed — see output above';
         statusEl.className = 'text-xs mt-2 text-red-500';
       }
