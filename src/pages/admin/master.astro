@@ -183,7 +183,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
         <label class="text-xs text-gray-500 block mb-1">Task / prompt</label>
         <textarea id="claude-prompt" rows="5" placeholder="Describe the task for Claude Code…&#10;e.g. Run node api/run-schema.cjs and report any errors" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono resize-y"></textarea>
       </div>
-      <div class="flex gap-2">
+      <div class="flex gap-2 flex-wrap">
         <button onclick="runClaude()" id="claude-run-btn" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-medium">
           ▶ Run
         </button>
@@ -193,7 +193,39 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
         <button onclick="clearOutput()" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
           Clear
         </button>
+        <button onclick="openAuthPanel()" class="ml-auto px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
+          🔑 Auth Account
+        </button>
       </div>
+    </div>
+
+    <!-- Auth panel (shown when "Auth Account" is clicked) -->
+    <div id="claude-auth-panel" class="hidden bg-white border border-blue-200 rounded-xl p-5 mb-4">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-sm font-semibold text-gray-800">Authenticate Claude Account</p>
+        <button onclick="closeAuthPanel()" class="text-gray-400 hover:text-gray-600 text-xs px-2 py-1 rounded hover:bg-gray-100">✕ Close</button>
+      </div>
+      <ol class="text-xs text-gray-500 mb-4 space-y-1 list-decimal list-inside">
+        <li>Select the account in the dropdown above, then click <strong>Start Auth</strong></li>
+        <li>Visit the URL shown below in your browser and authorize</li>
+        <li>The callback page shows: <em>"Authentication Code — Paste this into Claude Code:"</em></li>
+        <li>Paste that code into the field below and click <strong>Submit Code</strong></li>
+      </ol>
+
+      <div class="flex gap-2 mb-3">
+        <button onclick="startClaudeAuth()" id="auth-start-btn" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 font-medium">
+          Start Auth
+        </button>
+        <span id="auth-spinner" class="hidden text-xs text-gray-400 self-center">Waiting for auth process…</span>
+      </div>
+
+      <pre id="auth-output" class="text-xs font-mono bg-gray-950 text-green-400 rounded-lg p-3 min-h-12 max-h-48 overflow-auto whitespace-pre-wrap mb-3"></pre>
+
+      <div class="flex gap-2">
+        <input id="auth-code-input" type="text" placeholder="Paste Authentication Code here…" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono" />
+        <button onclick="submitAuthCode()" class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 font-medium whitespace-nowrap">Submit Code</button>
+      </div>
+      <p id="auth-status" class="text-xs mt-2 text-gray-500"></p>
     </div>
 
     <!-- Output terminal -->
@@ -640,6 +672,133 @@ function killClaude() {
     });
 }
 
+// ─── Claude Auth Panel ────────────────────────────────────────
+function openAuthPanel() {
+  document.getElementById('claude-auth-panel').classList.remove('hidden');
+}
+function closeAuthPanel() {
+  document.getElementById('claude-auth-panel').classList.add('hidden');
+}
+
+function startClaudeAuth() {
+  var account_dir = document.getElementById('claude-account').value;
+  var out = document.getElementById('auth-output');
+  var statusEl = document.getElementById('auth-status');
+  var spinner = document.getElementById('auth-spinner');
+  var startBtn = document.getElementById('auth-start-btn');
+  out.textContent = '';
+  statusEl.textContent = '';
+  startBtn.disabled = true;
+  spinner.classList.remove('hidden');
+  statusEl.className = 'text-xs mt-2 text-gray-500';
+
+  fetch(API + '/master/claude-auth-start', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ account_dir: account_dir }),
+  }).then(function(res) {
+    if (!res.ok) {
+      return res.json().then(function(j) {
+        statusEl.textContent = 'Error: ' + (j.error || res.status);
+        statusEl.className = 'text-xs mt-2 text-red-500';
+        spinner.classList.add('hidden');
+        startBtn.disabled = false;
+      });
+    }
+    if (!res.body) {
+      statusEl.textContent = 'SSE not supported in this browser';
+      spinner.classList.add('hidden');
+      startBtn.disabled = false;
+      return;
+    }
+    var reader = res.body.getReader();
+    var decoder = new TextDecoder();
+    var buf = '';
+
+    function read() {
+      return reader.read().then(function(chunk) {
+        if (chunk.done) {
+          spinner.classList.add('hidden');
+          startBtn.disabled = false;
+          return;
+        }
+        buf += decoder.decode(chunk.value, { stream: true });
+        var lines = buf.split('\n');
+        buf = lines.pop();
+        lines.forEach(function(line) {
+          if (!line.startsWith('data: ')) return;
+          var raw = line.slice(6).trim();
+          if (!raw) return;
+          var ev;
+          try { ev = JSON.parse(raw); } catch { return; }
+          if (ev.type === 'started') {
+            out.textContent += 'Starting claude auth login for: ' + ev.account_dir + '\n\n';
+          }
+          if (ev.type === 'out') {
+            out.textContent += ev.text;
+            out.scrollTop = out.scrollHeight;
+          }
+          if (ev.type === 'err') {
+            out.textContent += '[error] ' + ev.text;
+            out.scrollTop = out.scrollHeight;
+          }
+          if (ev.type === 'done') {
+            spinner.classList.add('hidden');
+            startBtn.disabled = false;
+            if (ev.code === 0) {
+              statusEl.textContent = 'Authentication successful! Reload the account dropdown.';
+              statusEl.className = 'text-xs mt-2 text-green-600';
+              loadClaudeAccounts();
+            } else {
+              statusEl.textContent = 'Auth process exited with code ' + ev.code;
+              statusEl.className = 'text-xs mt-2 text-red-500';
+            }
+          }
+        });
+        return read();
+      });
+    }
+    return read();
+  }).catch(function(err) {
+    statusEl.textContent = 'Request failed: ' + err.message;
+    statusEl.className = 'text-xs mt-2 text-red-500';
+    spinner.classList.add('hidden');
+    startBtn.disabled = false;
+  });
+}
+
+function submitAuthCode() {
+  var code = document.getElementById('auth-code-input').value.trim();
+  var statusEl = document.getElementById('auth-status');
+  if (!code) {
+    statusEl.textContent = 'Paste the authentication code first';
+    statusEl.className = 'text-xs mt-2 text-amber-500';
+    return;
+  }
+  statusEl.textContent = 'Submitting code…';
+  statusEl.className = 'text-xs mt-2 text-gray-500';
+
+  fetch(API + '/master/claude-auth-code', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ code: code }),
+  }).then(function(r) { return r.json(); })
+    .then(function(j) {
+      if (j.ok) {
+        statusEl.textContent = 'Code submitted — watch the output above for confirmation';
+        statusEl.className = 'text-xs mt-2 text-blue-600';
+        document.getElementById('auth-code-input').value = '';
+      } else {
+        statusEl.textContent = 'Error: ' + (j.error || 'Unknown error');
+        statusEl.className = 'text-xs mt-2 text-red-500';
+      }
+    })
+    .catch(function(err) {
+      statusEl.textContent = 'Request failed: ' + err.message;
+      statusEl.className = 'text-xs mt-2 text-red-500';
+    });
+}
+
 // ─── Utilities ────────────────────────────────────────────────
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -655,6 +814,10 @@ window.runClaude = runClaude;
 window.killClaude = killClaude;
 window.clearOutput = clearOutput;
 window.loadClaudeAccounts = loadClaudeAccounts;
+window.openAuthPanel = openAuthPanel;
+window.closeAuthPanel = closeAuthPanel;
+window.startClaudeAuth = startClaudeAuth;
+window.submitAuthCode = submitAuthCode;
 
 // Load initial tab
 loadSites();

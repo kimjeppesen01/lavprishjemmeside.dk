@@ -11,6 +11,8 @@ const crypto = require('crypto');
 const activeTasks = new Map();
 // Concurrency lock — one claude task at a time per server instance
 let runningTaskId = null;
+// Interactive auth session (claude auth login) — persists between SSE disconnect and code submission
+let authSession = null;
 
 // Known repo working directories on the server
 const REPO_DIRS = {
@@ -421,6 +423,76 @@ router.delete('/claude-run/:taskId', requireAuth, (req, res) => {
   activeTasks.delete(req.params.taskId);
   runningTaskId = null;
   res.json({ ok: true });
+});
+
+// POST /master/claude-auth-start — start interactive "claude auth login" and stream output via SSE
+// The process stays alive waiting for the auth code to be submitted via /claude-auth-code
+router.post('/claude-auth-start', requireAuth, (req, res) => {
+  // Kill any existing dangling auth session
+  if (authSession && authSession.proc) {
+    try { authSession.proc.kill(); } catch {}
+    authSession = null;
+  }
+
+  const account_dir = (req.body && req.body.account_dir) || '/home/theartis/.claude';
+
+  const spawnEnv = { ...process.env };
+  delete spawnEnv.ANTHROPIC_API_KEY;
+  spawnEnv.PATH = `/home/theartis/local/bin:/opt/alt/alt-nodejs22/root/usr/bin:${process.env.PATH || '/usr/local/bin:/usr/bin:/bin'}`;
+  spawnEnv.HOME = '/home/theartis';
+  spawnEnv.CLAUDE_CONFIG_DIR = account_dir;
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  // Spawn claude auth login with piped stdin so we can write the code later
+  const proc = spawn(CLAUDE_BIN, ['auth', 'login'], {
+    env: spawnEnv,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+
+  let sseActive = true;
+  authSession = { proc, account_dir };
+
+  function sendEvent(ev) {
+    if (!sseActive) return;
+    try { res.write(`data: ${JSON.stringify(ev)}\n\n`); } catch { sseActive = false; }
+  }
+
+  sendEvent({ type: 'started', account_dir });
+
+  proc.stdout.on('data', (d) => sendEvent({ type: 'out', text: stripAnsi(d.toString()) }));
+  proc.stderr.on('data', (d) => sendEvent({ type: 'out', text: stripAnsi(d.toString()) }));
+
+  proc.on('close', (code) => {
+    authSession = null;
+    sendEvent({ type: 'done', code });
+    if (sseActive) { try { res.end(); } catch {} sseActive = false; }
+  });
+  proc.on('error', (err) => {
+    authSession = null;
+    sendEvent({ type: 'err', text: 'Failed to start claude auth: ' + err.message });
+    sendEvent({ type: 'done', code: 1 });
+    if (sseActive) { try { res.end(); } catch {} sseActive = false; }
+  });
+
+  // On SSE disconnect: keep proc alive — user may still paste the code via /claude-auth-code
+  req.on('close', () => { sseActive = false; });
+});
+
+// POST /master/claude-auth-code — submit the authentication code into the waiting auth process stdin
+router.post('/claude-auth-code', requireAuth, (req, res) => {
+  const { code } = req.body || {};
+  if (!code) return res.status(400).json({ error: 'code required' });
+  if (!authSession || !authSession.proc) return res.status(404).json({ error: 'No active auth session — start one first' });
+  try {
+    authSession.proc.stdin.write(code.trim() + '\n');
+    authSession.proc.stdin.end();
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to submit code: ' + err.message });
+  }
 });
 
 module.exports = router;
