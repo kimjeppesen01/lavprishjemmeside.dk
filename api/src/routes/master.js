@@ -376,6 +376,8 @@ router.post('/claude-run', requireAuth, (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Task-Id', taskId);
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
 
   runningTaskId = taskId;
   res.write(`data: ${JSON.stringify({ type: 'start', taskId, cwd, model: modelId })}\n\n`);
