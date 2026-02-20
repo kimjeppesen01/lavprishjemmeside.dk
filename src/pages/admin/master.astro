@@ -597,6 +597,16 @@ function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// Expose onclick-called functions to global scope (define:vars wraps in IIFE)
+window.switchTab = switchTab;
+window.openAddCard = openAddCard;
+window.submitCard = submitCard;
+window.moveCard = moveCard;
+window.deleteCard = deleteCard;
+window.runClaude = runClaude;
+window.killClaude = killClaude;
+window.clearOutput = clearOutput;
+
 // Load initial tab
 loadSites();
 </script>
