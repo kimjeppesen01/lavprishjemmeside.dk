@@ -606,13 +606,16 @@ function startClaudeAuth() {
 function submitAuthCode() {
   var code = document.getElementById('auth-code-input').value.trim();
   var statusEl = document.getElementById('auth-status');
+  var out = document.getElementById('auth-output');
+  var spinner = document.getElementById('auth-spinner');
   if (!code) {
     statusEl.textContent = 'Paste the authentication code first';
     statusEl.className = 'text-xs mt-2 text-amber-500';
     return;
   }
-  statusEl.textContent = 'Submitting code…';
+  statusEl.textContent = 'Submitting code — exchanging token…';
   statusEl.className = 'text-xs mt-2 text-gray-500';
+  spinner.classList.remove('hidden');
 
   fetch(API + '/master/claude-auth-code', {
     method: 'POST',
@@ -620,16 +623,21 @@ function submitAuthCode() {
     body: JSON.stringify({ code: code }),
   }).then(function(r) { return r.json(); })
     .then(function(j) {
+      spinner.classList.add('hidden');
+      document.getElementById('auth-code-input').value = '';
       if (j.ok) {
-        statusEl.textContent = 'Code submitted — watch the output above for confirmation';
-        statusEl.className = 'text-xs mt-2 text-blue-600';
-        document.getElementById('auth-code-input').value = '';
+        out.textContent += '\n\n✓ ' + (j.output || 'Authentication successful.');
+        statusEl.textContent = 'Authenticated! Claude Code will now use your Claude Pro account.';
+        statusEl.className = 'text-xs mt-2 text-green-600';
+        loadClaudeAccounts();
       } else {
-        statusEl.textContent = 'Error: ' + (j.error || 'Unknown error');
+        out.textContent += '\n\n✗ ' + j.error + (j.output ? '\n' + j.output : '');
+        statusEl.textContent = 'Authentication failed — see output above';
         statusEl.className = 'text-xs mt-2 text-red-500';
       }
     })
     .catch(function(err) {
+      spinner.classList.add('hidden');
       statusEl.textContent = 'Request failed: ' + err.message;
       statusEl.className = 'text-xs mt-2 text-red-500';
     });
