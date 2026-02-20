@@ -449,7 +449,7 @@ router.post('/claude-auth-start', requireAuth, (req, res) => {
   // Generate PKCE params
   const codeVerifier  = crypto.randomBytes(32).toString('base64url');
   const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
-  const state         = crypto.randomBytes(16).toString('hex');
+  const state         = crypto.randomBytes(32).toString('base64url'); // matches CLI format
 
   // Build authorization URL (same as claude CLI does internally)
   const params = new URLSearchParams({
@@ -481,13 +481,11 @@ router.post('/claude-auth-code', requireAuth, async (req, res) => {
 
   const { codeVerifier, account_dir, state } = authSession;
 
-  // Callback page may show "code#code_verifier" — split carefully and trim all parts
-  const parts = rawCode.trim().split('#');
-  const authCode      = parts[0].trim();
-  // If the pasted text includes a verifier, prefer it (callback page may embed a different one
-  // than what we generated, depending on how the state is used). Fallback to our stored verifier.
-  const pastedVerifier   = parts[1] ? parts[1].trim() : null;
-  const effectiveVerifier = pastedVerifier || codeVerifier;
+  // The callback page shows "code#state_value". The part after # is the OAuth state (CSRF token),
+  // NOT the code_verifier. Always use our stored codeVerifier — confirmed from CLI source:
+  // WT8(code, state, this.codeVerifier, ...) — verifier is always the locally-stored one.
+  const authCode = rawCode.trim().split('#')[0].trim();
+  const effectiveVerifier = codeVerifier;
 
   if (!authCode) {
     authSession = null;
