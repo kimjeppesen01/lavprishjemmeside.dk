@@ -1,4 +1,4 @@
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
 // Strict rate limit for login (prevents brute-force attacks)
 const loginRateLimiter = rateLimit({
@@ -62,7 +62,7 @@ const claudeRunRateLimiter = rateLimit({
   handler: (req, res) => {
     res.status(429).json({ error: 'For mange Claude-kørsler. Prøv igen om en time.', code: 'CLAUDE_RUN_RATE_LIMIT' });
   },
-  keyGenerator: (req) => (req.user?.id ? `claude:${req.user.id}` : req.ip || 'anonymous'),
+  keyGenerator: (req) => (req.user?.id ? `claude:${req.user.id}` : ipKeyGenerator(req.ip || '')),
   skip: (req) => !req.user?.id,
 });
 

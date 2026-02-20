@@ -56,7 +56,7 @@ mkdir -p tmp && touch tmp/restart.txt
 ```
 - Use ONLY `tmp/restart.txt` — **DO NOT use pkill in GitHub Actions**
 - pkill causes SSH action to fail with exit code 143 (TERM signal)
-- The `tmp/restart.txt` method works reliably in automated deployments
+- After touching `tmp/restart.txt`, run an API health smoke test (`/health`) before marking deploy successful
 
 **For manual SSH restarts:**
 ```bash
@@ -127,14 +127,22 @@ Astro's root `package.json` has `"type": "module"`. If you have a Node.js API in
 5. On the server:
    - `git fetch origin && git reset --hard origin/main`
    - `cp -Rf dist/* ~/lavprishjemmeside.dk/` (deploy frontend)
-   - `cd api && npm install --production` (install API deps)
+   - `cd api && npm ci --omit=dev || npm install --production` (deterministic API deps, fallback for older environments)
    - `mkdir -p tmp && touch tmp/restart.txt` (signal restart)
+   - `curl https://api.lavprishjemmeside.dk/health` retry loop (deploy fails if API does not recover)
 
 **GitHub Secrets** (configured on the repo):
 - `FTP_SERVER` — `176.9.90.24`
 - `FTP_USERNAME` — `theartis`
 - `SSH_PORT` — `33`
 - `SSH_PRIVATE_KEY` — ed25519 private key for SSH deploy
+
+**Optional GitHub Variables** (for multi-domain):
+- `PUBLIC_SITE_URL` — site URL used at build time
+- `PUBLIC_API_URL` — API URL used at build time
+- `DEPLOY_REPO_PATH` — server repo path (default `repositories/lavprishjemmeside.dk`)
+- `DEPLOY_SITE_ROOT` — server web root (default `lavprishjemmeside.dk`)
+- `DEPLOY_API_HEALTH_URL` — post-deploy health endpoint (default `https://api.lavprishjemmeside.dk/health`)
 
 **Known quirks**:
 - Always `git pull --rebase` locally before pushing, because GitHub Actions commits `dist/` back to `main`
@@ -503,15 +511,17 @@ Set these in the repo settings:
 ### 5. Deploy Script Must Include
 ```yaml
 script: |
+  set -euo pipefail
   cd ~/repositories/client-domain.dk
   git fetch origin
   git reset --hard origin/main
   cp -Rf dist/* ~/client-domain.dk/
-  cd api && npm install --production
+  cd api && npm ci --omit=dev || npm install --production
   mkdir -p tmp && touch tmp/restart.txt
+  # retry /health and fail deploy if API does not come back
 ```
 
-**Important**: Do NOT use `pkill` in GitHub Actions deployment — it causes the SSH action to fail with exit code 143 (TERM signal). The `tmp/restart.txt` method works reliably for automated deployments.
+**Important**: Do NOT use `pkill` in GitHub Actions deployment — it causes the SSH action to fail with exit code 143 (TERM signal). Use `tmp/restart.txt` + health verification instead.
 
 ---
 
@@ -536,6 +546,7 @@ script: |
 - **Don't touch public_html**: WordPress site lives there for a different domain.
 - **API files must be `.cjs`**: The root `package.json` has `"type": "module"` for Astro. Node 22 will treat `.js` files as ESM and crash.
 - **Restart in GitHub Actions**: Use ONLY `mkdir -p tmp && touch tmp/restart.txt` — do NOT use pkill (causes exit code 143).
+- **Deploy verification**: Workflow must include post-deploy `/health` retries and fail hard if API does not recover.
 - **Manual restart via SSH**: `pkill -f 'lsnode:.*lavprishjemmeside'` works fine for manual operations.
 - **DB_HOST must be 127.0.0.1**: Using `localhost` can cause Unix socket connection failures in LiteSpeed.
 - **dotenv needs absolute path**: Use `path.join(__dirname, '.env')` or the `.env` won't be found when LiteSpeed starts the app.
@@ -557,6 +568,7 @@ script: |
 
 | Doc | Purpose |
 |---|---|
+| `docs/COMPREHENSIVE_PLAN.md` | **Single consolidated plan** — Merges project context, multi-domain CMS plan, Claude Code integration, and Claude access/safeguards. Vision, architecture, status, roadmap. |
 | `docs/COMPONENT_EDITOR.md` | **Full reference for the schema-driven component editor** — schema format, field type mapping, form builder internals, save flow, media picker, adding new components |
 | `docs/PHASE_6_Component-Library-&-Styling-Dashboard_v2.md` | **Phase 6 original spec** — Design tokens, DB schema, AI assembly, admin UI. Status: COMPLETED (implementation diverged; see "Implementation vs Spec" in doc). |
 | `docs/GLOBAL_FEATURES.md` | Styling features (smooth scroll, korn-overlay, sideloader, sticky header) from Admin → Design & styling |
@@ -567,6 +579,7 @@ script: |
 | `docs/DEPLOY_NEW_DOMAIN.md` | **Deploy to new domain** — Step-by-step checklist (cPanel, MySQL, Node.js App, GitHub secrets/vars, schema order). |
 | `docs/UPSTREAM_UPDATES.md` | **Upstream updates** — How clients pull upstream, resolve conflicts, redeploy; keep only `api/.env` local. |
 | `docs/ROLLOUT_MANUAL.md` | **Rollout manual** — Complete step-by-step human instructions and exact prompts for 1-click setup, new domain (GitHub + cPanel), and main site deploy. |
+| `docs/DEPLOY_HEALTHCHECK.md` | **Deploy health runbook** — Post-deploy verification, green/red criteria, SSH recovery steps, and API restart troubleshooting. |
 | `docs/IAN_PLAN.md` | **IAN client support AI** — Slack-based AI for client channels. Implementation, integration ideas (admin, AI-assembler, Shopping, Pro, multi-domain). |
 
 ---

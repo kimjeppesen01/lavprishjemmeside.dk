@@ -24,10 +24,19 @@ const { requestLogger } = require('./src/middleware/logger');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const corsAllowList = (process.env.CORS_ORIGIN || 'https://lavprishjemmeside.dk')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'https://lavprishjemmeside.dk',
+  origin: function(origin, cb) {
+    // Allow non-browser requests (curl/health checks) and configured browser origins.
+    if (!origin) return cb(null, true);
+    if (corsAllowList.includes(origin)) return cb(null, true);
+    return cb(new Error('Not allowed by CORS'));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
 }));

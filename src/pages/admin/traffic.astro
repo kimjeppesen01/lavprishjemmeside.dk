@@ -1,6 +1,7 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://lavprishjemmeside.dk';
 ---
 
 <AdminLayout title="Trafik">
@@ -218,18 +219,23 @@ GOOGLE_GA4_PROPERTY_ID=123456789</pre>
   </div>
 </AdminLayout>
 
-<script define:vars={{ apiUrl }}>
+<script define:vars={{ apiUrl, siteUrl }}>
 (function() {
   var API = apiUrl;
+  var SITE_URL = siteUrl;
   var token = localStorage.getItem('admin_token');
   var currentDays = 28;
   var scData = null;
   var gaData = null;
 
   function authFetch(url) {
+    var controller = new AbortController();
+    var timer = setTimeout(function() { controller.abort(); }, 20000);
     return fetch(url, {
+      signal: controller.signal,
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(function(res) {
+      clearTimeout(timer);
       if (res.status === 401 || res.status === 403) {
         localStorage.removeItem('admin_token');
         window.location.href = '/admin/';
@@ -237,6 +243,10 @@ GOOGLE_GA4_PROPERTY_ID=123456789</pre>
       }
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.json();
+    }).catch(function(err) {
+      clearTimeout(timer);
+      if (err && err.name === 'AbortError') throw new Error('Timeout while loading data');
+      throw err;
     });
   }
 
@@ -331,8 +341,7 @@ GOOGLE_GA4_PROPERTY_ID=123456789</pre>
         // Pages table
         var pBody = document.getElementById('sc-pages-body');
         pBody.innerHTML = data.pages.map(function(p) {
-          var siteOrigin = import.meta.env.PUBLIC_SITE_URL || 'https://lavprishjemmeside.dk';
-          var path = p.page.replace(siteOrigin, '') || '/';
+          var path = p.page.replace(SITE_URL, '') || '/';
           return '<tr class="hover:bg-gray-50">' +
             tdCell(path) +
             tdCell(fmtNum(p.clicks), true) +

@@ -49,14 +49,35 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
+            set -euo pipefail
             REPO_PATH="${{ vars.DEPLOY_REPO_PATH || 'repositories/lavprishjemmeside.dk' }}"
             SITE_ROOT="${{ vars.DEPLOY_SITE_ROOT || 'lavprishjemmeside.dk' }}"
+            API_HEALTH_URL="${{ vars.DEPLOY_API_HEALTH_URL || 'https://api.lavprishjemmeside.dk/health' }}"
+
             cd ~/$REPO_PATH
             git fetch origin
             git reset --hard origin/main
             cp -Rf dist/* ~/$SITE_ROOT/
-            cd api && npm install --production
+            cd api
+            npm ci --omit=dev || npm install --production
             mkdir -p tmp && touch tmp/restart.txt
-            # Force-restart lsnode if it didn't pick up the restart file
-            sleep 3
-            pkill -f "lsnode:.*$(basename ~/$REPO_PATH)" || true
+
+            # Post-deploy smoke test: API must recover after restart signal.
+            echo "Waiting for API health: $API_HEALTH_URL"
+            ok=0
+            for i in {1..12}; do
+              code="$(curl -sS -o /tmp/api_health.json -w "%{http_code}" "$API_HEALTH_URL" || true)"
+              if [ "$code" = "200" ]; then
+                echo "API health check passed (attempt $i)"
+                ok=1
+                break
+              fi
+              echo "Attempt $i: health returned HTTP $code, retrying..."
+              sleep 5
+            done
+
+            if [ "$ok" -ne 1 ]; then
+              echo "API health check failed after deploy"
+              cat /tmp/api_health.json || true
+              exit 1
+            fi

@@ -1,8 +1,8 @@
 # Claude Code integration — full reference
 
-This document describes the **Claude Code** integration in the Master Hub: how the dashboard runs the Claude CLI on the server, how authentication and safeguards work, and how to operate and extend it.
+This document describes the **Claude Code** integration in the Master Hub: how the dashboard runs the Claude CLI on the server, how authentication and safeguards work, and how to operate and extend it. It reflects the **current implementation** and maps plan actions to status (done vs pending).
 
-**See also:** [PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md) — Admin Dashboard and *Claude Code integration* section (overview and link to this doc).
+**See also:** [PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md) — Admin Dashboard and *Claude Code integration* section. [docs/COMPREHENSIVE_PLAN.md](COMPREHENSIVE_PLAN.md) — Consolidated plan including Claude goals and roadmap.
 
 ---
 
@@ -11,6 +11,29 @@ This document describes the **Claude Code** integration in the Master Hub: how t
 - **What it is:** The Master Hub at `/admin/master/` includes a **Claude Code** tab. A master user submits a task (prompt) and chooses a **repository** (one of the registered sites). The API spawns the **Claude CLI** on the server in that repo’s directory and streams the CLI output back to the browser via Server-Sent Events (SSE).
 - **Purpose:** Run Claude Code (same model and behaviour as in Cursor/VS Code) from the browser against any of your multi-site repos, with **full autonomy** (no permission allow-list) and with **all domains** injected into context so Claude is aware of every site.
 - **Access:** Only users with `role = 'master'` can open `/admin/master` or call any `/master/*` API. Strong safeguards (audit log, rate limits, optional IP allow-list) protect this control plane.
+- **Auth/me:** `GET /auth/me` returns `{ user, is_master }` so the frontend can use one call for both user info and master check.
+
+---
+
+## 1.1 Implementation status (from plan)
+
+All items from the Claude Code access plan that were committed are implemented. Optional or later items remain pending.
+
+| Plan item | Status | Notes |
+|-----------|--------|--------|
+| Document current access | Done | PROJECT_CONTEXT + this doc + COMPREHENSIVE_PLAN |
+| All domains in UI and backend | Done | Repo list from `sites`, `GET /master/claude-repos`, frontend dropdown from API, `cwd` resolved in claude-run |
+| All domains in context | Done | Context block built in `POST /master/claude-run` and prepended to prompt |
+| Full autonomy | Done | `--dangerously-skip-permissions` kept; no permission file alignment with local |
+| Master-only role + requireMaster + frontend | Done | `schema_master_role.sql`, `requireMaster` on all `/master/*` except GET /master/me; frontend master check, redirect, hide “Master Hub” link |
+| Audit logging | Done | `master_audit_log` table; middleware logs every `/master/*` request; claude-run meta: repo, taskId, prompt_length, prompt_preview |
+| Rate limiting | Done | `claudeRunRateLimiter` on POST /master/claude-run (default 10/user/hour, `MASTER_CLAUDE_RUN_LIMIT`) |
+| IP allow-list | Done | Optional `MASTER_ALLOWED_IPS`; middleware runs before requireMaster; uses `X-Forwarded-For` or req.ip |
+| Step-up auth | Pending (optional, later) | Re-enter password or 2FA to open Master Hub |
+| Session / token (shorter JWT or separate master token) | Pending (optional) | Can be added later for tighter time limits on master access |
+| Permissions parity with local | Not planned | We keep full autonomy; no use of repo `.claude/settings.local.json` on server |
+
+**Out of scope (for later):** Multi-repo in one task; WebFetch allow-list for all site URLs; `repo_path` column on `sites` (convention path is used).
 
 ---
 
@@ -43,7 +66,7 @@ sequenceDiagram
 
 ## 3. API endpoints (Claude-related)
 
-All require `Authorization: Bearer <JWT>` with a user that has `role = 'master'`, except `GET /master/me` (admin or master, returns `is_master`).
+All require `Authorization: Bearer <JWT>` with a user that has `role = 'admin'` or `'master'`; only `role = 'master'` can call routes other than `GET /master/me`. `GET /auth/me` also returns `is_master` for the current user.
 
 | Method | Path | Purpose |
 |--------|------|---------|
@@ -51,8 +74,7 @@ All require `Authorization: Bearer <JWT>` with a user that has `role = 'master'`
 | GET | `/master/claude-repos` | List repos for the Claude tab: `[{ id, name, domain, repo_path }]` from active sites. |
 | GET | `/master/claude-accounts` | List Claude config dirs: default `~/.claude` plus any `CLAUDE_CONFIG_DIR_*` env vars. |
 | GET | `/master/claude-auth-status?account_dir=...` | Check if the given account dir has valid OAuth credentials. |
-| GET | `/master/claude-context-files?repo=...` | List available `.md`/`.txt` docs in the selected repo for run-time context selection. |
-| POST | `/master/claude-run` | Run Claude CLI; body: `{ prompt, repo, model, account_dir?, timeout_min?, context_files?, kanban_item_id? }`; response: SSE stream. |
+| POST | `/master/claude-run` | Run Claude CLI; body: `{ prompt, repo, model, account_dir?, timeout_min? }`; response: SSE stream. |
 | DELETE | `/master/claude-run/:taskId` | Kill a running Claude task. |
 | POST | `/master/claude-auth-start` | Start OAuth flow; body: `{ account_dir? }`; returns `{ url, account_dir }` for user to open. |
 | POST | `/master/claude-auth-code` | Complete OAuth; body: `{ code }`; writes credentials to `account_dir`. |
@@ -64,30 +86,15 @@ All require `Authorization: Bearer <JWT>` with a user that has `role = 'master'`
 1. **Auth & rate limit:** `requireAuth` → `requireMaster` → `claudeRunRateLimiter` (default 10 runs per user per hour).
 2. **Resolve repo:** Load active sites, build map `domain → /home/theartis/repositories/<domain>`. Resolve `req.body.repo` (domain or site id) to `cwd`. If missing or path not readable, return 400.
 3. **Context block:** Build a short text block listing all sites (name, domain, api_url, admin_url, repo_path) and “Current repo for this task: &lt;repo&gt;”. Prepend this to the user prompt so Claude sees all domains every run.
-4. **Optional kanban scope:** If `kanban_item_id` is provided, load that card and prepend normalized task context (title, description, column, priority, owner, version target).
-5. **Optional docs context:** If `context_files[]` is provided, resolve files safely inside the selected repo, enforce extension/size/count limits, and prepend clipped file content to the prompt.
-6. **Spawn:** Run Claude CLI with `--print`, `--dangerously-skip-permissions`, selected model, and full prompt.
-7. **SSE:** Stream output (`out`/`err`) and final `done`; `start` now includes `context_files_used` and `kanban_item_id` so the UI confirms what was injected.
-8. **Audit:** `/master/*` requests are logged; for `claude-run`, metadata includes selected docs (used/skipped) and kanban linkage.
- 
-### Context file safeguards
-
-- Allowed extensions: `.md`, `.txt`
-- Max selected files per run: 12
-- Max file size: 80 KB per file
-- Max injected text: 12,000 chars per file and 90,000 chars total
-- Path traversal protection: normalized repo-relative paths only; files outside repo are rejected
-
-### Spawn details
-
-Run the Claude CLI binary (`CLAUDE_BIN`) with:
+4. **Spawn:** Run the Claude CLI binary (`CLAUDE_BIN`) with:
    - `--print` — print output (no interactive TTY).
    - `--dangerously-skip-permissions` — full autonomy (no allow-list).
    - `--model` — from `MODEL_MAP` (haiku/sonnet/opus).
    - `-p` — the full prompt (context block + user prompt).
    - `cwd` — the chosen repo directory.
    - Env: `CLAUDE_CONFIG_DIR`, `CLAUDE_CODE_OAUTH_TOKEN` (from account’s `.credentials.json`), `GH_TOKEN`, `CI=1`, `TERM=dumb`, and various “no update” vars.
-One task at a time per server; 409 if a task is already running.
+5. **SSE:** Stream CLI stdout/stderr as `data: { type: 'out'|'err', text }`, then `data: { type: 'done', code }`. One task at a time per server; 409 if a task is already running.
+6. **Audit:** Every `/master/*` request is logged to `master_audit_log`; for claude-run, meta includes repo, taskId, prompt_length, prompt_preview.
 
 ---
 
@@ -111,7 +118,7 @@ The runner uses **Claude Pro (OAuth)** on the server, not `ANTHROPIC_API_KEY`. T
 - **Master-only access:** `requireMaster` on all `/master/*` routes except `GET /master/me`. Frontend hides “Master Hub” for non-master and redirects direct visits to `/admin/master` to the dashboard with “Kun master-brugere har adgang”.
 - **Audit log:** Table `master_audit_log` (user_id, email, path, method, meta, ip, created_at). For `POST /master/claude-run`, meta includes repo, taskId, prompt_length, prompt_preview. Implemented in [api/src/routes/master.js](../api/src/routes/master.js) (middleware that runs on every master route).
 - **Rate limiting:** `POST /master/claude-run` is limited per user per hour (default 10; env `MASTER_CLAUDE_RUN_LIMIT`). Response 429 with message “For mange Claude-kørsler. Prøv igen om en time.” and code `CLAUDE_RUN_RATE_LIMIT`.
-- **Optional IP allow-list:** If `MASTER_ALLOWED_IPS` (comma-separated) is set, only those IPs can reach any `/master/*` endpoint; others get 403 `IP_NOT_ALLOWED`.
+- **Optional IP allow-list:** If `MASTER_ALLOWED_IPS` (comma-separated) is set, only those IPs can reach any `/master/*` endpoint; others get 403 `IP_NOT_ALLOWED`. Client IP is taken from `X-Forwarded-For` (first value) or `req.ip`. Middleware runs before `requireAuth`/`requireMaster`.
 
 ---
 
@@ -132,7 +139,7 @@ Repo path convention is fixed: `/home/theartis/repositories/<domain>` where `dom
 ## 8. Database and schema
 
 - **sites:** Used to build the repo list and cwd. Required columns for Claude: `id`, `name`, `domain`, `api_url`, `admin_url`, `is_active`. Repo path is not stored; it is derived as `REPO_BASE + '/' + domain`.
-- **users:** Must include role `master`. Run [api/src/schema_master_role.sql](../api/src/schema_master_role.sql) to extend `role` to `ENUM('user','admin','master')`, then set `role = 'master'` for allowed users.
+- **users:** Must include role `master`. Run [api/src/schema_master_role.sql](../api/src/schema_master_role.sql) to extend `role` to `ENUM('user','admin','master')`, then set `role = 'master'` for allowed users. To grant master to a specific email, run [api/src/seed_master_user_info.sql](../api/src/seed_master_user_info.sql) (or `UPDATE users SET role = 'master' WHERE email = '...'`) after the schema change.
 - **master_audit_log:** Required for audit. Run [api/src/schema_master_audit.sql](../api/src/schema_master_audit.sql) to create it.
 
 ---
@@ -142,9 +149,7 @@ Repo path convention is fixed: `/home/theartis/repositories/<domain>` where `dom
 - **Repo dropdown:** Filled from `GET /master/claude-repos` when the Claude tab is shown. Value is `domain` (used as `repo` in claude-run).
 - **Models:** Haiku 4.5 (fast/cheap), Sonnet 4.6 (default), Opus 4.6 (powerful). Sent as `model` in the request body; backend maps to CLI model IDs.
 - **Account:** Dropdown from `GET /master/claude-accounts`; auth status from `GET /master/claude-auth-status?account_dir=...`. Green dot = authenticated, amber = expired, grey = not authenticated.
-- **Kanban task selector:** Dropdown populated from `/master/kanban` (open columns). Optional `Insert task in prompt` helper adds a structured task header in the textarea.
-- **Docs context selector:** File list loaded from `GET /master/claude-context-files?repo=...`, with search/filter + multi-select + selected count.
-- **Run:** `runClaude()` POSTs to `/master/claude-run` with `prompt`, `repo`, `model`, `account_dir`, `timeout_min`, and optional `context_files[]` + `kanban_item_id`. Reads SSE; displays stdout in green, stderr in amber; detects “limit” messages and shows purple “Usage limit reached”.
+- **Run:** `runClaude()` POSTs to `/master/claude-run` with `prompt`, `repo`, `model`, `account_dir`, `timeout_min`. Reads SSE; displays stdout in green, stderr in amber; detects “limit” messages and shows purple “Usage limit reached”.
 - **Kill:** Sends `DELETE /master/claude-run/:taskId` with the task id from the `X-Task-Id` response header.
 
 ---
@@ -170,7 +175,8 @@ Repo path convention is fixed: `/home/theartis/repositories/<domain>` where `dom
 | [api/src/middleware/auth.js](../api/src/middleware/auth.js) | `requireAuth`, `requireMaster`. |
 | [api/src/middleware/rateLimit.js](../api/src/middleware/rateLimit.js) | `claudeRunRateLimiter`. |
 | [api/src/schema_master_role.sql](../api/src/schema_master_role.sql) | Add `master` to `users.role`. |
-| [api/src/schema_master_audit.sql](api/src/schema_master_audit.sql) | Create `master_audit_log`. |
+| [api/src/schema_master_audit.sql](../api/src/schema_master_audit.sql) | Create `master_audit_log`. |
+| [api/src/seed_master_user_info.sql](../api/src/seed_master_user_info.sql) | Example: set `info@lavprishjemmeside.dk` to master (run after schema_master_role). |
 | [api/src/schema_master.sql](../api/src/schema_master.sql) | `sites`, `kanban_items`, etc. |
 | [src/pages/admin/master.astro](../src/pages/admin/master.astro) | Master Hub UI and Claude tab (repo, model, account, prompt, output). |
 | [src/layouts/AdminLayout.astro](../src/layouts/AdminLayout.astro) | Hides “Master Hub” link for non-master. |
@@ -178,22 +184,7 @@ Repo path convention is fixed: `/home/theartis/repositories/<domain>` where `dom
 
 ---
 
-## 12. Senior review: best-practice checklist
-
-The junior design is functionally good, but for production-grade operator UX, these are required:
-
-1. **Task-scoped runs**: connect Claude runs to a kanban task id so execution intent is explicit and auditable.
-2. **Deterministic context selection**: let users choose exact docs per run; do not inject every file by default.
-3. **Prompt-context safety limits**: enforce hard limits on file count/size/total chars to avoid runaway token usage.
-4. **Path safety**: only allow repo-relative docs with extension allow-list to block traversal and accidental secret reads.
-5. **Run-time confirmation**: return selected docs/task in SSE `start` event so operators can verify context before trusting output.
-6. **Audit metadata quality**: include docs used/skipped and kanban linkage in `master_audit_log` for post-mortems.
-
-This is now reflected in the implemented API/UI flow above.
-
----
-
-## 13. Kanban and documentation task
+## 12. Kanban and documentation task
 
 A Kanban item **“Document Claude Code integration”** can be added to the **in progress** column so the board reflects that this integration is documented. To add it on a deployed system, run:
 
@@ -210,3 +201,34 @@ VALUES (
 ```
 
 Or run the seed file [api/src/seed_kanban_claude_doc.sql](../api/src/seed_kanban_claude_doc.sql).
+
+---
+
+## 13. Pending and optional (from plan)
+
+- **Step-up auth:** Implemented as configurable step-up flow (`MASTER_STEP_UP_REQUIRED=1`) with password re-check and short-lived step-up token.
+- **Session / token:** Implemented for master actions via dedicated short-lived `master_step_up` JWT used in `x-master-step-up-token`.
+- **Out of scope:** Claude running across multiple repos in one task; WebFetch allow-list for all site URLs; `repo_path` column on `sites` (convention path used instead).
+
+---
+
+## 14. Version 1.1 TODOs (Master Hub UX guardrails)
+
+Goal: make task execution safer and more intuitive by forcing every Claude run to be anchored to a project `.md` file.
+
+- [x] **Modern task composer UI (desktop + mobile):** redesigned Claude tab with a clear 3-step flow: `Select site/repo` -> `Select Kanban task` -> `Select or create .md plan`.
+- [x] **Kanban-linked `.md` picker:** when a Kanban task is selected, associated markdown files are shown first with suggested/all groups.
+- [x] **Mandatory `.md` requirement before Run:** `Run` is disabled until an `.md` file is chosen.
+- [x] **Required fallback prompt:** if no `.md` file is linked/found, run flow asks: **"Should we plan a new .md file?"** with explicit actions:
+  - `Create new .md and continue`
+  - `Cancel run`
+- [x] **New-plan bootstrap:** if user chooses create, system generates a starter planning file template and reuses it for the run.
+- [x] **Prompt envelope guardrail:** selected `.md` content + file path is prepended to Claude prompt every run.
+- [x] **Backend validation:** `.md` presence is enforced server-side in `POST /master/claude-run`.
+- [x] **Audit expansion:** selected `.md` path, kanban task id, and `created_new_plan` are logged to `master_audit_log.meta`.
+- [x] **API additions (v1.1):**
+  - `GET /master/kanban-tasks`
+  - `GET /master/task-md-files?task_id=...`
+  - `POST /master/task-md-files` (create new plan file)
+- [x] **Safety copy in UI:** run panel shows: `A run requires a planning .md file.`
+- [x] **Acceptance criteria:** Claude run cannot start without existing `.md` selection or explicit new-file creation.

@@ -161,13 +161,39 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
   <!-- ── Tab 4: Claude Code Runner ──────────────────────────── -->
   <div id="panel-claude" class="hidden">
     <div class="bg-white border border-gray-200 rounded-xl p-5 mb-4">
-      <div class="flex flex-wrap gap-3 items-end mb-4">
-        <div>
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-3 mb-4">
+        <div class="border border-gray-200 rounded-xl p-3 bg-gradient-to-br from-blue-50 to-white">
+          <p class="text-[11px] uppercase tracking-wide text-blue-700 font-semibold mb-1">Step 1</p>
           <label class="text-xs text-gray-500 block mb-1">Repository</label>
-          <select id="claude-repo" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" onchange="onClaudeRepoChange()">
+          <select id="claude-repo" onchange="onClaudeRepoOrTaskChange()" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
             <option value="">Henter repos…</option>
           </select>
         </div>
+        <div class="border border-gray-200 rounded-xl p-3 bg-gradient-to-br from-emerald-50 to-white">
+          <p class="text-[11px] uppercase tracking-wide text-emerald-700 font-semibold mb-1">Step 2</p>
+          <div class="flex items-center gap-2 mb-1">
+            <label class="text-xs text-gray-500 block">Kanban task</label>
+            <button onclick="loadClaudeKanbanTasks()" class="text-[11px] px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50">Refresh</button>
+          </div>
+          <select id="claude-task" onchange="onClaudeRepoOrTaskChange()" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">Vælg task…</option>
+          </select>
+        </div>
+        <div class="border border-gray-200 rounded-xl p-3 bg-gradient-to-br from-amber-50 to-white">
+          <p class="text-[11px] uppercase tracking-wide text-amber-700 font-semibold mb-1">Step 3</p>
+          <div class="flex items-center gap-2 mb-1">
+            <label class="text-xs text-gray-500 block">Plan .md file</label>
+            <button onclick="loadTaskMdFiles()" class="text-[11px] px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50">Refresh</button>
+          </div>
+          <select id="claude-md-file" onchange="updateRunButtonState()" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">Vælg .md-fil…</option>
+          </select>
+          <div id="claude-md-help" class="text-[11px] text-gray-500 mt-1">A run requires a planning .md file.</div>
+          <button onclick="createNewPlanMd()" class="mt-2 text-xs px-2.5 py-1 rounded-lg border border-gray-300 hover:bg-gray-50">Create new .md plan</button>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-3 items-end mb-4">
         <div>
           <label class="text-xs text-gray-500 block mb-1">Model</label>
           <select id="claude-model" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
@@ -177,10 +203,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
           </select>
         </div>
         <div>
-          <label class="text-xs text-gray-500 block mb-1">Account</label>
-          <select id="claude-account" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" onchange="loadAuthStatus()">
-            <option value="/home/theartis/.claude">Default</option>
-          </select>
+          <input id="claude-account" type="hidden" value="/home/theartis/.claude" />
           <div class="flex items-center gap-1.5 mt-1.5">
             <span id="auth-dot" class="inline-block w-2 h-2 rounded-full bg-gray-300 flex-shrink-0"></span>
             <span id="auth-label" class="text-xs text-gray-400 truncate">Checking…</span>
@@ -194,39 +217,10 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
             <option value="60">60 min</option>
           </select>
         </div>
-        <div class="min-w-64">
-          <label class="text-xs text-gray-500 block mb-1">Kanban task (optional)</label>
-          <select id="claude-kanban-task" class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full">
-            <option value="">Ingen (fri prompt)</option>
-          </select>
-        </div>
       </div>
       <div class="mb-3">
         <label class="text-xs text-gray-500 block mb-1">Task / prompt</label>
         <textarea id="claude-prompt" rows="5" placeholder="Describe the task for Claude Code…&#10;e.g. Run node api/run-schema.cjs and report any errors" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono resize-y"></textarea>
-        <div class="mt-2 flex items-center gap-2">
-          <button onclick="insertKanbanTaskInPrompt()" class="px-3 py-1.5 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-gray-50">
-            Indsæt valgt task i prompt
-          </button>
-          <button onclick="loadClaudeKanbanTasks()" class="px-3 py-1.5 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-gray-50">
-            Opdater tasks
-          </button>
-        </div>
-      </div>
-      <div class="mb-4 border border-gray-200 rounded-lg p-3 bg-gray-50">
-        <div class="flex items-center justify-between gap-3 mb-2">
-          <label class="text-xs text-gray-600 font-medium">Dokument-kontekst</label>
-          <span id="claude-context-count" class="text-xs text-gray-500">0 valgt</span>
-        </div>
-        <div class="flex flex-wrap gap-2 mb-2">
-          <input id="claude-context-filter" type="text" placeholder="Filtrer docs (fx seo, deploy, component)" class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs min-w-72" oninput="renderClaudeContextFiles()" />
-          <button onclick="selectAllFilteredContextDocs()" class="px-3 py-1.5 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-white">Vælg filtrerede</button>
-          <button onclick="clearContextDocSelection()" class="px-3 py-1.5 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-white">Ryd valg</button>
-          <button onclick="loadClaudeContextFiles()" class="px-3 py-1.5 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-white">Opdater docs</button>
-        </div>
-        <div id="claude-context-files" class="bg-white border border-gray-200 rounded-lg p-2 max-h-52 overflow-auto text-xs text-gray-600">
-          Vælg repository for at hente docs…
-        </div>
       </div>
       <div class="flex gap-2 flex-wrap">
         <button onclick="runClaude()" id="claude-run-btn" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-medium">
@@ -239,7 +233,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
           Clear
         </button>
         <button onclick="openAuthPanel()" class="ml-auto px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
-          🔑 Auth Account
+          Auth Account
         </button>
       </div>
     </div>
@@ -251,7 +245,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
         <button onclick="closeAuthPanel()" class="text-gray-400 hover:text-gray-600 text-xs px-2 py-1 rounded hover:bg-gray-100">✕ Close</button>
       </div>
       <ol class="text-xs text-gray-500 mb-4 space-y-1 list-decimal list-inside">
-        <li>Select the account in the dropdown above, then click <strong>Generate Auth URL</strong></li>
+        <li>Click <strong>Generate Auth URL</strong></li>
         <li>Click the link that appears and authorize in your browser</li>
         <li>The callback page shows: <em>"Authentication Code — Paste this into Claude Code:"</em></li>
         <li>Paste that code into the field below and click <strong>Submit Code</strong></li>
@@ -293,13 +287,41 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
 var API = apiUrl;
 var activeTab = 'sites';
 var kanbanData = {};
-var claudeContextFiles = [];
-var claudeSelectedContext = {};
+var currentTaskId = null;
+var masterStepUpToken = sessionStorage.getItem('master_step_up_token') || '';
 
 // ─── Auth helper ──────────────────────────────────────────────
 function authHeaders() {
   var token = localStorage.getItem('admin_token');
-  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+  var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+  if (masterStepUpToken) headers['x-master-step-up-token'] = masterStepUpToken;
+  return headers;
+}
+
+function ensureMasterStepUp() {
+  return fetch(API + '/master/step-up-status', { headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(status) {
+      if (!status.required || status.verified) return true;
+      var password = prompt('Master step-up required. Re-enter your password:');
+      if (!password) return false;
+      return fetch(API + '/master/step-up', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ password: password })
+      }).then(function(r) { return r.json(); }).then(function(j) {
+        if (!j.ok || !j.token) {
+          alert(j.error || 'Step-up authentication failed');
+          return false;
+        }
+        masterStepUpToken = j.token;
+        sessionStorage.setItem('master_step_up_token', j.token);
+        return true;
+      });
+    })
+    .catch(function() {
+      return true;
+    });
 }
 
 // ─── Tab switching ─────────────────────────────────────────────
@@ -319,7 +341,15 @@ function switchTab(tab) {
   if (tab === 'sites') loadSites();
   if (tab === 'agents') { loadAgents(); loadKanban(); }
   if (tab === 'ai') loadAiUsage();
-  if (tab === 'claude') { loadClaudeRepos(); loadClaudeAccounts(); loadClaudeKanbanTasks(); }
+  if (tab === 'claude') {
+    ensureMasterStepUp().then(function(ok) {
+      if (!ok) return;
+      loadClaudeRepos();
+      loadClaudeKanbanTasks();
+      loadClaudeAccounts();
+      updateRunButtonState();
+    });
+  }
 }
 
 // ─── Sites tab ────────────────────────────────────────────────
@@ -605,7 +635,7 @@ function loadAiUsage() {
 }
 
 // ─── Claude Code Runner ───────────────────────────────────────
-var currentTaskId = null;
+var claudeTasks = [];
 
 function loadClaudeRepos() {
   var sel = document.getElementById('claude-repo');
@@ -620,156 +650,115 @@ function loadClaudeRepos() {
         return '<option value="' + r.domain + '">' + r.name + ' (' + r.domain + ')</option>';
       }).join('');
       if (repos.length && !sel.value) sel.selectedIndex = 0;
-      onClaudeRepoChange();
+      onClaudeRepoOrTaskChange();
     })
     .catch(function(e) {
       sel.innerHTML = '<option value="">Fejl: ' + (e.message || 'Kunne ikke hente') + '</option>';
     });
 }
 
-function onClaudeRepoChange() {
-  loadClaudeContextFiles();
-}
-
 function loadClaudeKanbanTasks() {
-  var sel = document.getElementById('claude-kanban-task');
+  var sel = document.getElementById('claude-task');
   if (!sel) return;
-  fetch(API + '/master/kanban', { headers: authHeaders() })
+  fetch(API + '/master/kanban-tasks', { headers: authHeaders() })
     .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var cols = ['backlog', 'in_progress', 'review'];
-      var options = ['<option value="">Ingen (fri prompt)</option>'];
-      cols.forEach(function(col) {
-        var items = (data[col] || []);
-        items.forEach(function(item) {
-          var label = '[' + col + '] #' + item.id + ' ' + escHtml(item.title);
-          options.push('<option value="' + item.id + '">' + label + '</option>');
-        });
-      });
-      sel.innerHTML = options.join('');
+    .then(function(tasks) {
+      claudeTasks = tasks || [];
+      sel.innerHTML = '<option value="">Vælg task…</option>' + claudeTasks.map(function(t) {
+        return '<option value="' + t.id + '">#' + t.id + ' · ' + escHtml(t.title) + ' (' + t.column_name + ')</option>';
+      }).join('');
+      onClaudeRepoOrTaskChange();
     })
     .catch(function() {
       sel.innerHTML = '<option value="">Kunne ikke hente tasks</option>';
     });
 }
 
-function loadClaudeContextFiles() {
-  var repoSel = document.getElementById('claude-repo');
-  var wrap = document.getElementById('claude-context-files');
-  if (!repoSel || !wrap) return;
-  var repo = repoSel.value;
-  if (!repo) {
-    wrap.textContent = 'Vælg repository for at hente docs…';
+function getSelectedTaskId() {
+  var sel = document.getElementById('claude-task');
+  var n = parseInt(sel && sel.value, 10);
+  return n || null;
+}
+
+function onClaudeRepoOrTaskChange() {
+  loadTaskMdFiles();
+  updateRunButtonState();
+}
+
+function loadTaskMdFiles() {
+  var repoEl = document.getElementById('claude-repo');
+  var taskId = getSelectedTaskId();
+  var mdSel = document.getElementById('claude-md-file');
+  var help = document.getElementById('claude-md-help');
+  if (!repoEl || !mdSel || !help) return;
+  if (!repoEl.value || !taskId) {
+    mdSel.innerHTML = '<option value="">Vælg repo + task først</option>';
+    help.textContent = 'A run requires a planning .md file.';
+    updateRunButtonState();
     return;
   }
-  wrap.textContent = 'Henter docs…';
-  fetch(API + '/master/claude-context-files?repo=' + encodeURIComponent(repo), { headers: authHeaders() })
+  mdSel.innerHTML = '<option value="">Henter .md-filer…</option>';
+  fetch(API + '/master/task-md-files?task_id=' + encodeURIComponent(taskId) + '&repo=' + encodeURIComponent(repoEl.value), { headers: authHeaders() })
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      if (data.error) {
-        wrap.textContent = 'Fejl: ' + data.error;
-        return;
+      var associated = data.associated || [];
+      var suggested = data.suggested || [];
+      var all = data.all || [];
+      var opts = ['<option value="">Vælg .md-fil…</option>'];
+      if (associated.length) {
+        opts.push('<optgroup label="Associated with task">');
+        associated.forEach(function(p) { opts.push('<option value="' + escHtml(p) + '">' + escHtml(p) + '</option>'); });
+        opts.push('</optgroup>');
       }
-      claudeContextFiles = data.files || [];
-      renderClaudeContextFiles();
+      if (suggested.length) {
+        opts.push('<optgroup label="Suggested">');
+        suggested.forEach(function(p) { opts.push('<option value="' + escHtml(p) + '">' + escHtml(p) + '</option>'); });
+        opts.push('</optgroup>');
+      }
+      opts.push('<optgroup label="All docs">');
+      all.forEach(function(p) { opts.push('<option value="' + escHtml(p) + '">' + escHtml(p) + '</option>'); });
+      opts.push('</optgroup>');
+      mdSel.innerHTML = opts.join('');
+      if (associated.length) mdSel.value = associated[0];
+      help.textContent = associated.length ? 'Task-linked plan file detected.' : 'No linked .md file found for this task.';
+      updateRunButtonState();
     })
-    .catch(function(e) {
-      wrap.textContent = 'Fejl: ' + e.message;
+    .catch(function() {
+      mdSel.innerHTML = '<option value="">Kunne ikke hente .md-filer</option>';
+      help.textContent = 'A run requires a planning .md file.';
+      updateRunButtonState();
     });
 }
 
-function renderClaudeContextFiles() {
-  var wrap = document.getElementById('claude-context-files');
-  var filterInput = document.getElementById('claude-context-filter');
-  if (!wrap) return;
-  var q = (filterInput && filterInput.value || '').trim().toLowerCase();
-  var filtered = claudeContextFiles.filter(function(file) {
-    return !q || file.path.toLowerCase().indexOf(q) !== -1;
-  });
-  if (!filtered.length) {
-    wrap.innerHTML = '<p class="text-gray-400">Ingen docs matcher filteret.</p>';
-    updateContextCount();
-    return;
+function createNewPlanMd() {
+  var taskId = getSelectedTaskId();
+  var repoEl = document.getElementById('claude-repo');
+  if (!taskId || !repoEl || !repoEl.value) {
+    alert('Vælg repo og kanban task først');
+    return Promise.resolve(false);
   }
-  wrap.innerHTML = filtered.map(function(file) {
-    var checked = claudeSelectedContext[file.path] ? 'checked' : '';
-    return (
-      '<label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-gray-50">' +
-        '<input type="checkbox" data-doc-path="' + file.path + '" ' + checked + ' onchange="toggleContextDoc(this)" />' +
-        '<span class="font-mono text-[11px] text-gray-700">' + escHtml(file.path) + '</span>' +
-      '</label>'
-    );
-  }).join('');
-  updateContextCount();
-}
-
-function toggleContextDoc(el) {
-  if (!el) return;
-  var p = el.getAttribute('data-doc-path');
-  if (!p) return;
-  if (el.checked) claudeSelectedContext[p] = true;
-  else delete claudeSelectedContext[p];
-  updateContextCount();
-}
-
-function selectedContextDocPaths() {
-  return Object.keys(claudeSelectedContext).filter(function(p) { return !!claudeSelectedContext[p]; });
-}
-
-function updateContextCount() {
-  var countEl = document.getElementById('claude-context-count');
-  if (!countEl) return;
-  var n = selectedContextDocPaths().length;
-  countEl.textContent = n + ' valgt';
-}
-
-function selectAllFilteredContextDocs() {
-  var filterInput = document.getElementById('claude-context-filter');
-  var q = (filterInput && filterInput.value || '').trim().toLowerCase();
-  claudeContextFiles.forEach(function(file) {
-    if (!q || file.path.toLowerCase().indexOf(q) !== -1) claudeSelectedContext[file.path] = true;
-  });
-  renderClaudeContextFiles();
-}
-
-function clearContextDocSelection() {
-  claudeSelectedContext = {};
-  renderClaudeContextFiles();
-}
-
-function insertKanbanTaskInPrompt() {
-  var taskSel = document.getElementById('claude-kanban-task');
-  var promptEl = document.getElementById('claude-prompt');
-  if (!taskSel || !promptEl) return;
-  var taskId = taskSel.value;
-  if (!taskId) {
-    alert('Vælg en kanban task først.');
-    return;
-  }
-  fetch(API + '/master/kanban', { headers: authHeaders() })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var all = [].concat(data.backlog || [], data.in_progress || [], data.review || [], data.done || []);
-      var task = all.find(function(t) { return String(t.id) === String(taskId); });
-      if (!task) {
-        alert('Task blev ikke fundet.');
-        return;
+  return fetch(API + '/master/task-md-files', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ task_id: taskId, repo: repoEl.value, mode: 'create' })
+  }).then(function(r) { return r.json(); })
+    .then(function(j) {
+      if (!j.ok) {
+        alert(j.error || 'Kunne ikke oprette .md plan');
+        return false;
       }
-      var parts = [
-        'Task scope (from kanban):',
-        '#'+ task.id + ' ' + task.title,
-        'Column: ' + task.column_name,
-        'Priority: ' + task.priority,
-        'Assigned: ' + (task.assigned_to || 'n/a'),
-        task.version_target ? ('Version target: ' + task.version_target) : '',
-        task.description ? ('Description:\n' + task.description) : '',
-        '',
-      ].filter(Boolean);
-      promptEl.value = parts.join('\n') + promptEl.value;
-      promptEl.focus();
+      return loadTaskMdFiles(), new Promise(function(resolve) {
+        setTimeout(function() {
+          var mdSel = document.getElementById('claude-md-file');
+          if (mdSel && j.file_path) mdSel.value = j.file_path;
+          updateRunButtonState();
+          resolve(true);
+        }, 200);
+      });
     })
     .catch(function(e) {
-      alert('Kunne ikke hente task: ' + e.message);
+      alert('Fejl: ' + e.message);
+      return false;
     });
 }
 
@@ -840,119 +829,167 @@ function clearOutput() {
 function setRunning(running) {
   var runBtn = document.getElementById('claude-run-btn');
   var killBtn = document.getElementById('claude-kill');
-  if (runBtn) runBtn.disabled = running;
+  if (runBtn) runBtn.disabled = running || !canRunClaude();
   if (killBtn) killBtn.classList.toggle('hidden', !running);
   document.getElementById('claude-status').textContent = running ? 'Running…' : '';
 }
 
+function canRunClaude() {
+  var body = (document.getElementById('claude-prompt').value || '').trim();
+  var repo = document.getElementById('claude-repo').value;
+  var taskId = getSelectedTaskId();
+  var mdPath = document.getElementById('claude-md-file').value;
+  return Boolean(body && repo && taskId && mdPath);
+}
+
+function updateRunButtonState() {
+  var runBtn = document.getElementById('claude-run-btn');
+  if (runBtn) runBtn.disabled = !canRunClaude();
+}
+
 function runClaude() {
   var body = document.getElementById('claude-prompt').value.trim();
-  if (!body) return;
+  if (!body) { updateRunButtonState(); return; }
   var repo        = document.getElementById('claude-repo').value;
   var model       = document.getElementById('claude-model').value;
   var account_dir = document.getElementById('claude-account').value;
   var timeout_min = parseInt(document.getElementById('claude-timeout').value) || 10;
-  var kanban_item_id = document.getElementById('claude-kanban-task').value || null;
-  var context_files = selectedContextDocPaths();
+  var task_id = getSelectedTaskId();
+  var md_path = document.getElementById('claude-md-file').value;
 
-  clearOutput();
-  setRunning(true);
-  appendOutput('$ claude --model ' + model + ' --print --dangerously-skip-permissions\n', 'text-gray-500');
-  appendOutput('  repo: ' + repo + ' | account: ' + account_dir + ' | timeout: ' + timeout_min + 'min\n\n', 'text-gray-600');
-  if (kanban_item_id) appendOutput('  kanban task: #' + kanban_item_id + '\n', 'text-gray-600');
-  if (context_files.length) appendOutput('  context docs: ' + context_files.length + '\n\n', 'text-gray-600');
+  if (!repo || !task_id) {
+    alert('Vælg repository og kanban task først');
+    updateRunButtonState();
+    return;
+  }
 
-  fetch(API + '/master/claude-run', {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify({
-      prompt: body,
-      repo: repo,
-      model: model,
-      account_dir: account_dir,
-      timeout_min: timeout_min,
-      context_files: context_files,
-      kanban_item_id: kanban_item_id,
-    }),
-  }).then(function(res) {
-    if (res.status === 409) {
-      return res.json().then(function(j) {
-        appendOutput('Error: ' + j.error + '\n', 'text-red-400');
-        setRunning(false);
-      });
-    }
-    currentTaskId = res.headers.get('X-Task-Id');
-    if (!res.body) {
-      appendOutput('Error: No response body (SSE not supported?)\n', 'text-red-400');
-      setRunning(false);
+  var createdNewPlan = false;
+  var ensurePlan = Promise.resolve(true);
+  if (!md_path) {
+    if (!confirm('Should we plan a new .md file?')) {
+      updateRunButtonState();
       return;
     }
-    var reader = res.body.getReader();
-    var decoder = new TextDecoder();
-    var buf = '';
-    var statusEl = document.getElementById('claude-status');
+    ensurePlan = createNewPlanMd().then(function(ok) {
+      if (ok) {
+        createdNewPlan = true;
+        md_path = document.getElementById('claude-md-file').value;
+      }
+      return ok;
+    });
+  }
 
-    var hitLimit = false;
-
-    function isLimitMsg(text) {
-      return /hit.{0,30}limit|usage.?limit|rate.?limit|overloaded|too many|resets\s+\w+\s+\d/i.test(text);
+  ensurePlan.then(function(ok) {
+    if (!ok || !md_path) {
+      updateRunButtonState();
+      return;
     }
+    clearOutput();
+    setRunning(true);
+    appendOutput('$ claude --model ' + model + ' --print --dangerously-skip-permissions\n', 'text-gray-500');
+    appendOutput('  repo: ' + repo + ' | task: #' + task_id + ' | md: ' + md_path + '\n', 'text-gray-600');
+    appendOutput('  account: ' + account_dir + ' | timeout: ' + timeout_min + 'min\n\n', 'text-gray-600');
 
-    function read() {
-      return reader.read().then(function(chunk) {
-        if (chunk.done) { setRunning(false); currentTaskId = null; return; }
-        buf += decoder.decode(chunk.value, { stream: true });
-        var lines = buf.split('\n');
-        buf = lines.pop();
-        lines.forEach(function(line) {
-          if (!line.startsWith('data: ')) return;
-          var raw = line.slice(6).trim();
-          if (!raw) return;
-          var ev;
-          try { ev = JSON.parse(raw); } catch { return; }
-          if (ev.type === 'out') {
-            if (isLimitMsg(ev.text)) {
-              hitLimit = true;
-              appendOutput(ev.text, 'text-purple-400');
-              if (statusEl) statusEl.textContent = 'Usage limit reached';
-            } else {
-              appendOutput(ev.text, 'text-green-400');
-            }
+    fetch(API + '/master/claude-run', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        prompt: body,
+        repo: repo,
+        model: model,
+        account_dir: account_dir,
+        timeout_min: timeout_min,
+        task_id: task_id,
+        md_path: md_path,
+        created_new_plan: createdNewPlan
+      }),
+    }).then(function(res) {
+      if (res.status === 403) {
+        return res.json().then(function(j) {
+          if (j.code === 'STEP_UP_REQUIRED') {
+            appendOutput('Step-up authentication required. Run cancelled.\n', 'text-amber-400');
+          } else {
+            appendOutput('Error: ' + (j.error || 'Forbidden') + '\n', 'text-red-400');
           }
-          if (ev.type === 'start') {
-            if (ev.context_files_used && ev.context_files_used.length) {
-              appendOutput('[Context docs loaded]\n- ' + ev.context_files_used.join('\n- ') + '\n\n', 'text-blue-300');
-            }
-            if (ev.kanban_item_id) {
-              appendOutput('[Kanban task linked] #' + ev.kanban_item_id + '\n\n', 'text-blue-300');
-            }
-          }
-          if (ev.type === 'err') {
-            if (isLimitMsg(ev.text)) {
-              hitLimit = true;
-              appendOutput(ev.text, 'text-purple-400');
-              if (statusEl) statusEl.textContent = 'Usage limit reached';
-            } else {
-              appendOutput(ev.text, 'text-amber-400');
-            }
-          }
-          if (ev.type === 'done') {
-            if (hitLimit) {
-              appendOutput('\n⚠ Claude Pro daily limit reached. Check the message above for reset time.\n', 'text-purple-400');
-            } else {
-              appendOutput('\n[Exited with code ' + ev.code + ']\n', ev.code === 0 ? 'text-blue-400' : 'text-red-400');
-            }
-            setRunning(false);
-            currentTaskId = null;
-          }
+          setRunning(false);
         });
-        return read();
-      });
-    }
-    return read();
-  }).catch(function(err) {
-    appendOutput('Request failed: ' + err.message + '\n', 'text-red-400');
-    setRunning(false);
+      }
+      if (res.status === 409 || res.status === 400) {
+        return res.json().then(function(j) {
+          appendOutput('Error: ' + j.error + '\n', 'text-red-400');
+          setRunning(false);
+        });
+      }
+      currentTaskId = res.headers.get('X-Task-Id');
+      if (!res.body) {
+        appendOutput('Error: No response body (SSE not supported?)\n', 'text-red-400');
+        setRunning(false);
+        return;
+      }
+      var reader = res.body.getReader();
+      var decoder = new TextDecoder();
+      var buf = '';
+      var statusEl = document.getElementById('claude-status');
+
+      var hitLimit = false;
+
+      function isLimitMsg(text) {
+        return /hit.{0,30}limit|usage.?limit|rate.?limit|overloaded|too many|resets\s+\w+\s+\d/i.test(text);
+      }
+
+      function read() {
+        return reader.read().then(function(chunk) {
+          if (chunk.done) { setRunning(false); currentTaskId = null; updateRunButtonState(); return; }
+          buf += decoder.decode(chunk.value, { stream: true });
+          var lines = buf.split('\n');
+          buf = lines.pop();
+          lines.forEach(function(line) {
+            if (!line.startsWith('data: ')) return;
+            var raw = line.slice(6).trim();
+            if (!raw) return;
+            var ev;
+            try { ev = JSON.parse(raw); } catch { return; }
+            if (ev.type === 'start' && ev.md_path) {
+              appendOutput('[Using plan file: ' + ev.md_path + (ev.kanban_task_id ? ' | task #' + ev.kanban_task_id : '') + ']\n', 'text-cyan-300');
+            }
+            if (ev.type === 'out') {
+              if (isLimitMsg(ev.text)) {
+                hitLimit = true;
+                appendOutput(ev.text, 'text-purple-400');
+                if (statusEl) statusEl.textContent = 'Usage limit reached';
+              } else {
+                appendOutput(ev.text, 'text-green-400');
+              }
+            }
+            if (ev.type === 'err') {
+              if (isLimitMsg(ev.text)) {
+                hitLimit = true;
+                appendOutput(ev.text, 'text-purple-400');
+                if (statusEl) statusEl.textContent = 'Usage limit reached';
+              } else {
+                appendOutput(ev.text, 'text-amber-400');
+              }
+            }
+            if (ev.type === 'done') {
+              if (hitLimit) {
+                appendOutput('\nClaude Pro daily limit reached. Check the message above for reset time.\n', 'text-purple-400');
+              } else {
+                appendOutput('\n[Exited with code ' + ev.code + ']\n', ev.code === 0 ? 'text-blue-400' : 'text-red-400');
+              }
+              setRunning(false);
+              currentTaskId = null;
+              updateRunButtonState();
+            }
+          });
+          return read();
+        });
+      }
+      return read();
+    }).catch(function(err) {
+      appendOutput('Request failed: ' + err.message + '\n', 'text-red-400');
+      setRunning(false);
+      updateRunButtonState();
+    });
   });
 }
 
@@ -963,6 +1000,7 @@ function killClaude() {
       appendOutput('\n[Killed by user]\n', 'text-amber-400');
       setRunning(false);
       currentTaskId = null;
+      updateRunButtonState();
     });
 }
 
@@ -1085,17 +1123,17 @@ window.killClaude = killClaude;
 window.clearOutput = clearOutput;
 window.loadClaudeAccounts = loadClaudeAccounts;
 window.loadClaudeKanbanTasks = loadClaudeKanbanTasks;
-window.insertKanbanTaskInPrompt = insertKanbanTaskInPrompt;
-window.onClaudeRepoChange = onClaudeRepoChange;
-window.loadClaudeContextFiles = loadClaudeContextFiles;
-window.renderClaudeContextFiles = renderClaudeContextFiles;
-window.toggleContextDoc = toggleContextDoc;
-window.selectAllFilteredContextDocs = selectAllFilteredContextDocs;
-window.clearContextDocSelection = clearContextDocSelection;
+window.loadTaskMdFiles = loadTaskMdFiles;
+window.onClaudeRepoOrTaskChange = onClaudeRepoOrTaskChange;
+window.createNewPlanMd = createNewPlanMd;
+window.updateRunButtonState = updateRunButtonState;
 window.openAuthPanel = openAuthPanel;
 window.closeAuthPanel = closeAuthPanel;
 window.startClaudeAuth = startClaudeAuth;
 window.submitAuthCode = submitAuthCode;
+
+var promptInput = document.getElementById('claude-prompt');
+if (promptInput) promptInput.addEventListener('input', updateRunButtonState);
 
 // Load initial tab
 loadSites();
