@@ -425,8 +425,9 @@ router.delete('/claude-run/:taskId', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-// POST /master/claude-auth-start — start interactive "claude auth login" and stream output via SSE
-// The process stays alive waiting for the auth code to be submitted via /claude-auth-code
+// POST /master/claude-auth-start — spawn "claude auth login", wait for the URL to appear in
+// output, then return JSON { url }. The process stays alive (waiting for stdin) so the user can
+// submit the auth code via /claude-auth-code. Plain JSON avoids LiteSpeed SSE buffering issues.
 router.post('/claude-auth-start', requireAuth, (req, res) => {
   // Kill any existing dangling auth session
   if (authSession && authSession.proc) {
@@ -442,43 +443,57 @@ router.post('/claude-auth-start', requireAuth, (req, res) => {
   spawnEnv.HOME = '/home/theartis';
   spawnEnv.CLAUDE_CONFIG_DIR = account_dir;
 
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-
-  // Spawn claude auth login with piped stdin so we can write the code later
   const proc = spawn(CLAUDE_BIN, ['auth', 'login'], {
     env: spawnEnv,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
 
-  let sseActive = true;
   authSession = { proc, account_dir };
 
-  function sendEvent(ev) {
-    if (!sseActive) return;
-    try { res.write(`data: ${JSON.stringify(ev)}\n\n`); } catch { sseActive = false; }
+  let outputBuf = '';
+  let responded = false;
+
+  const timeout = setTimeout(() => {
+    if (!responded) {
+      responded = true;
+      res.status(504).json({ error: 'Timed out waiting for auth URL (15s). Is claude installed?' });
+    }
+    // Don't kill proc — user might still submit code
+  }, 15000);
+
+  function checkForUrl() {
+    const match = outputBuf.match(/https:\/\/claude\.ai\/oauth\/[^\s]+/);
+    if (match && !responded) {
+      responded = true;
+      clearTimeout(timeout);
+      res.json({ ok: true, url: match[0], account_dir });
+    }
   }
 
-  sendEvent({ type: 'started', account_dir });
-
-  proc.stdout.on('data', (d) => sendEvent({ type: 'out', text: stripAnsi(d.toString()) }));
-  proc.stderr.on('data', (d) => sendEvent({ type: 'out', text: stripAnsi(d.toString()) }));
+  proc.stdout.on('data', (d) => { outputBuf += stripAnsi(d.toString()); checkForUrl(); });
+  proc.stderr.on('data', (d) => { outputBuf += stripAnsi(d.toString()); checkForUrl(); });
 
   proc.on('close', (code) => {
     authSession = null;
-    sendEvent({ type: 'done', code });
-    if (sseActive) { try { res.end(); } catch {} sseActive = false; }
+    clearTimeout(timeout);
+    if (!responded) {
+      responded = true;
+      if (code === 0) {
+        // Completed without needing a code (e.g. already logged in)
+        res.json({ ok: true, completed: true, account_dir });
+      } else {
+        res.status(500).json({ error: 'Auth process exited with code ' + code, output: outputBuf.slice(0, 500) });
+      }
+    }
   });
   proc.on('error', (err) => {
     authSession = null;
-    sendEvent({ type: 'err', text: 'Failed to start claude auth: ' + err.message });
-    sendEvent({ type: 'done', code: 1 });
-    if (sseActive) { try { res.end(); } catch {} sseActive = false; }
+    clearTimeout(timeout);
+    if (!responded) {
+      responded = true;
+      res.status(500).json({ error: 'Failed to start claude auth: ' + err.message });
+    }
   });
-
-  // On SSE disconnect: keep proc alive — user may still paste the code via /claude-auth-code
-  req.on('close', () => { sseActive = false; });
 });
 
 // POST /master/claude-auth-code — submit the authentication code into the waiting auth process stdin
