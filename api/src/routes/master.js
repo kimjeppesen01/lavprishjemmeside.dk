@@ -496,18 +496,49 @@ router.post('/claude-auth-start', requireAuth, (req, res) => {
   });
 });
 
-// POST /master/claude-auth-code — submit the authentication code into the waiting auth process stdin
+// POST /master/claude-auth-code — submit the authentication code into the waiting auth process stdin,
+// then wait for the process to complete and return the result (success or failure).
 router.post('/claude-auth-code', requireAuth, (req, res) => {
   const { code } = req.body || {};
   if (!code) return res.status(400).json({ error: 'code required' });
-  if (!authSession || !authSession.proc) return res.status(404).json({ error: 'No active auth session — start one first' });
+  if (!authSession || !authSession.proc) return res.status(404).json({ error: 'No active auth session — click Start Auth first' });
+
+  const proc = authSession.proc;
+  let extraOutput = '';
+
+  // Capture any output after the code is submitted (success/failure message)
+  proc.stdout.on('data', (d) => { extraOutput += stripAnsi(d.toString()); });
+  proc.stderr.on('data', (d) => { extraOutput += stripAnsi(d.toString()); });
+
   try {
-    authSession.proc.stdin.write(code.trim() + '\n');
-    authSession.proc.stdin.end();
-    res.json({ ok: true });
+    proc.stdin.write(code.trim() + '\n');
+    proc.stdin.end();
   } catch (err) {
-    res.status(500).json({ error: 'Failed to submit code: ' + err.message });
+    return res.status(500).json({ error: 'Failed to submit code: ' + err.message });
   }
+
+  // Wait for the process to finish (token exchange should be fast, 30s max)
+  const killTimer = setTimeout(() => {
+    try { proc.kill(); } catch {}
+    if (!res.headersSent) res.status(504).json({ error: 'Timed out waiting for auth to complete' });
+  }, 30000);
+
+  proc.once('close', (exitCode) => {
+    clearTimeout(killTimer);
+    authSession = null;
+    if (res.headersSent) return;
+    if (exitCode === 0) {
+      res.json({ ok: true, output: extraOutput.trim() || 'Authentication successful.' });
+    } else {
+      res.status(400).json({ error: 'Auth failed (exit ' + exitCode + ')', output: extraOutput.trim() });
+    }
+  });
+
+  proc.once('error', (err) => {
+    clearTimeout(killTimer);
+    authSession = null;
+    if (!res.headersSent) res.status(500).json({ error: err.message });
+  });
 });
 
 module.exports = router;
