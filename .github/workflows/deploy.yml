@@ -57,3 +57,6 @@ jobs:
             cp -Rf dist/* ~/$SITE_ROOT/
             cd api && npm install --production
             mkdir -p tmp && touch tmp/restart.txt
+            # Force-restart lsnode if it didn't pick up the restart file
+            sleep 3
+            pkill -f "lsnode:.*$(basename ~/$REPO_PATH)" || true
