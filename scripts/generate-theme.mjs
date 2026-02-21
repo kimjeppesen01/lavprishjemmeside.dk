@@ -29,6 +29,7 @@ const DEFAULT_HEADER_FOOTER = {
 
 // Default tokens (fallback if API fails)
 const DEFAULT_TOKENS = {
+  theme_mode: 'simple',
   color_primary: '#2563EB',
   color_primary_hover: '#1D4ED8',
   color_primary_light: '#DBEAFE',
@@ -243,13 +244,63 @@ function buildCSS(tokens) {
   const radius =
     radiusMap[tokens.border_radius] || radiusMap.medium;
   const shadow = shadowMap[tokens.shadow_style] || shadowMap.subtle;
+  const themeMode = tokens.theme_mode === 'modern' ? 'modern' : 'simple';
+  const isModern = themeMode === 'modern';
 
-  return `/* ===== DESIGN TOKENS ===== */
+  // Theme-level semantic values (existing component vars alias these)
+  const semantic = isModern
+    ? {
+        textPrimary: '#121317',
+        textSecondary: '#45474D',
+        textOnPrimary: '#FFFFFF',
+        bgPage: '#F8F9FC',
+        bgAlt: '#EFF2F7',
+        border: 'rgba(33,34,38,0.12)',
+        surface: '#FFFFFF',
+        surfaceHigh: '#EFF2F7',
+        overlay: 'rgba(255,255,255,0.92)',
+        backdropBlur: '10px',
+        lineHeightTight: '1.08',
+        lineHeightNormal: '1.55',
+        sectionY: '4.5rem',
+        sectionYLg: '6.5rem',
+      }
+    : {
+        textPrimary: 'var(--color-neutral-900)',
+        textSecondary: 'var(--color-neutral-600)',
+        textOnPrimary: '#FFFFFF',
+        bgPage: '#FFFFFF',
+        bgAlt: 'var(--color-neutral-50)',
+        border: 'var(--color-neutral-200)',
+        surface: '#FFFFFF',
+        surfaceHigh: 'var(--color-neutral-50)',
+        overlay: 'rgba(255,255,255,0.88)',
+        backdropBlur: '0px',
+        lineHeightTight: '1.15',
+        lineHeightNormal: '1.6',
+        sectionY: '4rem',
+        sectionYLg: '6rem',
+      };
+
+  const modernFontImport = `@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,slnt,wdth,wght@8..144,-10..0,25..151,400..700&display=swap');`;
+  const header = isModern ? `${modernFontImport}\n\n` : '';
+
+  return `${header}/* ===== DESIGN TOKENS ===== */
 /* Generated at build time from database */
 /* Source: ${API_URL}/design-settings/public */
 /* Last updated: ${new Date().toISOString()} */
+/* Theme mode: ${themeMode} */
 
 :root {
+  --theme-mode: ${themeMode};
+
+  /* --- Base Palette --- */
+  --palette-neutral-0: #FFFFFF;
+  --palette-neutral-10: #F8F9FC;
+  --palette-neutral-20: #EFF2F7;
+  --palette-neutral-1000: #212226;
+  --palette-neutral-1200: #121317;
+
   /* --- Brand Colors --- */
   --color-primary: ${tokens.color_primary};
   --color-primary-hover: ${tokens.color_primary_hover};
@@ -270,13 +321,25 @@ function buildCSS(tokens) {
   --color-neutral-800: ${tokens.color_neutral_800};
   --color-neutral-900: ${tokens.color_neutral_900};
 
+  /* --- Semantic Theme Tokens --- */
+  --theme-surface-surface: ${semantic.surface};
+  --theme-surface-surface-container: ${semantic.surfaceHigh};
+  --theme-surface-overlay: ${semantic.overlay};
+  --theme-surface-on-surface: ${semantic.textPrimary};
+  --theme-surface-on-surface-variant: ${semantic.textSecondary};
+  --theme-outline: ${semantic.border};
+  --theme-outline-variant: ${semantic.border};
+  --theme-button-primary-enabled: var(--color-primary);
+  --theme-button-primary-hovered: var(--color-primary-hover);
+  --theme-button-tonal-enabled: var(--color-primary-light);
+
   /* --- Semantic Colors --- */
-  --color-text-primary: var(--color-neutral-900);
-  --color-text-secondary: var(--color-neutral-600);
-  --color-text-on-primary: #FFFFFF;
-  --color-bg-page: #FFFFFF;
-  --color-bg-section-alt: var(--color-neutral-50);
-  --color-border: var(--color-neutral-200);
+  --color-text-primary: ${semantic.textPrimary};
+  --color-text-secondary: ${semantic.textSecondary};
+  --color-text-on-primary: ${semantic.textOnPrimary};
+  --color-bg-page: ${semantic.bgPage};
+  --color-bg-section-alt: ${semantic.bgAlt};
+  --color-border: ${semantic.border};
 
   /* --- Typography --- */
   --font-heading: '${tokens.font_heading}', sans-serif;
@@ -288,8 +351,15 @@ function buildCSS(tokens) {
   --font-size-3xl: 1.875rem;
   --font-size-4xl: 2.25rem;
   --font-size-5xl: 3rem;
-  --line-height-tight: 1.15;
-  --line-height-normal: 1.6;
+  --line-height-tight: ${semantic.lineHeightTight};
+  --line-height-normal: ${semantic.lineHeightNormal};
+
+  /* --- Motion Tokens --- */
+  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-emphasis: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --motion-duration-fast: 120ms;
+  --motion-duration-medium: 220ms;
+  --motion-duration-slow: 360ms;
 
   /* --- Shapes (border radius: ${tokens.border_radius}) --- */
   --radius-sm: ${radius.sm};
@@ -306,14 +376,15 @@ function buildCSS(tokens) {
   --shadow-md: ${shadow.md};
   --shadow-lg: ${shadow.lg};
   --shadow-card: ${shadow.card};
+  --surface-backdrop-blur: ${semantic.backdropBlur};
 
   /* --- Spacing (consistent section padding) --- */
-  --section-padding-y: 4rem;
-  --section-padding-y-lg: 6rem;
+  --section-padding-y: ${semantic.sectionY};
+  --section-padding-y-lg: ${semantic.sectionYLg};
   --container-max-width: 80rem;
-  --container-padding-x: ${tokens.border_radius === 'full' ? '2rem' : '1.5rem'};
-  --card-padding: ${tokens.border_radius === 'full' ? '1.5rem' : '1.25rem'};
-  --card-padding-lg: ${tokens.border_radius === 'full' ? '1.75rem' : '1.5rem'};
+  --container-padding-x: ${isModern ? '2rem' : tokens.border_radius === 'full' ? '2rem' : '1.5rem'};
+  --card-padding: ${isModern ? '1.5rem' : tokens.border_radius === 'full' ? '1.5rem' : '1.25rem'};
+  --card-padding-lg: ${isModern ? '1.75rem' : tokens.border_radius === 'full' ? '1.75rem' : '1.5rem'};
 }
 `;
 }
