@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Design Token Editor — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.DZVCyDGx.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+<!DOCTYPE html><html lang="da"> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Design Token Editor — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.J6LVuzXu.css"></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased"> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
     (function() {
       var token = localStorage.getItem('admin_token');
       var path = window.location.pathname.replace(/\/$/, '') || '/admin';
@@ -81,7 +81,16 @@ Publicer til live (~90 sek)
                 padding: 1rem;
                 backdrop-filter: blur(var(--surface-backdrop-blur));
               }
-            </style> <div class="space-y-6 theme-preview-shell"> <!-- Primary Button --> <div> <p class="text-xs text-gray-500 uppercase tracking-wider mb-2">Primær knap</p> <button class="px-6 py-3 rounded text-white font-medium transition-colors" style="background-color: var(--color-primary); border-radius: var(--border-radius);" onmouseover="this.style.backgroundColor = 'var(--color-primary-hover)'" onmouseout="this.style.backgroundColor = 'var(--color-primary)'">
+
+              .theme-preview-shell[data-theme='modern'] {
+                background:
+                  radial-gradient(420px 180px at 8% 0%, rgba(26,115,232,0.16), transparent 70%),
+                  radial-gradient(380px 160px at 100% 0%, rgba(50,121,249,0.14), transparent 72%),
+                  var(--color-bg-page);
+                border-color: color-mix(in srgb, var(--color-primary) 26%, var(--theme-outline));
+                box-shadow: 0 16px 34px -20px rgba(24, 45, 94, 0.36);
+              }
+            </style> <div id="theme-preview-shell" data-theme="simple" class="space-y-6 theme-preview-shell"> <!-- Primary Button --> <div> <p class="text-xs text-gray-500 uppercase tracking-wider mb-2">Primær knap</p> <button class="px-6 py-3 rounded text-white font-medium transition-colors" style="background-color: var(--color-primary); border-radius: var(--border-radius);" onmouseover="this.style.backgroundColor = 'var(--color-primary-hover)'" onmouseout="this.style.backgroundColor = 'var(--color-primary)'">
 Primær handling
 </button> </div> <!-- Secondary Button --> <div> <p class="text-xs text-gray-500 uppercase tracking-wider mb-2">Sekundær knap</p> <button class="px-6 py-3 rounded text-white font-medium transition-colors" style="background-color: var(--color-secondary); border-radius: var(--border-radius);" onmouseover="this.style.backgroundColor = 'var(--color-secondary-hover)'" onmouseout="this.style.backgroundColor = 'var(--color-secondary)'">
 Sekundær handling
@@ -547,6 +556,9 @@ Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved 
         css = css.replace(/--theme-outline: [^;]+;/, '--theme-outline: rgba(17,24,39,0.12);');
         css = css.replace(/--surface-backdrop-blur: [^;]+;/, '--surface-backdrop-blur: 0px;');
       }
+
+      const previewShell = document.getElementById('theme-preview-shell');
+      if (previewShell) previewShell.setAttribute('data-theme', themeMode);
 
       // Shapes: map enum to CSS value (preview uses simple rem/shadow)
       const borderRadius = document.getElementById('border_radius');
