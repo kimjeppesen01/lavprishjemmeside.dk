@@ -315,6 +315,18 @@ html[data-theme='modern'] .modern-pre-reveal.modern-revealed {
   filter: blur(0);
 }
 
+html[data-motion='reduced'] .modern-pre-reveal {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  transition: none;
+}
+
+html[data-motion='expressive'] .modern-pre-reveal {
+  transform: translateY(42px) scale(0.975);
+  transition-duration: 780ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html[data-theme='modern'] .modern-pre-reveal {
     opacity: 1;

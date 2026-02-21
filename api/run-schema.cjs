@@ -17,6 +17,7 @@ const SCHEMA_ORDER = [
   'schema_ai_prompt_settings.sql',
   'schema_design_features.sql',
   'schema_theme_modes.sql',
+  'schema_theme_settings.sql',
   'schema_master.sql',
   'schema_indexes.sql',
 ];

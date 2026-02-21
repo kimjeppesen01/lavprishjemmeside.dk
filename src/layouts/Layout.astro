@@ -56,10 +56,11 @@ const baseSchemas = [
 
 const allSchemas = [...baseSchemas, ...schemaMarkup];
 const themeMode = designFeatures.themeMode === 'modern' ? 'modern' : 'simple';
+const motionProfile = ['standard', 'reduced', 'expressive'].includes(designFeatures.motionProfile) ? designFeatures.motionProfile : 'standard';
 ---
 
 <!doctype html>
-<html lang="da" data-theme={themeMode} class:list={[designFeatures.smoothScroll && 'smooth-scroll']}>
+<html lang="da" data-theme={themeMode} data-motion={motionProfile} class:list={[designFeatures.smoothScroll && 'smooth-scroll']}>
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -97,7 +98,7 @@ const themeMode = designFeatures.themeMode === 'modern' ? 'modern' : 'simple';
     </script>
   </head>
   <body
-  class:list={['min-h-screen flex flex-col bg-[var(--color-bg-page)] text-[var(--color-text-primary)] antialiased theme-app', `theme-${themeMode}`, designFeatures.borderRadius === 'full' && 'radius-full']}
+  class:list={['min-h-screen flex flex-col bg-[var(--color-bg-page)] text-[var(--color-text-primary)] antialiased theme-app', `theme-${themeMode}`, `theme-motion-${motionProfile}`, designFeatures.borderRadius === 'full' && 'radius-full']}
 >
     {designFeatures.pageLoader && (
     <div id="page-loader" class="page-loader" aria-hidden="true">

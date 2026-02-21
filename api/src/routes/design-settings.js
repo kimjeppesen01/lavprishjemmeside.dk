@@ -34,7 +34,6 @@ router.get('/public', async (req, res) => {
     if (rows.length === 0) {
       // Return defaults if no settings exist
       return res.json({
-        theme_mode: 'simple',
         feature_smooth_scroll: 1,
         feature_grain_overlay: 1,
         feature_page_loader: 1,
@@ -134,10 +133,6 @@ router.post('/update', requireAuth, async (req, res) => {
     if (shadow_style !== undefined && !['none', 'subtle', 'medium', 'dramatic'].includes(shadow_style)) {
       return res.status(400).json({ error: 'Ugyldig shadow_style værdi' });
     }
-    if (req.body.theme_mode !== undefined && !['simple', 'modern'].includes(req.body.theme_mode)) {
-      return res.status(400).json({ error: 'Ugyldig theme_mode værdi' });
-    }
-
     // Validate feature toggles (0 or 1)
     const featureFields = ['feature_smooth_scroll', 'feature_grain_overlay', 'feature_page_loader', 'feature_sticky_header', 'page_loader_show_logo'];
     for (const key of featureFields) {
@@ -167,7 +162,6 @@ router.post('/update', requireAuth, async (req, res) => {
       'color_neutral_50', 'color_neutral_100', 'color_neutral_200', 'color_neutral_300',
       'color_neutral_600', 'color_neutral_700', 'color_neutral_800', 'color_neutral_900',
       'font_heading', 'font_body', 'font_size_base', 'border_radius', 'shadow_style',
-      'theme_mode',
       'feature_smooth_scroll', 'feature_grain_overlay', 'feature_page_loader', 'feature_sticky_header',
       'page_loader_text', 'page_loader_show_logo', 'page_loader_duration'
     ]);
@@ -249,15 +243,6 @@ router.post('/apply-preset', requireAuth, async (req, res) => {
 
     const preset = presets[0];
     const settings = JSON.parse(preset.settings);
-    const presetName = String(preset.name || '').toLowerCase();
-    const presetLabel = String(preset.label_da || '').toLowerCase();
-    const inferredModern =
-      presetName.includes('modern') ||
-      presetName.includes('minimal') ||
-      presetLabel.includes('modern') ||
-      presetLabel.includes('minimal');
-    const presetThemeMode = settings.theme_mode || (inferredModern ? 'modern' : 'simple');
-
     // Apply preset settings
     const updates = [];
     const values = [];
@@ -270,8 +255,6 @@ router.post('/apply-preset', requireAuth, async (req, res) => {
 
     updates.push('active_preset_id = ?');
     values.push(preset_id);
-    updates.push('theme_mode = ?');
-    values.push(presetThemeMode);
     updates.push('updated_by = ?');
     values.push(req.user.id);
     values.push(1); // site_id

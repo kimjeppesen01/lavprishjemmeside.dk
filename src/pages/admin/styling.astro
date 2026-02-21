@@ -26,27 +26,8 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
         <!-- Settings Form (Left) -->
         <div class="lg:col-span-1">
           <form id="styling-form" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <!-- Theme Section -->
-            <div class="mb-8">
-              <h2 class="text-lg font-semibold mb-2 text-gray-900">Tema</h2>
-              <p class="text-sm text-gray-600 mb-4">Vælg hele design-sprog for sitet. Forhåndsvisning påvirker kun preview-panelet indtil du anvender temaet.</p>
-              <input type="hidden" id="theme_mode" value="simple">
-
-              <div id="theme-presets" class="space-y-3"></div>
-
-              <div id="theme-preview-banner" class="hidden mt-4 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
-                Forhåndsviser tema: <span id="theme-preview-name" class="font-semibold"></span>
-              </div>
-
-              <div class="mt-3 flex gap-2">
-                <button type="button" id="theme-preview-reset" class="hidden text-xs px-3 py-1.5 rounded border border-gray-300 text-gray-700 hover:bg-gray-50">
-                  Tilbage til gemte indstillinger
-                </button>
-              </div>
-            </div>
-
             <!-- Colors Section -->
-            <div class="mb-8 border-t border-gray-200 pt-8">
+            <div class="mb-8">
               <h2 class="text-lg font-semibold mb-4 text-gray-900">Farver</h2>
 
               <!-- Primary Colors -->
@@ -237,7 +218,6 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
 
             <style id="preview-styles" is:inline>
               :root {
-                --theme-mode: simple;
                 --color-primary: #3b82f6;
                 --color-primary-hover: #2563eb;
                 --color-primary-light: #dbeafe;
@@ -259,36 +239,12 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
                 --font-heading: 'Inter', sans-serif;
                 --font-body: 'Inter', sans-serif;
                 --base-font-size: 1rem;
-                --color-bg-page: #ffffff;
-                --color-bg-section-alt: #f9fafb;
-                --color-text-primary: #111827;
-                --color-text-secondary: #4b5563;
-                --theme-outline: rgba(17, 24, 39, 0.12);
-                --surface-backdrop-blur: 0px;
                 --border-radius: 0.5rem;
                 --shadow-style: 0 4px 6px rgba(0,0,0,0.1);
               }
-
-              .theme-preview-shell {
-                background: var(--color-bg-page);
-                color: var(--color-text-primary);
-                border: 1px solid var(--theme-outline);
-                border-radius: calc(var(--border-radius) * 1.5);
-                padding: 1rem;
-                backdrop-filter: blur(var(--surface-backdrop-blur));
-              }
-
-              .theme-preview-shell[data-theme='modern'] {
-                background:
-                  radial-gradient(420px 180px at 8% 0%, rgba(26,115,232,0.16), transparent 70%),
-                  radial-gradient(380px 160px at 100% 0%, rgba(50,121,249,0.14), transparent 72%),
-                  var(--color-bg-page);
-                border-color: color-mix(in srgb, var(--color-primary) 26%, var(--theme-outline));
-                box-shadow: 0 16px 34px -20px rgba(24, 45, 94, 0.36);
-              }
             </style>
 
-            <div id="theme-preview-shell" data-theme="simple" class="space-y-6 theme-preview-shell">
+            <div class="space-y-6">
               <!-- Primary Button -->
               <div>
                 <p class="text-xs text-gray-500 uppercase tracking-wider mb-2">Primær knap</p>
@@ -360,12 +316,10 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
     }
 
     let currentSettings = {};
-    let themePresets = [];
-    let previewBackupSettings = null;
 
     // Diagnostic: verify required DOM elements exist before we use them
     function diagnoseDOM() {
-      const ids = ['loading', 'error', 'error-text', 'content', 'neutral-colors-container', 'preview-styles', 'styling-form', 'theme-presets', 'theme_mode'];
+      const ids = ['loading', 'error', 'error-text', 'content', 'neutral-colors-container', 'preview-styles', 'styling-form'];
       const missing = ids.filter(id => !document.getElementById(id));
       if (missing.length > 0) {
         console.warn('[styling] Missing DOM elements:', missing);
@@ -395,51 +349,6 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
     }
 
     createNeutralInputs();
-
-    function getThemeModeFromSettings(settings, fallback = 'simple') {
-      const mode = settings?.theme_mode;
-      return mode === 'modern' ? 'modern' : fallback;
-    }
-
-    function getFormSnapshot() {
-      const data = {};
-      const ids = [
-        'theme_mode',
-        'color_primary', 'color_primary_hover', 'color_primary_light',
-        'color_secondary', 'color_secondary_hover', 'color_secondary_light',
-        'color_accent', 'color_accent_hover',
-        'font_heading', 'font_body', 'font_size_base',
-        'border_radius', 'shadow_style',
-        'feature_smooth_scroll', 'feature_grain_overlay', 'feature_page_loader', 'feature_sticky_header',
-        'page_loader_text', 'page_loader_show_logo', 'page_loader_duration'
-      ];
-      ids.forEach((id) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        data[id] = el.type === 'checkbox' ? (el.checked ? 1 : 0) : el.value;
-      });
-
-      [50, 100, 200, 300, 400, 500, 600, 700, 800, 900].forEach((shade) => {
-        const key = `color_neutral_${shade}`;
-        const el = document.getElementById(key);
-        if (el) data[key] = el.value;
-      });
-      return data;
-    }
-
-    function setPreviewBanner(name) {
-      const banner = document.getElementById('theme-preview-banner');
-      const label = document.getElementById('theme-preview-name');
-      const reset = document.getElementById('theme-preview-reset');
-      if (name) {
-        if (label) label.textContent = name;
-        banner?.classList.remove('hidden');
-        reset?.classList.remove('hidden');
-      } else {
-        banner?.classList.add('hidden');
-        reset?.classList.add('hidden');
-      }
-    }
 
     // Sync color inputs with hex inputs
     function setupColorSync(colorId) {
@@ -488,166 +397,8 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
       }
     }
 
-    async function loadThemePresets() {
-      try {
-        const res = await fetch(API + '/theme-presets/', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        if (!res.ok) throw new Error('Kunne ikke hente tema presets');
-        const list = await res.json();
-        const ids = Array.isArray(list) ? list.map((p) => p.id) : [];
-        const details = await Promise.all(ids.map(async (id) => {
-          const detailRes = await fetch(API + '/theme-presets/' + id, {
-            headers: { 'Authorization': 'Bearer ' + token }
-          });
-          if (!detailRes.ok) return null;
-          return await detailRes.json();
-        }));
-        themePresets = details.filter(Boolean)
-          .sort((a, b) => {
-            const rank = (name) => (name === 'simple' ? 0 : name === 'modern' ? 1 : 10);
-            return rank(a.name) - rank(b.name);
-          });
-        renderThemePresetCards();
-      } catch (err) {
-        console.warn('[styling] loadThemePresets error:', err.message);
-      }
-    }
-
-    function renderThemePresetCards() {
-      const container = document.getElementById('theme-presets');
-      if (!container) return;
-      container.innerHTML = '';
-      const activeMode = getThemeModeFromSettings(currentSettings, 'simple');
-
-      themePresets.forEach((preset) => {
-        const s = preset.settings || {};
-        const mode = s.theme_mode || (preset.name === 'modern' ? 'modern' : 'simple');
-        const isActive = activeMode === mode;
-        const card = document.createElement('div');
-        card.className = 'rounded-lg border p-3 ' + (isActive ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white');
-        card.innerHTML = `
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-sm font-semibold text-gray-900">${preset.label_da || preset.name}</p>
-              <p class="text-xs text-gray-600 mt-0.5">${preset.description_da || ''}</p>
-              <div class="mt-2 flex gap-1.5">
-                <span class="inline-block h-4 w-4 rounded-full border border-gray-200" style="background:${s.color_primary || '#2563EB'}"></span>
-                <span class="inline-block h-4 w-4 rounded-full border border-gray-200" style="background:${s.color_secondary || '#7C3AED'}"></span>
-                <span class="inline-block h-4 w-4 rounded-full border border-gray-200" style="background:${s.color_accent || '#F59E0B'}"></span>
-              </div>
-            </div>
-            <span class="text-[10px] px-2 py-1 rounded-full ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}">${isActive ? 'Aktiv' : mode}</span>
-          </div>
-          <div class="mt-3 flex gap-2">
-            <button type="button" data-theme-preview="${preset.id}" class="text-xs px-2.5 py-1.5 rounded border border-gray-300 text-gray-700 hover:bg-gray-50">Preview</button>
-            <button type="button" data-theme-apply="${preset.id}" class="text-xs px-2.5 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">Anvend tema</button>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-
-      container.querySelectorAll('[data-theme-preview]').forEach((btn) => {
-        btn.addEventListener('click', () => previewThemePreset(Number(btn.getAttribute('data-theme-preview'))));
-      });
-      container.querySelectorAll('[data-theme-apply]').forEach((btn) => {
-        btn.addEventListener('click', () => applyThemePreset(Number(btn.getAttribute('data-theme-apply'))));
-      });
-    }
-
-    function applySettingsToForm(settings) {
-      const themeMode = getThemeModeFromSettings(settings, getThemeModeFromSettings(currentSettings, 'simple'));
-      const themeModeInput = document.getElementById('theme_mode');
-      if (themeModeInput) themeModeInput.value = themeMode;
-
-      const colorFields = [
-        'color_primary', 'color_primary_hover', 'color_primary_light',
-        'color_secondary', 'color_secondary_hover', 'color_secondary_light',
-        'color_accent', 'color_accent_hover'
-      ];
-      colorFields.forEach((field) => {
-        const input = document.getElementById(field);
-        const hex = document.getElementById(field + '_hex');
-        const value = settings[field];
-        if (input && value) input.value = value;
-        if (hex && value) hex.value = String(value).toUpperCase();
-      });
-
-      [50, 100, 200, 300, 400, 500, 600, 700, 800, 900].forEach((shade) => {
-        const key = `color_neutral_${shade}`;
-        const input = document.getElementById(key);
-        const hex = document.getElementById(key + '_hex');
-        const value = settings[key];
-        if (input && value) input.value = value;
-        if (hex && value) hex.value = String(value).toUpperCase();
-      });
-
-      ['font_heading', 'font_body', 'font_size_base', 'border_radius', 'shadow_style', 'page_loader_text', 'page_loader_duration'].forEach((key) => {
-        const input = document.getElementById(key);
-        if (input && settings[key] !== undefined && settings[key] !== null) {
-          input.value = settings[key];
-        }
-      });
-
-      ['feature_smooth_scroll', 'feature_grain_overlay', 'feature_page_loader', 'feature_sticky_header', 'page_loader_show_logo'].forEach((key) => {
-        const input = document.getElementById(key);
-        if (input && settings[key] !== undefined) {
-          input.checked = settings[key] !== 0 && settings[key] !== false && settings[key] !== '0';
-        }
-      });
-
-      const loaderDurationVal = document.getElementById('page_loader_duration_val');
-      const loaderDuration = document.getElementById('page_loader_duration');
-      if (loaderDuration && loaderDurationVal) loaderDurationVal.textContent = loaderDuration.value;
-
-      updatePreview();
-    }
-
-    function previewThemePreset(id) {
-      const preset = themePresets.find((p) => p.id === id);
-      if (!preset) return;
-      if (!previewBackupSettings) {
-        previewBackupSettings = getFormSnapshot();
-      }
-      applySettingsToForm({ ...previewBackupSettings, ...(preset.settings || {}) });
-      setPreviewBanner(preset.label_da || preset.name);
-    }
-
-    async function applyThemePreset(id) {
-      try {
-        const res = await fetch(API + '/design-settings/apply-preset', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ preset_id: id })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Kunne ikke anvende tema');
-
-        previewBackupSettings = null;
-        setPreviewBanner(null);
-        currentSettings = data.data || currentSettings;
-        populateForm();
-        renderThemePresetCards();
-        const successEl = document.querySelector('#success-message p');
-        document.getElementById('success-message')?.classList.remove('hidden');
-        if (successEl) successEl.textContent = `✓ Tema anvendt (${data.preset || 'preset'}). Klik "Publicer til live" for at vise på sitet.`;
-        setTimeout(() => document.getElementById('success-message')?.classList.add('hidden'), 5000);
-      } catch (err) {
-        const errBox = document.getElementById('save-error-message');
-        const errText = document.getElementById('save-error-text');
-        if (errText) errText.textContent = err.message;
-        if (errBox) errBox.classList.remove('hidden');
-      }
-    }
-
     // Populate form with current values
     function populateForm() {
-      const themeModeInput = document.getElementById('theme_mode');
-      if (themeModeInput) themeModeInput.value = getThemeModeFromSettings(currentSettings, 'simple');
-
       const colorFields = [
         'color_primary', 'color_primary_hover', 'color_primary_light',
         'color_secondary', 'color_secondary_hover', 'color_secondary_light',
@@ -729,7 +480,6 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
       document.getElementById('loading').classList.add('hidden');
       document.getElementById('content').classList.remove('hidden');
       updatePreview();
-      renderThemePresetCards();
     }
 
     // Form field names use underscore (color_secondary); CSS vars use hyphen (--color-secondary)
@@ -784,29 +534,6 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
       if (baseFontSize && baseFontSize.value) {
         css = css.replace(/--base-font-size: [^;]+;/, `--base-font-size: ${baseFontSize.value};`);
       }
-
-      // Theme mode (semantic preview differences)
-      const themeModeInput = document.getElementById('theme_mode');
-      const themeMode = (themeModeInput && themeModeInput.value === 'modern') ? 'modern' : 'simple';
-      css = css.replace(/--theme-mode: [^;]+;/, `--theme-mode: ${themeMode};`);
-      if (themeMode === 'modern') {
-        css = css.replace(/--color-bg-page: [^;]+;/, '--color-bg-page: #F8F9FC;');
-        css = css.replace(/--color-bg-section-alt: [^;]+;/, '--color-bg-section-alt: #EFF2F7;');
-        css = css.replace(/--color-text-primary: [^;]+;/, '--color-text-primary: #121317;');
-        css = css.replace(/--color-text-secondary: [^;]+;/, '--color-text-secondary: #45474D;');
-        css = css.replace(/--theme-outline: [^;]+;/, '--theme-outline: rgba(33,34,38,0.12);');
-        css = css.replace(/--surface-backdrop-blur: [^;]+;/, '--surface-backdrop-blur: 10px;');
-      } else {
-        css = css.replace(/--color-bg-page: [^;]+;/, '--color-bg-page: #ffffff;');
-        css = css.replace(/--color-bg-section-alt: [^;]+;/, '--color-bg-section-alt: #f9fafb;');
-        css = css.replace(/--color-text-primary: [^;]+;/, '--color-text-primary: #111827;');
-        css = css.replace(/--color-text-secondary: [^;]+;/, '--color-text-secondary: #4b5563;');
-        css = css.replace(/--theme-outline: [^;]+;/, '--theme-outline: rgba(17,24,39,0.12);');
-        css = css.replace(/--surface-backdrop-blur: [^;]+;/, '--surface-backdrop-blur: 0px;');
-      }
-
-      const previewShell = document.getElementById('theme-preview-shell');
-      if (previewShell) previewShell.setAttribute('data-theme', themeMode);
 
       // Shapes: map enum to CSS value (preview uses simple rem/shadow)
       const borderRadius = document.getElementById('border_radius');
@@ -869,8 +596,6 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
       if (fontHeading) formData.font_heading = fontHeading.value;
       if (fontBody) formData.font_body = fontBody.value;
       if (baseFontSize) formData.font_size_base = baseFontSize.value;
-      const themeMode = document.getElementById('theme_mode');
-      if (themeMode) formData.theme_mode = themeMode.value === 'modern' ? 'modern' : 'simple';
 
       // Shapes
       const borderRadius = document.getElementById('border_radius');
@@ -964,16 +689,8 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
       }
     });
 
-    document.getElementById('theme-preview-reset')?.addEventListener('click', function() {
-      if (!previewBackupSettings) return;
-      applySettingsToForm(previewBackupSettings);
-      previewBackupSettings = null;
-      setPreviewBanner(null);
-    });
-
     // Load settings on page load
     loadSettings();
-    loadThemePresets();
   })();
   </script>
 </AdminLayout>
