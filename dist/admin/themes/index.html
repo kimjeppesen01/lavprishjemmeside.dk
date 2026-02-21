@@ -94,7 +94,8 @@ Log ud
 
       async function loadThemeSettings() {
         try {
-          const res = await fetch(API + '/theme-settings', {
+          const endpoint = API + '/theme-settings';
+          const res = await fetch(endpoint, {
             headers: { Authorization: 'Bearer ' + token }
           });
           if (!res.ok) {
@@ -103,7 +104,7 @@ Log ud
               const body = await res.json();
               detail = body && body.error ? ` (${body.error})` : '';
             } catch (_) {}
-            throw new Error(`Kunne ikke hente temaindstillinger${detail}`);
+            throw new Error(`Kunne ikke hente temaindstillinger [${res.status}] ${endpoint}${detail}`);
           }
           const data = await res.json();
           current = {
@@ -133,7 +134,8 @@ Log ud
         const motion = document.getElementById('motion_profile');
         if (motion) current.motion_profile = motion.value;
         try {
-          const res = await fetch(API + '/theme-settings/update', {
+          const endpoint = API + '/theme-settings/update';
+          const res = await fetch(endpoint, {
             method: 'POST',
             headers: {
               Authorization: 'Bearer ' + token,
@@ -147,7 +149,7 @@ Log ud
               const body = await res.json();
               detail = body && body.error ? ` (${body.error})` : '';
             } catch (_) {}
-            throw new Error(`Kunne ikke gemme tema${detail}`);
+            throw new Error(`Kunne ikke gemme tema [${res.status}] ${endpoint}${detail}`);
           }
           const data = await res.json();
           current.active_theme_key = data.active_theme_key || current.active_theme_key;
