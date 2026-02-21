@@ -135,6 +135,7 @@ jobs:
             cp -Rf dist/* ~/$SITE_ROOT/
             cd api
             npm ci --omit=dev || npm install --production
+            node run-schema.cjs
             mkdir -p tmp && touch tmp/restart.txt
 
             set +e
