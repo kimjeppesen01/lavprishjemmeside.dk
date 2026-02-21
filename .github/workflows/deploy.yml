@@ -109,6 +109,7 @@ jobs:
             run_full_checks() {
               check_200 "$API_HEALTH_URL" "api health"
               check_200 "$API_BASE_URL/design-settings/public" "design settings"
+              check_200 "$API_BASE_URL/theme-settings/public" "theme settings"
               check_200 "$API_BASE_URL/page-components/public?page=all" "page components"
               check_non_5xx "$API_BASE_URL/auth/login" "POST" '{"email":"invalid@example.com","password":"wrong"}' "auth login transport"
               check_non_5xx "$SITE_URL/" "HEAD" "" "site reachability"
