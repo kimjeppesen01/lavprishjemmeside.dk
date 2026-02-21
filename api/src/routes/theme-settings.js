@@ -3,6 +3,37 @@ const router = express.Router();
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 
+async function ensureThemeTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS site_theme_settings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      site_id INT NOT NULL DEFAULT 1,
+      active_theme_key ENUM('simple','modern','kreativ') NOT NULL DEFAULT 'simple',
+      motion_profile ENUM('standard','reduced','expressive') NOT NULL DEFAULT 'standard',
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      updated_by INT DEFAULT NULL,
+      UNIQUE KEY idx_site_id (site_id),
+      FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await pool.query(`
+    INSERT INTO site_theme_settings (site_id, active_theme_key, motion_profile)
+    VALUES (1, 'simple', 'standard')
+    ON DUPLICATE KEY UPDATE site_id = VALUES(site_id)
+  `);
+
+  await pool.query(`
+    UPDATE site_theme_settings sts
+    JOIN design_settings ds ON ds.site_id = sts.site_id
+    SET sts.active_theme_key = CASE
+      WHEN ds.theme_mode = 'modern' THEN 'modern'
+      ELSE sts.active_theme_key
+    END
+    WHERE sts.site_id = 1
+  `).catch(() => {});
+}
+
 function normalize(row) {
   if (!row) {
     return {
@@ -23,6 +54,7 @@ function normalize(row) {
 // GET /theme-settings/public
 router.get('/public', async (req, res) => {
   try {
+    await ensureThemeTable();
     const [rows] = await pool.execute(
       'SELECT site_id, active_theme_key, motion_profile, updated_at, updated_by FROM site_theme_settings WHERE site_id = 1 LIMIT 1'
     );
@@ -36,6 +68,7 @@ router.get('/public', async (req, res) => {
 // GET /theme-settings
 router.get('/', requireAuth, async (req, res) => {
   try {
+    await ensureThemeTable();
     const [rows] = await pool.execute(
       'SELECT site_id, active_theme_key, motion_profile, updated_at, updated_by FROM site_theme_settings WHERE site_id = 1 LIMIT 1'
     );
@@ -49,6 +82,7 @@ router.get('/', requireAuth, async (req, res) => {
 // POST /theme-settings/update
 router.post('/update', requireAuth, async (req, res) => {
   try {
+    await ensureThemeTable();
     const active_theme_key = String(req.body.active_theme_key || 'simple').toLowerCase();
     const motion_profile = String(req.body.motion_profile || 'standard').toLowerCase();
 
