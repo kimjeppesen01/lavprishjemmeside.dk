@@ -8,6 +8,10 @@
 
 Tabbed interface to organize dense content (e.g. features, pricing). Uses proper ARIA roles for accessibility.
 
+Theme behavior:
+- `simple`: Bordered, minimalist, business-style shell with clear separation between tabs and content.
+- `modern`: Rounded chip-style tab menu (Apple/Antigravity-inspired) with elevated gradient container and animated content transitions.
+
 **Common use cases:**
 - Feature comparison
 - Pricing details
@@ -46,3 +50,4 @@ interface Props {
 
 - Tab labels: Korte, klare (fx "Basis", "Pro", "Enterprise")
 - Content: HTML tilladt (p, ul, etc.)
+- Brug gerne korte punktopstillinger i indhold for bedre skanbarhed
