@@ -81,6 +81,7 @@ async function generateTheme() {
 
     // Write feature flags and page loader config for Layout/Header
     const features = {
+      themeMode: tokens.theme_mode === 'modern' ? 'modern' : 'simple',
       smoothScroll: (tokens.feature_smooth_scroll ?? 1) !== 0,
       grainOverlay: (tokens.feature_grain_overlay ?? 1) !== 0,
       pageLoader: (tokens.feature_page_loader ?? 1) !== 0,
@@ -121,6 +122,7 @@ async function generateTheme() {
     fs.writeFileSync(THEME_FILE, css, 'utf-8');
     console.log(`✓ Generated ${THEME_FILE} (with defaults)`);
     const features = {
+      themeMode: 'simple',
       smoothScroll: true,
       grainOverlay: true,
       pageLoader: true,
@@ -257,7 +259,6 @@ function buildCSS(tokens) {
         bgAlt: '#EFF2F7',
         border: 'rgba(33,34,38,0.12)',
         surface: '#FFFFFF',
-        surfaceHigh: '#EFF2F7',
         overlay: 'rgba(255,255,255,0.92)',
         backdropBlur: '10px',
         lineHeightTight: '1.08',
@@ -284,6 +285,9 @@ function buildCSS(tokens) {
 
   const modernFontImport = `@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,slnt,wdth,wght@8..144,-10..0,25..151,400..700&display=swap');`;
   const header = isModern ? `${modernFontImport}\n\n` : '';
+
+  const headingFont = isModern ? 'Google Sans Flex' : tokens.font_heading;
+  const bodyFont = isModern ? 'Manrope' : tokens.font_body;
 
   return `${header}/* ===== DESIGN TOKENS ===== */
 /* Generated at build time from database */
@@ -342,8 +346,8 @@ function buildCSS(tokens) {
   --color-border: ${semantic.border};
 
   /* --- Typography --- */
-  --font-heading: '${tokens.font_heading}', sans-serif;
-  --font-body: '${tokens.font_body}', sans-serif;
+  --font-heading: '${headingFont}', sans-serif;
+  --font-body: '${bodyFont}', sans-serif;
   --font-size-base: ${tokens.font_size_base};
   --font-size-lg: 1.125rem;
   --font-size-xl: 1.25rem;

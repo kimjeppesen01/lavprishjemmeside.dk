@@ -1,12 +1,19 @@
 ---
 import headerFooter from '../data/header-footer.json';
+import designFeatures from '../data/design-features.json';
 
 const year = new Date().getFullYear();
 const columns = Array.isArray(headerFooter.footer_columns) ? headerFooter.footer_columns : [];
 const copyright = headerFooter.footer_copyright ?? null;
+const isModern = designFeatures.themeMode === 'modern';
 ---
 
-<footer class="modern-shell mt-auto border-t border-[var(--color-border)] bg-[var(--color-neutral-900)] py-14 text-[var(--color-neutral-300)]">
+<footer class:list={[
+  'modern-shell mt-auto border-t py-14',
+  isModern
+    ? 'text-[var(--color-neutral-200)]'
+    : 'border-[var(--color-border)] bg-[var(--color-neutral-900)] text-[var(--color-neutral-300)]',
+]} style={isModern ? 'border-color: color-mix(in srgb, var(--color-primary) 24%, var(--color-border)); background: linear-gradient(145deg, #0f172a, #101c39);' : undefined}>
   <div class="mx-auto max-w-[var(--container-max-width)] px-[var(--container-padding-x)]">
     {columns.length > 0 && (
       <div class={`grid gap-8 ${columns.length === 1 ? 'grid-cols-1' : columns.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>

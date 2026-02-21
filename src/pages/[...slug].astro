@@ -373,8 +373,10 @@ const pageTitle = pageComponents[0]?.content?.headline ||
 
     try {
       return (
-        <div class={sectionBgClass}>
-          <Component {...normalizedProps} />
+        <div class={sectionBgClass + ' theme-block-shell'} data-component={pc.slug} data-order={index + 1}>
+          <div class="theme-block-inner">
+            <Component {...normalizedProps} />
+          </div>
         </div>
       );
     } catch (error) {

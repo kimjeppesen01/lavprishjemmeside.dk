@@ -171,8 +171,10 @@ const pageDescription = pageMeta?.meta_description;
           normalizedProps.instanceId = pc.id;
           const sectionBgClass = index % 2 === 0 ? 'section-bg-page' : 'section-bg-alt';
           return (
-            <div class={sectionBgClass}>
-              <Component {...normalizedProps} />
+            <div class={sectionBgClass + ' theme-block-shell'} data-component={pc.slug} data-order={index + 1}>
+              <div class="theme-block-inner">
+                <Component {...normalizedProps} />
+              </div>
             </div>
           );
         })}

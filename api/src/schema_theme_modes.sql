@@ -59,3 +59,22 @@ ON DUPLICATE KEY UPDATE
   description_da = VALUES(description_da),
   settings = VALUES(settings),
   is_default = VALUES(is_default);
+
+-- Normalize legacy preset naming/labels to v1.1 terms.
+UPDATE theme_presets
+SET
+  label_da = 'Simple',
+  description_da = 'Kendt professionel stil med klar struktur og klassisk business-layout.',
+  settings = JSON_SET(settings, '$.theme_mode', 'simple')
+WHERE
+  LOWER(name) IN ('simple', 'professionel', 'professional')
+  OR LOWER(COALESCE(label_da, '')) IN ('simple', 'professionel', 'professional');
+
+UPDATE theme_presets
+SET
+  label_da = 'Modern',
+  description_da = 'Markant redesign med Material-inspirerede flader, motion og stærk visuel rytme.',
+  settings = JSON_SET(settings, '$.theme_mode', 'modern')
+WHERE
+  LOWER(name) IN ('modern', 'minimalistisk', 'minimalistic')
+  OR LOWER(COALESCE(label_da, '')) IN ('modern', 'minimalistisk', 'minimalistic');

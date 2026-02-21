@@ -277,9 +277,18 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
                 padding: 1rem;
                 backdrop-filter: blur(var(--surface-backdrop-blur));
               }
+
+              .theme-preview-shell[data-theme='modern'] {
+                background:
+                  radial-gradient(420px 180px at 8% 0%, rgba(26,115,232,0.16), transparent 70%),
+                  radial-gradient(380px 160px at 100% 0%, rgba(50,121,249,0.14), transparent 72%),
+                  var(--color-bg-page);
+                border-color: color-mix(in srgb, var(--color-primary) 26%, var(--theme-outline));
+                box-shadow: 0 16px 34px -20px rgba(24, 45, 94, 0.36);
+              }
             </style>
 
-            <div class="space-y-6 theme-preview-shell">
+            <div id="theme-preview-shell" data-theme="simple" class="space-y-6 theme-preview-shell">
               <!-- Primary Button -->
               <div>
                 <p class="text-xs text-gray-500 uppercase tracking-wider mb-2">Primær knap</p>
@@ -795,6 +804,9 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
         css = css.replace(/--theme-outline: [^;]+;/, '--theme-outline: rgba(17,24,39,0.12);');
         css = css.replace(/--surface-backdrop-blur: [^;]+;/, '--surface-backdrop-blur: 0px;');
       }
+
+      const previewShell = document.getElementById('theme-preview-shell');
+      if (previewShell) previewShell.setAttribute('data-theme', themeMode);
 
       // Shapes: map enum to CSS value (preview uses simple rem/shadow)
       const borderRadius = document.getElementById('border_radius');

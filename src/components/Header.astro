@@ -5,6 +5,8 @@ import MegaMenu from './MegaMenu.astro';
 
 const stickyClass = designFeatures.stickyHeader ? 'sticky top-0 z-40' : '';
 const layout = headerFooter.header_layout || 'regular';
+const themeMode = designFeatures.themeMode === 'modern' ? 'modern' : 'simple';
+const effectiveLayout = themeMode === 'modern' && layout === 'regular' ? 'modern' : layout;
 const logoUrl = headerFooter.header_logo_url || '/favicon.svg';
 const logoText = headerFooter.header_logo_text || (typeof import.meta.env.PUBLIC_SITE_URL === 'string' && import.meta.env.PUBLIC_SITE_URL ? new URL(import.meta.env.PUBLIC_SITE_URL).hostname : 'lavprishjemmeside.dk');
 const menu1 = Array.isArray(headerFooter.header_menu_1) ? headerFooter.header_menu_1 : [];
@@ -13,7 +15,7 @@ const megaHtml = headerFooter.header_mega_html;
 const megaMenu = headerFooter.header_mega_menu;
 ---
 
-{layout === 'modern-mega' ? (
+{effectiveLayout === 'modern-mega' ? (
   <header id="main-header" class={stickyClass}>
     <MegaMenu
       menu={Array.isArray(megaMenu) && megaMenu.length > 0 ? megaMenu : undefined}
@@ -22,11 +24,11 @@ const megaMenu = headerFooter.header_mega_menu;
       ctaLinks={menu2}
     />
   </header>
-) : layout === 'mega' && megaHtml ? (
+) : effectiveLayout === 'mega' && megaHtml ? (
   <header id="main-header" class={`${stickyClass} glass-surface border-b border-[var(--color-border)]`}>
     <div class="mega-nav-wrapper" set:html={megaHtml} />
   </header>
-) : layout === 'modern' ? (
+) : effectiveLayout === 'modern' ? (
   <header id="main-header" class={`${stickyClass} glass-surface border-b border-[var(--color-border)] transition-shadow duration-300`}>
     <nav class="mx-auto max-w-[var(--container-max-width)] px-[var(--container-padding-x)] py-5 flex flex-col items-center gap-4">
       <a href="/" class="flex items-center gap-2">

@@ -189,3 +189,137 @@ html.smooth-scroll {
     0 0 0 2px color-mix(in srgb, var(--color-bg-page) 100%, transparent),
     0 0 0 4px color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
+
+/* --- Theme: Modern (v1.1) --- */
+html[data-theme='modern'] {
+  color-scheme: light;
+}
+
+html[data-theme='modern'] body.theme-modern {
+  background:
+    radial-gradient(1200px 520px at -10% -12%, color-mix(in srgb, var(--color-primary) 18%, transparent), transparent 72%),
+    radial-gradient(1100px 520px at 110% 0%, color-mix(in srgb, var(--color-secondary) 14%, transparent), transparent 70%),
+    linear-gradient(180deg, #f8f9fc 0%, #f5f7fb 45%, #f8f9fc 100%);
+  font-family: var(--font-body);
+}
+
+html[data-theme='modern'] body.theme-modern::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-primary) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 8%, transparent) 1px, transparent 1px);
+  background-size: 36px 36px;
+  opacity: 0.28;
+}
+
+html[data-theme='modern'] .theme-block-shell {
+  position: relative;
+  isolation: isolate;
+  padding-block: clamp(0.35rem, 0.8vw, 0.65rem);
+}
+
+html[data-theme='modern'] .theme-block-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0.1rem clamp(0.4rem, 2.2vw, 2.2rem);
+  border-radius: clamp(1.25rem, 2.5vw, 2.25rem);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 12%, var(--color-border));
+  background: linear-gradient(135deg, color-mix(in srgb, #fff 92%, var(--color-primary) 8%), color-mix(in srgb, #fff 85%, var(--color-secondary-light) 15%));
+  box-shadow: 0 14px 34px -24px rgba(24, 45, 94, 0.35);
+  z-index: -1;
+}
+
+html[data-theme='modern'] .theme-block-shell:nth-child(2n)::before {
+  background: linear-gradient(125deg, color-mix(in srgb, #fff 90%, var(--color-secondary-light) 10%), color-mix(in srgb, #fff 84%, var(--color-primary-light) 16%));
+}
+
+html[data-theme='modern'] .theme-block-inner {
+  max-width: min(96vw, 1500px);
+  margin-inline: auto;
+}
+
+html[data-theme='modern'] .theme-block-inner > section,
+html[data-theme='modern'] .theme-block-inner > header {
+  border-radius: clamp(1rem, 2vw, 1.75rem);
+}
+
+html[data-theme='modern'] main h1,
+html[data-theme='modern'] main h2,
+html[data-theme='modern'] main h3 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+html[data-theme='modern'] main p,
+html[data-theme='modern'] main li {
+  line-height: 1.62;
+  color: var(--color-text-secondary);
+}
+
+html[data-theme='modern'] main a[class*='bg-'],
+html[data-theme='modern'] main button {
+  transition:
+    transform var(--motion-duration-medium) var(--motion-ease-emphasis),
+    box-shadow var(--motion-duration-medium) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+html[data-theme='modern'] main a[class*='bg-']:hover,
+html[data-theme='modern'] main button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -12px color-mix(in srgb, var(--color-primary) 60%, transparent);
+}
+
+html[data-theme='modern'] main article,
+html[data-theme='modern'] main .card-modern {
+  border-radius: clamp(1rem, 1.8vw, 1.4rem);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 14%, var(--color-border));
+  background: color-mix(in srgb, #fff 93%, var(--color-primary-light));
+  box-shadow: 0 12px 28px -22px rgba(20, 43, 96, 0.35);
+}
+
+html[data-theme='modern'] .theme-block-shell[data-component='hero-section']::before {
+  inset: clamp(0.2rem, 1vw, 0.8rem) clamp(0.4rem, 2.2vw, 2.4rem);
+  border-width: 0;
+  background:
+    radial-gradient(180px 180px at 8% 14%, color-mix(in srgb, var(--color-primary) 30%, transparent), transparent 70%),
+    radial-gradient(220px 220px at 82% 24%, color-mix(in srgb, var(--color-secondary) 24%, transparent), transparent 68%),
+    linear-gradient(145deg, color-mix(in srgb, #fff 94%, var(--color-primary-light) 6%), color-mix(in srgb, #fff 88%, var(--color-secondary-light) 12%));
+  box-shadow: 0 24px 44px -28px rgba(18, 47, 130, 0.32);
+}
+
+html[data-theme='modern'] .theme-block-shell[data-component='hero-section'] .eyebrow {
+  background: color-mix(in srgb, var(--color-primary-light) 75%, #fff);
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  color: color-mix(in srgb, var(--color-primary) 78%, #172554);
+}
+
+html[data-theme='modern'] .modern-pre-reveal {
+  opacity: 0.001;
+  transform: translateY(34px) scale(0.985);
+  filter: blur(2px);
+  transition:
+    opacity 0.62s var(--motion-ease-emphasis) var(--modern-reveal-delay, 0ms),
+    transform 0.62s var(--motion-ease-emphasis) var(--modern-reveal-delay, 0ms),
+    filter 0.62s var(--motion-ease-standard) var(--modern-reveal-delay, 0ms);
+}
+
+html[data-theme='modern'] .modern-pre-reveal.modern-revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme='modern'] .modern-pre-reveal {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
+}

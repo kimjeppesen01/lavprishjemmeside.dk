@@ -249,7 +249,14 @@ router.post('/apply-preset', requireAuth, async (req, res) => {
 
     const preset = presets[0];
     const settings = JSON.parse(preset.settings);
-    const presetThemeMode = settings.theme_mode || (preset.name === 'modern' ? 'modern' : 'simple');
+    const presetName = String(preset.name || '').toLowerCase();
+    const presetLabel = String(preset.label_da || '').toLowerCase();
+    const inferredModern =
+      presetName.includes('modern') ||
+      presetName.includes('minimal') ||
+      presetLabel.includes('modern') ||
+      presetLabel.includes('minimal');
+    const presetThemeMode = settings.theme_mode || (inferredModern ? 'modern' : 'simple');
 
     // Apply preset settings
     const updates = [];

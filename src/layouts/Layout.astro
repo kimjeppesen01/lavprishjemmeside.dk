@@ -55,10 +55,11 @@ const baseSchemas = [
 ];
 
 const allSchemas = [...baseSchemas, ...schemaMarkup];
+const themeMode = designFeatures.themeMode === 'modern' ? 'modern' : 'simple';
 ---
 
 <!doctype html>
-<html lang="da" class:list={[designFeatures.smoothScroll && 'smooth-scroll']}>
+<html lang="da" data-theme={themeMode} class:list={[designFeatures.smoothScroll && 'smooth-scroll']}>
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -96,7 +97,7 @@ const allSchemas = [...baseSchemas, ...schemaMarkup];
     </script>
   </head>
   <body
-  class:list={['min-h-screen flex flex-col bg-[var(--color-bg-page)] text-[var(--color-text-primary)] antialiased', designFeatures.borderRadius === 'full' && 'radius-full']}
+  class:list={['min-h-screen flex flex-col bg-[var(--color-bg-page)] text-[var(--color-text-primary)] antialiased theme-app', `theme-${themeMode}`, designFeatures.borderRadius === 'full' && 'radius-full']}
 >
     {designFeatures.pageLoader && (
     <div id="page-loader" class="page-loader" aria-hidden="true">
@@ -129,5 +130,27 @@ const allSchemas = [...baseSchemas, ...schemaMarkup];
       })();
     </script>
     )}
+    <script is:inline>
+      (function () {
+        if (document.documentElement.dataset.theme !== 'modern') return;
+        const targets = Array.from(document.querySelectorAll(
+          'main > .theme-block-shell, main > header, main > section, main .theme-modern-reveal'
+        ));
+        if (!targets.length || typeof IntersectionObserver === 'undefined') return;
+        const uniqueTargets = targets.filter((el, idx) => targets.indexOf(el) === idx);
+        uniqueTargets.forEach((el, index) => {
+          el.classList.add('modern-pre-reveal');
+          el.style.setProperty('--modern-reveal-delay', Math.min(index * 45, 360) + 'ms');
+        });
+        const io = new IntersectionObserver((entries) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            entry.target.classList.add('modern-revealed');
+            io.unobserve(entry.target);
+          }
+        }, { rootMargin: '0px 0px -12% 0px', threshold: 0.14 });
+        uniqueTargets.forEach((el) => io.observe(el));
+      })();
+    </script>
   </body>
 </html>
