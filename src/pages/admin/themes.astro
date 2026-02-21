@@ -16,6 +16,9 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
       <p class="text-red-700 mb-2" id="error-text"></p>
       <button onclick="window.location.reload()" class="text-red-600 underline text-sm">Prøv igen</button>
     </div>
+    <div id="warning" class="hidden bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+      <p class="text-amber-800 text-sm" id="warning-text"></p>
+    </div>
 
     <div id="content" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
       <section class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -72,6 +75,13 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
         if (error) error.classList.remove('hidden');
       }
 
+      function setWarning(msg) {
+        const warning = document.getElementById('warning');
+        const warningText = document.getElementById('warning-text');
+        if (warningText) warningText.textContent = msg;
+        if (warning) warning.classList.remove('hidden');
+      }
+
       function renderCards() {
         const holder = document.getElementById('theme-cards');
         if (!holder) return;
@@ -103,7 +113,14 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
           const res = await fetch(API + '/theme-settings', {
             headers: { Authorization: 'Bearer ' + token }
           });
-          if (!res.ok) throw new Error('Kunne ikke hente temaindstillinger');
+          if (!res.ok) {
+            let detail = '';
+            try {
+              const body = await res.json();
+              detail = body && body.error ? ` (${body.error})` : '';
+            } catch (_) {}
+            throw new Error(`Kunne ikke hente temaindstillinger${detail}`);
+          }
           const data = await res.json();
           current = {
             active_theme_key: data.active_theme_key || 'simple',
@@ -116,8 +133,15 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
           document.getElementById('loading')?.classList.add('hidden');
           document.getElementById('content')?.classList.remove('hidden');
         } catch (err) {
+          // Failsafe: still allow UI interaction with defaults.
+          current = { active_theme_key: 'simple', motion_profile: 'standard' };
+          const motion = document.getElementById('motion_profile');
+          if (motion) motion.value = current.motion_profile;
+          renderCards();
+          renderActive();
           document.getElementById('loading')?.classList.add('hidden');
-          setError(err.message || 'Fejl ved hentning');
+          document.getElementById('content')?.classList.remove('hidden');
+          setWarning((err && err.message) ? err.message + '. Viser standardværdier.' : 'Kunne ikke hente temaindstillinger. Viser standardværdier.');
         }
       }
 

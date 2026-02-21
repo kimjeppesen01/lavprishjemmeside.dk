@@ -7,8 +7,7 @@ CREATE TABLE IF NOT EXISTS site_theme_settings (
   motion_profile ENUM('standard','reduced','expressive') NOT NULL DEFAULT 'standard',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   updated_by INT DEFAULT NULL,
-  UNIQUE KEY idx_site_id (site_id),
-  FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
+  UNIQUE KEY idx_site_id (site_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Initial seed for canonical single-site install.
