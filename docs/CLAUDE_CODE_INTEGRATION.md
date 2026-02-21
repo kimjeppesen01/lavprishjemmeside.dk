@@ -186,14 +186,14 @@ Repo path convention is fixed: `/home/theartis/repositories/<domain>` where `dom
 
 ## 12. Kanban and documentation task
 
-A Kanban item **“Document Claude Code integration”** can be added to the **in progress** column so the board reflects that this integration is documented. To add it on a deployed system, run:
+A Kanban item **”Document Claude Code integration”** can be added to the **Plans** column so the board reflects that this integration is documented. To add it on a deployed system, run:
 
 ```sql
 INSERT INTO kanban_items (title, description, column_name, priority, assigned_to, sort_order)
 VALUES (
   'Document Claude Code integration',
   'Full reference doc: docs/CLAUDE_CODE_INTEGRATION.md. Covers architecture, API, auth, safeguards, env, troubleshooting.',
-  'in_progress',
+  'plans',
   'medium',
   'human',
   5

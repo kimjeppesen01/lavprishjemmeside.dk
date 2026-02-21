@@ -30,6 +30,14 @@ HEAVY_KEYWORDS: frozenset[str] = frozenset(
         "optimize",
         "strategic",
         "multi-project",
+        # v1.1: Planner persona triggers (always route to Sonnet)
+        "plan",
+        "blueprint",
+        "spec",
+        "specification",
+        "implementation plan",
+        "design plan",
+        "build plan",
     }
 )
 
@@ -48,9 +56,11 @@ def select_model(text: str, model_default: str, model_heavy: str) -> tuple[str, 
     """
     stripped = text.strip()
 
-    # Explicit override — highest priority
-    if stripped.lower().startswith("!sonnet"):
-        return model_heavy, "explicit !sonnet override"
+    # Explicit overrides — highest priority
+    if stripped.lower().startswith("!sonnet") or stripped.lower().startswith("!plan"):
+        return model_heavy, "explicit Sonnet/Planner override"
+    if stripped.lower().startswith("!brainstorm"):
+        return model_default, "explicit Brainstormer override (Haiku)"
 
     # Keyword match — case-insensitive substring search
     lower = stripped.lower()

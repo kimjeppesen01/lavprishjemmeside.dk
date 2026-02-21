@@ -12,7 +12,7 @@
 ## Capability Status
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Slack messaging | ✅ Live | Dual accounts: Haiku posts cheap replies, Sonnet posts heavy replies |
+| Slack messaging | ✅ Live | Dual accounts: Brainstormer (Haiku model) refines ideas via multi-turn state machine; Planner (Sonnet model) designs 10-section implementation plans with cost estimates |
 | Multi-turn memory | ✅ Live | SQLite + token-aware sliding window, session compression at 20 turns |
 | File read/write | ✅ Live | Scoped to safe roots, write requires approval |
 | Shell commands | ✅ Live | Always requires approval, blocked list enforced |

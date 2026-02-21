@@ -1,10 +1,12 @@
 {
+  "themeMode": "simple",
+  "motionProfile": "standard",
   "smoothScroll": true,
   "grainOverlay": true,
   "pageLoader": true,
   "stickyHeader": true,
   "pageLoaderText": "Indlæser...",
-  "pageLoaderShowLogo": true,
+  "pageLoaderShowLogo": false,
   "pageLoaderDuration": 2.5,
-  "borderRadius": "medium"
+  "borderRadius": "large"
 }

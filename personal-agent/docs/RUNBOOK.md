@@ -28,17 +28,17 @@ In the app settings → **OAuth & Permissions** → scroll to **User Token Scope
 
 **Do NOT add bot token scopes** — only user token scopes.
 
-### Step 3 — Get Token for Account 1 (Haiku)
+### Step 3 — Get Token for Account 1 (Brainstormer)
 
-1. Make sure you are logged into Slack in your browser **as Account 1** (the Haiku account)
+1. Make sure you are logged into Slack in your browser **as Account 1** (the Brainstormer account)
 2. In the app → **OAuth & Permissions** → click **Install to Workspace**
 3. Click **Allow** on the OAuth consent screen
 4. Copy the **User OAuth Token** — it starts with `xoxp-`
 5. Paste it as `SLACK_USER_TOKEN_HAIKU=xoxp-...` in your `.env`
 
-### Step 4 — Get Token for Account 2 (Sonnet)
+### Step 4 — Get Token for Account 2 (Planner)
 
-1. **Log out** of Slack in your browser and log in **as Account 2** (the Sonnet account)
+1. **Log out** of Slack in your browser and log in **as Account 2** (the Planner account)
 2. Go back to [api.slack.com/apps](https://api.slack.com/apps) → find your app → **OAuth & Permissions**
 3. Click **Install to Workspace** (or **Reinstall**)
 4. Click **Allow**
@@ -62,11 +62,11 @@ In the app settings → **OAuth & Permissions** → scroll to **User Token Scope
 
 ### Step 7 — Invite Both Accounts to the Channel
 
-Both Haiku and Sonnet accounts must be members of the control channel so they can read and post:
+Both Brainstormer and Planner accounts must be members of the control channel so they can read and post:
 
 ```
-/invite @haiku-account-name
-/invite @sonnet-account-name
+/invite @brainstormer-account-name
+/invite @planner-account-name
 ```
 
 ---
@@ -88,10 +88,10 @@ bash scripts/install_service.sh
 ```
 
 **Signs it's working:**
-- Both tokens pass `auth.test` (you'll see log lines: `Token verified | account=Haiku | user=...`)
+- Both tokens pass `auth.test` (you'll see log lines: `Token verified | account=Brainstormer | user=...` and `account=Planner`)
 - Polling starts: `Poller started | channel=C... | interval=5s`
-- Send a message in your control channel → Haiku account replies
-- Send `!sonnet what is the architecture of this project` → Sonnet account replies
+- Send a message in your control channel → Brainstormer account replies
+- Send `!plan what is the architecture of this project` → Planner account replies
 
 ---
 
@@ -99,9 +99,10 @@ bash scripts/install_service.sh
 
 | Command | What it does | Posted by |
 |---------|-------------|-----------|
-| `!status` | Agent status, model, budget | Haiku account |
-| `!help` | Command list | Haiku account |
-| `!sonnet <prompt>` | Force Sonnet for this message | Sonnet account |
+| `!status` | Agent status, model, budget | Brainstormer account |
+| `!help` | Command list | Brainstormer account |
+| `!plan <prompt>` | Force Planner for this message | Planner account |
+| `!brainstorm <prompt>` | Force Brainstormer for this message | Brainstormer account |
 
 ---
 
@@ -147,6 +148,6 @@ tail -f audit/logs/system/stderr.log
 | `Token failed auth.test` | Check `xoxp-` token in `.env`; regenerate if expired |
 | Agent not posting | Verify both accounts are members of the control channel |
 | `conversations_history: channel_not_found` | Check `SLACK_CONTROL_CHANNEL_ID` is correct |
-| Only Haiku replies (never Sonnet) | Check `SLACK_USER_TOKEN_SONNET` is set and different from Haiku token |
+| Only Brainstormer replies (Planner never triggered) | Check `SLACK_USER_TOKEN_SONNET` is set and different from Brainstormer token; also check Planner keyword triggers (`!plan`, `plan this`, `blueprint`, `spec`) |
 | Agent doesn't start at login | Run `bash scripts/install_service.sh` again; check plist path |
 | Context size > 8KB at startup | Check `MEMORY_STARTUP_FILES` — remove any large files |

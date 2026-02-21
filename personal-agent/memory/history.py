@@ -16,6 +16,7 @@ Session lifecycle:
 """
 from __future__ import annotations
 
+import json
 import logging
 import sqlite3
 import uuid
@@ -179,4 +180,30 @@ class ConversationHistory:
             conn.execute(
                 "UPDATE sessions SET summary = ? WHERE id = ?",
                 (summary, session_id),
+            )
+
+    # ------------------------------------------------------------------
+    # Persona state machine metadata (v1.1 Brainstormer / Planner)
+    # ------------------------------------------------------------------
+
+    def get_session_metadata(self, session_id: str) -> dict:
+        """Return the parsed JSON metadata dict for a session, or empty dict."""
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT session_metadata FROM sessions WHERE id = ?",
+                (session_id,),
+            ).fetchone()
+        if row and row[0]:
+            try:
+                return json.loads(row[0])
+            except (json.JSONDecodeError, TypeError):
+                return {}
+        return {}
+
+    def set_session_metadata(self, session_id: str, data: dict) -> None:
+        """Persist the JSON metadata dict for a session (overwrites existing)."""
+        with self._conn() as conn:
+            conn.execute(
+                "UPDATE sessions SET session_metadata = ? WHERE id = ?",
+                (json.dumps(data), session_id),
             )

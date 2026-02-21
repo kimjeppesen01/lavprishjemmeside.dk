@@ -104,6 +104,12 @@ MIGRATIONS: list[str] = [
 
     INSERT OR IGNORE INTO schema_version (version) VALUES (3);
     """,
+    # Migration 004 — persona state machine metadata (Brainstormer/Planner workflows)
+    """
+    ALTER TABLE sessions ADD COLUMN session_metadata TEXT;
+
+    INSERT OR IGNORE INTO schema_version (version) VALUES (4);
+    """,
 ]
 
 

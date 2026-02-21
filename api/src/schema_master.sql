@@ -20,9 +20,9 @@ CREATE TABLE IF NOT EXISTS kanban_items (
   id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   description TEXT,
-  column_name ENUM('backlog','in_progress','review','done') DEFAULT 'backlog',
+  column_name ENUM('ideas','plans','in_review','completed') DEFAULT 'ideas',
   priority ENUM('low','medium','high','critical') DEFAULT 'medium',
-  assigned_to ENUM('haiku','sonnet','human') DEFAULT 'human',
+  assigned_to ENUM('brainstormer','planner','human') DEFAULT 'human',
   version_target VARCHAR(20) DEFAULT NULL,
   sort_order INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS kanban_items (
 
 CREATE TABLE IF NOT EXISTS ian_heartbeat (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  agent_type ENUM('haiku','sonnet','ian') NOT NULL UNIQUE,
+  agent_type ENUM('brainstormer','planner','ian') NOT NULL UNIQUE,
   status ENUM('online','offline','busy') DEFAULT 'offline',
   current_task TEXT,
   messages_sent_today INT DEFAULT 0,
@@ -42,6 +42,6 @@ CREATE TABLE IF NOT EXISTS ian_heartbeat (
 );
 
 -- Default rows for IAN agent types
-INSERT IGNORE INTO ian_heartbeat (agent_type, status) VALUES ('haiku', 'offline');
-INSERT IGNORE INTO ian_heartbeat (agent_type, status) VALUES ('sonnet', 'offline');
+INSERT IGNORE INTO ian_heartbeat (agent_type, status) VALUES ('brainstormer', 'offline');
+INSERT IGNORE INTO ian_heartbeat (agent_type, status) VALUES ('planner', 'offline');
 INSERT IGNORE INTO ian_heartbeat (agent_type, status) VALUES ('ian', 'offline');

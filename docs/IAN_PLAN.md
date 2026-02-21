@@ -17,7 +17,9 @@
 | **Client channels** | `SLACK_CLIENT_CHANNELS` (comma-separated IDs) in `.env` — empty = control channel only |
 | **Control channel** | `SLACK_CONTROL_CHANNEL_ID` — owner commands (`!status`, `!tools`, etc.) |
 
-IAN uses the same Slack workspace, two user accounts (Haiku/Sonnet), and project_router for other projects. Client channels get lavprishjemmeside product context injected automatically.
+IAN uses the same Slack workspace, two Slack user accounts (Brainstormer + Planner), and project_router for other projects. Client channels get lavprishjemmeside product context injected automatically.
+
+**v1.1 — Brainstormer & Planner personas** (2026-02-21): The two accounts are now purpose-built workflow agents. Brainstormer (Haiku model) runs a multi-turn idea refinement state machine (`IDEATION → REFINEMENT → SYNTHESIS → APPROVED → TICKET_CREATED`). Planner (Sonnet model) loads full project context and produces 10-section implementation plans with token cost estimates. Kanban columns: Ideas, Plans, In Review, Completed. See `personal-agent/SOUL.md` and `personal-agent/docs/RUNBOOK.md`.
 
 ---
 

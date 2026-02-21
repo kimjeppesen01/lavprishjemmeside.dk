@@ -627,7 +627,13 @@ Full e-commerce: product catalog, Quickpay (Dankort, Visa/MC, MobilePay), cart, 
 ### IAN — Client Support AI
 **Spec**: [docs/IAN_PLAN.md](docs/IAN_PLAN.md) | **Product context**: [personal-agent/projects/lavprishjemmeside.md](personal-agent/projects/lavprishjemmeside.md)
 
-IAN lives in `personal-agent/` within this repo. Slack-based AI that monitors client channels and answers product questions. Stays silent when owner chats directly with clients. Run: `cd personal-agent && source .venv/bin/activate && python -m agent.main`. Supports multi-client via `SLACK_CLIENT_CHANNELS`. Integration ideas: admin widget, AI-assembler link, product-context sync, future Shopping/Pro/multi-domain support — see IAN_PLAN.md.
+IAN lives in `personal-agent/` within this repo. Slack-based AI that monitors client channels and answers product questions. Stays silent when owner chats directly with clients. Run: `cd personal-agent && source .venv/bin/activate && python -m agent.main`. Supports multi-client via `SLACK_CLIENT_CHANNELS`.
+
+**v1.1 — Two workflow personas (2026-02-21):**
+- **Brainstormer** (Haiku model): Multi-turn idea refinement state machine (`IDEATION → REFINEMENT → SYNTHESIS → APPROVED → TICKET_CREATED`). Never accepts a raw idea immediately — asks clarifying questions, suggests improvements, synthesizes a structured brief. Creates Kanban card in "Ideas" on user approval.
+- **Planner** (Sonnet model): Loads full project context (BRAND_VISION.md + PROJECT_CONTEXT.md + all docs) before every call. Produces 10-section implementation plans with API token cost estimate (+ ×20 real-world rate). Creates Kanban card in "Plans" when plan is complete.
+- **Kanban columns**: Ideas, Plans, In Review, Completed (replaces backlog/in_progress/review/done).
+- See [personal-agent/SOUL.md](personal-agent/SOUL.md) and [personal-agent/docs/RUNBOOK.md](personal-agent/docs/RUNBOOK.md) for full operating spec.
 
 ### Future Implementations (Nice-to-Have)
 **Spec**: [docs/Future_implementations.md](docs/Future_implementations.md)

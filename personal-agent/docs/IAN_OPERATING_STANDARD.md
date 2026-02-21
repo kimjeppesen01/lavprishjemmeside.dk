@@ -13,6 +13,8 @@ IAN may execute only these standardized task types:
 3. `runbook_guidance`
 4. `light_triage`
 5. `request_capture`
+6. `idea_brainstorm` — multi-turn idea refinement via Brainstormer persona (Haiku)
+7. `plan_design` — implementation plan creation via Planner persona (Sonnet)
 
 Any request outside these types is out of scope and must be converted into a backlog request.
 
@@ -44,12 +46,33 @@ For every request:
 
 ## Model Policy
 
-- Default model: Haiku.
+- Default model: Haiku (Brainstormer persona).
 - Sonnet is allowed only for predefined heavy classes:
   - architecture analysis
   - security analysis
   - complex cross-source synthesis
+  - `plan_design` intent (Planner persona — always Sonnet)
 - Model escalation is rule-based, not freeform.
+
+## Persona Routing (v1.1)
+
+Before model routing, IAN applies persona routing (pure function, no API call):
+
+- Messages with idea/brainstorm keywords → **Brainstormer** persona (Haiku model)
+  - Explicit prefix: `!brainstorm`
+  - Triggers: "idea", "brainstorm", "concept", "what if", "thinking about", etc.
+- Messages with plan/blueprint/spec keywords → **Planner** persona (Sonnet model)
+  - Explicit prefix: `!plan`
+  - Triggers: "plan", "blueprint", "spec", "implementation plan", etc.
+- All other messages → General IAN handler (existing behavior, unchanged)
+
+**Session continuity**: once a persona workflow is active (non-terminal state),
+all subsequent messages in that session route to the same persona.
+Terminal states: Brainstormer → `TICKET_CREATED`, Planner → `PLAN_CREATED`
+
+**Workflow docs**:
+- Brainstormer: `personal-agent/docs/BRAINSTORMER_WORKFLOW.md`
+- Planner: `personal-agent/docs/PLANNER_WORKFLOW.md`
 
 ## Response Contracts
 

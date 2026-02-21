@@ -417,7 +417,7 @@ router.put('/sites/:id', requireAuth, requireMaster, async (req, res) => {
 router.get('/kanban', requireAuth, requireMaster, async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM kanban_items ORDER BY column_name, sort_order ASC, id ASC');
-    const grouped = { backlog: [], in_progress: [], review: [], done: [] };
+    const grouped = { ideas: [], plans: [], in_review: [], completed: [] };
     for (const r of rows) {
       if (grouped[r.column_name]) grouped[r.column_name].push(r);
     }
@@ -432,7 +432,7 @@ router.get('/kanban', requireAuth, requireMaster, async (req, res) => {
 router.get('/kanban-tasks', requireAuth, requireMaster, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, title, description, column_name, priority, assigned_to, version_target FROM kanban_items ORDER BY FIELD(column_name, "in_progress","backlog","review","done"), sort_order ASC, id ASC'
+      'SELECT id, title, description, column_name, priority, assigned_to, version_target FROM kanban_items ORDER BY FIELD(column_name, "plans","ideas","in_review","completed"), sort_order ASC, id ASC'
     );
     res.json(rows);
   } catch (err) {
@@ -454,7 +454,7 @@ router.post('/kanban', [
   try {
     const [result] = await pool.query(
       'INSERT INTO kanban_items (title, description, column_name, priority, assigned_to, version_target, sort_order) VALUES (?,?,?,?,?,?,?)',
-      [title, description || null, column_name || 'backlog', priority || 'medium', assigned_to || 'human', version_target || null, sort_order || 0]
+      [title, description || null, column_name || 'ideas', priority || 'medium', assigned_to || 'human', version_target || null, sort_order || 0]
     );
     res.json({ id: result.insertId });
   } catch (err) {

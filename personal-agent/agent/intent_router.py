@@ -18,6 +18,8 @@ class IntentType(str, Enum):
     RUNBOOK_GUIDANCE = "runbook_guidance"
     LIGHT_TRIAGE = "light_triage"
     REQUEST_CAPTURE = "request_capture"
+    IDEA_BRAINSTORM = "idea_brainstorm"   # v1.1: Brainstormer persona workflow
+    PLAN_DESIGN = "plan_design"           # v1.1: Planner persona workflow
     DEV_HANDOFF = "dev_handoff"
     NEEDS_CLARIFICATION = "needs_clarification"
     OUT_OF_SCOPE = "out_of_scope"
@@ -30,6 +32,8 @@ ALLOWED_IN_SCOPE_INTENTS: frozenset[IntentType] = frozenset(
         IntentType.RUNBOOK_GUIDANCE,
         IntentType.LIGHT_TRIAGE,
         IntentType.REQUEST_CAPTURE,
+        IntentType.IDEA_BRAINSTORM,
+        IntentType.PLAN_DESIGN,
     }
 )
 
@@ -56,6 +60,37 @@ _DEV_KEYWORDS = frozenset(
 )
 
 _INTENT_KEYWORDS: dict[IntentType, frozenset[str]] = {
+    IntentType.IDEA_BRAINSTORM: frozenset(
+        {
+            "idea",
+            "brainstorm",
+            "concept",
+            "thinking about",
+            "what if",
+            "explore",
+            "could we",
+            "imagine",
+            "feature idea",
+            "wild idea",
+            "what about",
+            "how about",
+        }
+    ),
+    IntentType.PLAN_DESIGN: frozenset(
+        {
+            "plan",
+            "blueprint",
+            "spec",
+            "specification",
+            "implementation plan",
+            "design plan",
+            "build plan",
+            "plan this",
+            "plan for",
+            "plan out",
+            "technical design",
+        }
+    ),
     IntentType.FAQ_ANSWER: frozenset(
         {
             "what is",
@@ -210,5 +245,9 @@ def allowed_tools_for_intent(intent: IntentType) -> frozenset[str]:
         return frozenset({"filesystem_read", "web_search"})
     if intent == IntentType.REQUEST_CAPTURE:
         return frozenset()
+    if intent == IntentType.IDEA_BRAINSTORM:
+        return frozenset()  # Brainstormer uses dialogue only — no tool access
+    if intent == IntentType.PLAN_DESIGN:
+        return frozenset({"filesystem_read", "filesystem_list"})  # reads docs, no web
     return frozenset()
 

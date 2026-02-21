@@ -23,12 +23,21 @@ from typing import Any, Callable
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
+from agent.brainstormer import (
+    advance_state,
+    build_system_prompt as brainstorm_system_prompt,
+    build_ticket_fields,
+    detect_approval_signal,
+    strip_sentinel,
+)
 from agent.budget_tracker import BudgetTracker
 from agent.claude_client import ClaudeClient
 from agent.config import Config
 from agent.handoff import build_claude_code_handoff
 from agent.intent_router import IntentType, allowed_tools_for_intent, classify_intent
 from agent.model_router import select_model
+from agent.persona_router import Persona, select_persona
+from agent.planner_context import PlannerContextLoader
 from agent.project_router import ProjectRouter
 from agent.security import sanitise_input
 from audit.logger import AuditLogger
@@ -327,6 +336,211 @@ def make_handler(
             "- next_step: Triage ticket and assign owner (SLA: within 1 business day)."
         )
 
+    planner_loader = PlannerContextLoader(cfg.project_root)
+
+    def _handle_brainstormer(
+        message: dict,
+        session_id: str,
+        text: str,
+        channel: str,
+        thread_ts: str | None,
+    ) -> None:
+        """
+        Brainstormer persona handler — multi-turn idea refinement workflow.
+        Uses Haiku model. State persisted in session_metadata.
+        """
+        meta = history.get_session_metadata(session_id)
+        if meta.get("persona") != Persona.BRAINSTORMER:
+            # First entry — initialise state
+            meta = {
+                "persona": Persona.BRAINSTORMER,
+                "brainstorm_state": "IDEATION",
+                "raw_idea": text,
+                "refined_idea": None,
+            }
+
+        state = meta.get("brainstorm_state", "IDEATION")
+        raw_idea = meta.get("raw_idea", text)
+        refined_idea = meta.get("refined_idea")
+
+        # Build state-specific system context
+        extra_ctx = brainstorm_system_prompt(state, raw_idea, refined_idea)
+
+        history.add_message(session_id, "user", text)
+        messages = history.get_messages(session_id)
+
+        try:
+            reply, usage = _run_with_tools(
+                claude=claude,
+                registry=registry,
+                approval_gate=approval_gate,
+                messages=messages,
+                model=cfg.anthropic.model_default,  # Brainstormer always uses Haiku
+                extra_system_context=extra_ctx,
+                allowed_tools=frozenset(),  # No tools for Brainstormer
+                audit=audit,
+            )
+        except Exception:
+            logger.exception("Brainstormer Claude API error")
+            _post(haiku_client, channel, ":red_circle: Brainstormer error. Try again.", thread_ts)
+            return
+
+        if usage is None:
+            _post(haiku_client, channel, reply, thread_ts)
+            return
+
+        # Advance state
+        next_state = advance_state(state, reply, text)
+        meta["brainstorm_state"] = next_state
+
+        # If approved, create a Kanban ticket and update state to terminal
+        if detect_approval_signal(reply):
+            synthesis_text = meta.get("synthesis_text", "")
+            ticket_fields = build_ticket_fields(raw_idea, refined_idea or raw_idea, synthesis_text)
+            ticket_id, _ = _create_backlog_ticket(
+                message=message,
+                intent=IntentType.IDEA_BRAINSTORM,
+                handoff_target="planner",
+                title_prefix=ticket_fields["title"],
+            )
+            meta["brainstorm_state"] = "TICKET_CREATED"
+            meta["ticket_id"] = ticket_id
+            logger.info("brainstormer.ticket_created id=%s", ticket_id)
+
+        # Store synthesis text for ticket building on next turn
+        if state == "SYNTHESIS":
+            meta["synthesis_text"] = reply
+
+        # Track refinements
+        if state == "REFINEMENT":
+            meta["refined_idea"] = text
+
+        history.set_session_metadata(session_id, meta)
+
+        # Record usage
+        cache_written = getattr(usage, "cache_creation_input_tokens", 0) or 0
+        cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
+        budget.record_usage(
+            cfg.anthropic.model_default,
+            usage.input_tokens, usage.output_tokens,
+            cache_written, cache_read,
+        )
+        history.add_message(
+            session_id, role="assistant", content=reply,
+            model=cfg.anthropic.model_default,
+            input_tokens=usage.input_tokens, output_tokens=usage.output_tokens,
+            cache_written=cache_written, cache_read=cache_read,
+        )
+
+        clean_reply = strip_sentinel(reply)
+        _post(haiku_client, channel, clean_reply, thread_ts)
+
+    def _handle_planner(
+        message: dict,
+        session_id: str,
+        text: str,
+        channel: str,
+        thread_ts: str | None,
+    ) -> None:
+        """
+        Planner persona handler — full-context implementation plan design.
+        Uses Sonnet model. Loads all docs via PlannerContextLoader.
+        """
+        meta = history.get_session_metadata(session_id)
+        if meta.get("persona") != Persona.PLANNER:
+            meta = {
+                "persona": Persona.PLANNER,
+                "planner_state": "PLANNING",
+                "task_description": text,
+            }
+
+        _post(haiku_client, channel, "_Planner loading full project context..._", thread_ts)
+
+        # Load all docs for Planner context
+        planner_ctx = planner_loader.load_all()
+        planner_instruction = (
+            "\n\n=== PLANNER PERSONA ===\n"
+            "You are the Planner. Your sole purpose is to design a comprehensive, "
+            "production-ready implementation plan for the given task.\n\n"
+            "REQUIRED OUTPUT STRUCTURE (include all 10 sections):\n"
+            "1. Technical Approach\n"
+            "2. Files to Modify\n"
+            "3. New Files to Create\n"
+            "4. Database Changes\n"
+            "5. API Changes\n"
+            "6. UI Changes\n"
+            "7. Testing Approach\n"
+            "8. Deployment Steps\n"
+            "9. Timeline Estimate\n"
+            "10. Complexity Assessment: Low / Medium / High / Very High\n\n"
+            "SEPARATE APPLICATION RULE: If complexity is Very High or requires new "
+            "infrastructure (new domain, new server), specify it as a standalone application "
+            "at api.[domain] with a full build specification.\n\n"
+            "COST ESTIMATE (required last section):\n"
+            "## Cost Estimate\n"
+            "- Estimated input tokens for implementation run: ~{N}\n"
+            "- Estimated output tokens: ~{M}\n"
+            "- API cost (Sonnet @ $3/1M in, $15/1M out): ~${X:.4f}\n"
+            "- Your cost (×20 real-world rate): ~${Y:.2f}\n\n"
+            "End your reply with: [PLAN:READY]"
+        )
+        extra_ctx = planner_ctx + planner_instruction
+
+        history.add_message(session_id, "user", text)
+        messages = history.get_messages(session_id)
+
+        try:
+            reply, usage = _run_with_tools(
+                claude=claude,
+                registry=registry,
+                approval_gate=approval_gate,
+                messages=messages,
+                model=cfg.anthropic.model_heavy,  # Planner always uses Sonnet
+                extra_system_context=extra_ctx,
+                allowed_tools=frozenset({"filesystem_read", "filesystem_list"}),
+                audit=audit,
+            )
+        except Exception:
+            logger.exception("Planner Claude API error")
+            _post(haiku_client, channel, ":red_circle: Planner error. Try again.", thread_ts)
+            return
+
+        if usage is None:
+            _post(haiku_client, channel, reply, thread_ts)
+            return
+
+        # If plan is ready, create a Kanban ticket in "plans" column
+        if "[PLAN:READY]" in reply:
+            ticket_id, _ = _create_backlog_ticket(
+                message=message,
+                intent=IntentType.PLAN_DESIGN,
+                handoff_target="human",
+                title_prefix=f"Plan: {meta.get('task_description', text)[:60]}",
+            )
+            meta["planner_state"] = "PLAN_CREATED"
+            meta["ticket_id"] = ticket_id
+            logger.info("planner.plan_created id=%s", ticket_id)
+
+        history.set_session_metadata(session_id, meta)
+
+        # Record usage
+        cache_written = getattr(usage, "cache_creation_input_tokens", 0) or 0
+        cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
+        budget.record_usage(
+            cfg.anthropic.model_heavy,
+            usage.input_tokens, usage.output_tokens,
+            cache_written, cache_read,
+        )
+        history.add_message(
+            session_id, role="assistant", content=reply,
+            model=cfg.anthropic.model_heavy,
+            input_tokens=usage.input_tokens, output_tokens=usage.output_tokens,
+            cache_written=cache_written, cache_read=cache_read,
+        )
+
+        clean_reply = reply.replace("[PLAN:READY]", "").rstrip()
+        _post(sonnet_client, channel, clean_reply, thread_ts)
+
     def handle(message: dict) -> None:
         raw_text: str = message.get("text", "").strip()
         channel: str = message.get("channel", cfg.slack.control_channel_id)
@@ -407,7 +621,20 @@ def make_handler(
         if bstatus.warned:
             _post(haiku_client, channel, f":warning: {bstatus.summary()}", thread_ts)
 
-        # Fixed-environment intent gate
+        # ---- Persona routing (v1.1) — Brainstormer / Planner / General ----
+        session_meta = history.get_session_metadata(session_id)
+        persona, persona_reason = select_persona(text, session_meta)
+        logger.info("persona=%s reason=%s", persona, persona_reason)
+
+        if persona == Persona.BRAINSTORMER:
+            _handle_brainstormer(message, session_id, text, channel, thread_ts)
+            return
+
+        if persona == Persona.PLANNER:
+            _handle_planner(message, session_id, text, channel, thread_ts)
+            return
+
+        # ---- Fixed-environment intent gate (general path, unchanged) ----
         decision = classify_intent(text)
         logger.info(
             "intent=%s confidence=%.2f reason=%s",
@@ -506,6 +733,10 @@ def make_handler(
         prompt = text
         if prompt.lower().startswith("!sonnet"):
             prompt = prompt[7:].strip() or "Hello"
+        elif prompt.lower().startswith("!plan"):
+            prompt = prompt[5:].strip() or "Hello"
+        elif prompt.lower().startswith("!brainstorm"):
+            prompt = prompt[11:].strip() or "Hello"
 
         if is_client_ch:
             # Always inject lavprishjemmeside product context in client channels
