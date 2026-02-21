@@ -51,6 +51,7 @@ Log ud
       ];
 
       let current = { active_theme_key: 'simple', motion_profile: 'standard' };
+      let legacyThemeApi = false;
 
       function setError(msg) {
         const error = document.getElementById('error');
@@ -98,6 +99,11 @@ Log ud
           const res = await fetch(endpoint, {
             headers: { Authorization: 'Bearer ' + token }
           });
+          if (res.status === 404) {
+            legacyThemeApi = true;
+            await loadLegacyThemeSettings();
+            return;
+          }
           if (!res.ok) {
             let detail = '';
             try {
@@ -130,10 +136,55 @@ Log ud
         }
       }
 
+      function inferThemeFromPreset(preset) {
+        const name = String((preset && preset.name) || '').toLowerCase();
+        const label = String((preset && preset.label_da) || '').toLowerCase();
+        if (name.includes('modern') || name.includes('minimal') || label.includes('modern') || label.includes('minimal')) return 'modern';
+        if (name.includes('kreativ') || name.includes('creative') || label.includes('kreativ') || label.includes('creative')) return 'kreativ';
+        return 'simple';
+      }
+
+      async function loadLegacyThemeSettings() {
+        const settingsRes = await fetch(API + '/design-settings', {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        if (!settingsRes.ok) throw new Error(`Legacy load failed [${settingsRes.status}] ${API + '/design-settings'}`);
+        const settings = await settingsRes.json();
+
+        let inferred = 'simple';
+        if (settings && settings.theme_mode === 'modern') {
+          inferred = 'modern';
+        } else {
+          try {
+            const presetsRes = await fetch(API + '/theme-presets/', {
+              headers: { Authorization: 'Bearer ' + token }
+            });
+            if (presetsRes.ok) {
+              const presets = await presetsRes.json();
+              const active = Array.isArray(presets) ? presets.find((p) => Number(p.id) === Number(settings.active_preset_id)) : null;
+              if (active) inferred = inferThemeFromPreset(active);
+            }
+          } catch (_) {}
+        }
+
+        current = { active_theme_key: inferred, motion_profile: 'standard' };
+        const motion = document.getElementById('motion_profile');
+        if (motion) motion.value = 'standard';
+        renderCards();
+        renderActive();
+        document.getElementById('loading')?.classList.add('hidden');
+        document.getElementById('content')?.classList.remove('hidden');
+        setWarning('Kører i legacy theme mode (theme-settings endpoint mangler).');
+      }
+
       document.getElementById('save-btn')?.addEventListener('click', async () => {
         const motion = document.getElementById('motion_profile');
         if (motion) current.motion_profile = motion.value;
         try {
+          if (legacyThemeApi) {
+            await saveLegacyThemeSettings();
+            return;
+          }
           const endpoint = API + '/theme-settings/update';
           const res = await fetch(endpoint, {
             method: 'POST',
@@ -165,6 +216,57 @@ Log ud
           setError(err.message || 'Gemning fejlede');
         }
       });
+
+      async function saveLegacyThemeSettings() {
+        const presetsRes = await fetch(API + '/theme-presets/', {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        if (!presetsRes.ok) throw new Error(`Legacy save failed [${presetsRes.status}] ${API + '/theme-presets/'}`);
+        const presets = await presetsRes.json();
+        const target = (Array.isArray(presets) ? presets : []).find((p) => inferThemeFromPreset(p) === current.active_theme_key);
+
+        if (target) {
+          const applyRes = await fetch(API + '/design-settings/apply-preset', {
+            method: 'POST',
+            headers: {
+              Authorization: 'Bearer ' + token,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ preset_id: target.id })
+          });
+          if (!applyRes.ok) {
+            let detail = '';
+            try {
+              const body = await applyRes.json();
+              detail = body && body.error ? ` (${body.error})` : '';
+            } catch (_) {}
+            throw new Error(`Kunne ikke gemme tema [${applyRes.status}] ${API + '/design-settings/apply-preset'}${detail}`);
+          }
+        } else if (current.active_theme_key !== 'kreativ') {
+          // Last fallback for very old installs with theme_mode column.
+          const updateRes = await fetch(API + '/design-settings/update', {
+            method: 'POST',
+            headers: {
+              Authorization: 'Bearer ' + token,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ theme_mode: current.active_theme_key === 'modern' ? 'modern' : 'simple' })
+          });
+          if (!updateRes.ok) {
+            throw new Error(`Kunne ikke gemme tema [${updateRes.status}] ${API + '/design-settings/update'}`);
+          }
+        } else {
+          throw new Error('Kunne ikke gemme Kreativ i legacy mode: preset mangler.');
+        }
+
+        renderCards();
+        renderActive();
+        const success = document.getElementById('success');
+        if (success) {
+          success.classList.remove('hidden');
+          setTimeout(() => success.classList.add('hidden'), 3000);
+        }
+      }
 
       document.getElementById('publish-btn')?.addEventListener('click', async () => {
         try {
