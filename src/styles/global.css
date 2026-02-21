@@ -190,6 +190,12 @@ html.smooth-scroll {
     0 0 0 4px color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
 
+/* Visibility fallback: ensure primary CTA text is always readable. */
+a[class*="bg-[var(--color-primary)]"],
+button[class*="bg-[var(--color-primary)]"] {
+  color: var(--color-text-on-primary, #FFFFFF);
+}
+
 /* --- Theme: Modern (v1.1) --- */
 html[data-theme='modern'] {
   color-scheme: light;

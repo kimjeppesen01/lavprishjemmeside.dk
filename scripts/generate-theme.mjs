@@ -180,6 +180,32 @@ async function generateTheme() {
 }
 
 function buildCSS(tokens) {
+  function hexToRgb(hex) {
+    const m = String(hex || '').trim().match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+    if (!m) return null;
+    return {
+      r: parseInt(m[1], 16),
+      g: parseInt(m[2], 16),
+      b: parseInt(m[3], 16),
+    };
+  }
+
+  function relChannel(v) {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  }
+
+  function luminance(hex) {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return 0;
+    return 0.2126 * relChannel(rgb.r) + 0.7152 * relChannel(rgb.g) + 0.0722 * relChannel(rgb.b);
+  }
+
+  function onColor(bgHex) {
+    // If background is dark, use white text; otherwise dark text.
+    return luminance(bgHex) < 0.45 ? '#FFFFFF' : '#111827';
+  }
+
   // Map database border_radius enum to CSS values
   const radiusMap = {
     none: {
@@ -265,6 +291,9 @@ function buildCSS(tokens) {
   const radius =
     radiusMap[tokens.border_radius] || radiusMap.medium;
   const shadow = shadowMap[tokens.shadow_style] || shadowMap.subtle;
+  const textOnPrimary = onColor(tokens.color_primary);
+  const textOnSecondary = onColor(tokens.color_secondary);
+  const textOnAccent = onColor(tokens.color_accent);
 
   return `/* ===== DESIGN TOKENS ===== */
 /* Generated at build time from database */
@@ -295,7 +324,9 @@ function buildCSS(tokens) {
   /* --- Semantic Colors --- */
   --color-text-primary: var(--color-neutral-900);
   --color-text-secondary: var(--color-neutral-600);
-  --color-text-on-primary: #FFFFFF;
+  --color-text-on-primary: ${textOnPrimary};
+  --color-text-on-secondary: ${textOnSecondary};
+  --color-text-on-accent: ${textOnAccent};
   --color-bg-page: #FFFFFF;
   --color-bg-section-alt: var(--color-neutral-50);
   --color-border: var(--color-neutral-200);
