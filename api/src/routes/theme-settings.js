@@ -84,9 +84,40 @@ function normalize(row) {
 }
 
 async function readLegacyTheme() {
-  const [rows] = await pool.query('SELECT site_id, updated_at, updated_by, theme_mode FROM design_settings WHERE site_id = 1 LIMIT 1');
+  const [themeModeCols] = await pool.query(`SHOW COLUMNS FROM design_settings LIKE 'theme_mode'`);
+  const hasThemeMode = Array.isArray(themeModeCols) && themeModeCols.length > 0;
+
+  if (hasThemeMode) {
+    const [rows] = await pool.query('SELECT site_id, updated_at, updated_by, theme_mode FROM design_settings WHERE site_id = 1 LIMIT 1');
+    const row = rows && rows[0] ? rows[0] : {};
+    const mode = row.theme_mode === 'modern' ? 'modern' : 'simple';
+    return normalize({
+      site_id: row.site_id || 1,
+      active_theme_key: mode,
+      motion_profile: 'standard',
+      updated_at: row.updated_at || null,
+      updated_by: row.updated_by || null,
+    });
+  }
+
+  // Legacy fallback without theme_mode: infer from active preset name/label.
+  const [rows] = await pool.query(`
+    SELECT ds.site_id, ds.updated_at, ds.updated_by, ds.active_preset_id, tp.name AS preset_name, tp.label_da
+    FROM design_settings ds
+    LEFT JOIN theme_presets tp ON tp.id = ds.active_preset_id
+    WHERE ds.site_id = 1
+    LIMIT 1
+  `);
   const row = rows && rows[0] ? rows[0] : {};
-  const mode = row.theme_mode === 'modern' ? 'modern' : 'simple';
+  const name = String(row.preset_name || '').toLowerCase();
+  const label = String(row.label_da || '').toLowerCase();
+  const mode =
+    name.includes('modern') ||
+    name.includes('minimal') ||
+    label.includes('modern') ||
+    label.includes('minimal')
+      ? 'modern'
+      : 'simple';
   return normalize({
     site_id: row.site_id || 1,
     active_theme_key: mode,
@@ -98,10 +129,41 @@ async function readLegacyTheme() {
 
 async function writeLegacyTheme(activeThemeKey, userId) {
   const mapped = activeThemeKey === 'modern' ? 'modern' : 'simple';
-  await pool.query(
-    'UPDATE design_settings SET theme_mode = ?, updated_by = ? WHERE site_id = 1',
-    [mapped, userId]
-  );
+  const [themeModeCols] = await pool.query(`SHOW COLUMNS FROM design_settings LIKE 'theme_mode'`);
+  const hasThemeMode = Array.isArray(themeModeCols) && themeModeCols.length > 0;
+
+  if (hasThemeMode) {
+    await pool.query(
+      'UPDATE design_settings SET theme_mode = ?, updated_by = ? WHERE site_id = 1',
+      [mapped, userId]
+    );
+  } else {
+    // Persist theme via active_preset_id if theme_mode column is unavailable.
+    const [presetRows] = await pool.query(
+      `SELECT id, name, label_da
+       FROM theme_presets
+       WHERE LOWER(name) IN (?, ?, ?, ?)
+          OR LOWER(COALESCE(label_da,'')) IN (?, ?, ?, ?)
+       ORDER BY is_default DESC, id ASC
+       LIMIT 1`,
+      mapped === 'modern'
+        ? ['modern', 'minimalist', 'minimalistisk', 'minimalistic', 'modern', 'minimalist', 'minimalistisk', 'minimalistic']
+        : ['simple', 'business', 'professionel', 'professional', 'simple', 'business', 'professionel', 'professional']
+    );
+    const presetId = presetRows && presetRows[0] ? presetRows[0].id : null;
+    if (presetId) {
+      await pool.query(
+        'UPDATE design_settings SET active_preset_id = ?, updated_by = ? WHERE site_id = 1',
+        [presetId, userId]
+      );
+    } else {
+      await pool.query(
+        'UPDATE design_settings SET updated_by = ? WHERE site_id = 1',
+        [userId]
+      );
+    }
+  }
+
   return normalize({
     site_id: 1,
     active_theme_key: mapped,
