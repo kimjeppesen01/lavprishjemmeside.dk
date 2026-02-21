@@ -141,7 +141,14 @@ Log ud
             },
             body: JSON.stringify(current)
           });
-          if (!res.ok) throw new Error('Kunne ikke gemme tema');
+          if (!res.ok) {
+            let detail = '';
+            try {
+              const body = await res.json();
+              detail = body && body.error ? ` (${body.error})` : '';
+            } catch (_) {}
+            throw new Error(`Kunne ikke gemme tema${detail}`);
+          }
           const data = await res.json();
           current.active_theme_key = data.active_theme_key || current.active_theme_key;
           current.motion_profile = data.motion_profile || current.motion_profile;
