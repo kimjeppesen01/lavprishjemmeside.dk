@@ -180,6 +180,16 @@ async function generateTheme() {
 }
 
 function buildCSS(tokens) {
+  function isValidHex(hex) {
+    return /^#([a-f\d]{6})$/i.test(String(hex || '').trim());
+  }
+
+  function normalizeHex(hex, fallback) {
+    const value = String(hex || '').trim();
+    if (isValidHex(value)) return value.toUpperCase();
+    return fallback;
+  }
+
   function hexToRgb(hex) {
     const m = String(hex || '').trim().match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
     if (!m) return null;
@@ -201,10 +211,40 @@ function buildCSS(tokens) {
     return 0.2126 * relChannel(rgb.r) + 0.7152 * relChannel(rgb.g) + 0.0722 * relChannel(rgb.b);
   }
 
-  function onColor(bgHex) {
-    // If background is dark, use white text; otherwise dark text.
-    return luminance(bgHex) < 0.45 ? '#FFFFFF' : '#111827';
+  function contrastRatio(fgHex, bgHex) {
+    const l1 = luminance(fgHex);
+    const l2 = luminance(bgHex);
+    const lighter = Math.max(l1, l2);
+    const darker = Math.min(l1, l2);
+    return (lighter + 0.05) / (darker + 0.05);
   }
+
+  function onColor(bgHex) {
+    // Choose the higher contrast foreground for accessibility.
+    const white = '#FFFFFF';
+    const dark = '#111827';
+    return contrastRatio(white, bgHex) >= contrastRatio(dark, bgHex) ? white : dark;
+  }
+
+  const safeTokens = {
+    ...tokens,
+    color_primary: normalizeHex(tokens.color_primary, DEFAULT_TOKENS.color_primary),
+    color_primary_hover: normalizeHex(tokens.color_primary_hover, DEFAULT_TOKENS.color_primary_hover),
+    color_primary_light: normalizeHex(tokens.color_primary_light, DEFAULT_TOKENS.color_primary_light),
+    color_secondary: normalizeHex(tokens.color_secondary, DEFAULT_TOKENS.color_secondary),
+    color_secondary_hover: normalizeHex(tokens.color_secondary_hover, DEFAULT_TOKENS.color_secondary_hover),
+    color_secondary_light: normalizeHex(tokens.color_secondary_light, DEFAULT_TOKENS.color_secondary_light),
+    color_accent: normalizeHex(tokens.color_accent, DEFAULT_TOKENS.color_accent),
+    color_accent_hover: normalizeHex(tokens.color_accent_hover, DEFAULT_TOKENS.color_accent_hover),
+    color_neutral_50: normalizeHex(tokens.color_neutral_50, DEFAULT_TOKENS.color_neutral_50),
+    color_neutral_100: normalizeHex(tokens.color_neutral_100, DEFAULT_TOKENS.color_neutral_100),
+    color_neutral_200: normalizeHex(tokens.color_neutral_200, DEFAULT_TOKENS.color_neutral_200),
+    color_neutral_300: normalizeHex(tokens.color_neutral_300, DEFAULT_TOKENS.color_neutral_300),
+    color_neutral_600: normalizeHex(tokens.color_neutral_600, DEFAULT_TOKENS.color_neutral_600),
+    color_neutral_700: normalizeHex(tokens.color_neutral_700, DEFAULT_TOKENS.color_neutral_700),
+    color_neutral_800: normalizeHex(tokens.color_neutral_800, DEFAULT_TOKENS.color_neutral_800),
+    color_neutral_900: normalizeHex(tokens.color_neutral_900, DEFAULT_TOKENS.color_neutral_900),
+  };
 
   // Map database border_radius enum to CSS values
   const radiusMap = {
@@ -289,11 +329,11 @@ function buildCSS(tokens) {
   };
 
   const radius =
-    radiusMap[tokens.border_radius] || radiusMap.medium;
-  const shadow = shadowMap[tokens.shadow_style] || shadowMap.subtle;
-  const textOnPrimary = onColor(tokens.color_primary);
-  const textOnSecondary = onColor(tokens.color_secondary);
-  const textOnAccent = onColor(tokens.color_accent);
+    radiusMap[safeTokens.border_radius] || radiusMap.medium;
+  const shadow = shadowMap[safeTokens.shadow_style] || shadowMap.subtle;
+  const textOnPrimary = onColor(safeTokens.color_primary);
+  const textOnSecondary = onColor(safeTokens.color_secondary);
+  const textOnAccent = onColor(safeTokens.color_accent);
 
   return `/* ===== DESIGN TOKENS ===== */
 /* Generated at build time from database */
@@ -302,24 +342,24 @@ function buildCSS(tokens) {
 
 :root {
   /* --- Brand Colors --- */
-  --color-primary: ${tokens.color_primary};
-  --color-primary-hover: ${tokens.color_primary_hover};
-  --color-primary-light: ${tokens.color_primary_light};
-  --color-secondary: ${tokens.color_secondary};
-  --color-secondary-hover: ${tokens.color_secondary_hover};
-  --color-secondary-light: ${tokens.color_secondary_light};
-  --color-accent: ${tokens.color_accent};
-  --color-accent-hover: ${tokens.color_accent_hover};
+  --color-primary: ${safeTokens.color_primary};
+  --color-primary-hover: ${safeTokens.color_primary_hover};
+  --color-primary-light: ${safeTokens.color_primary_light};
+  --color-secondary: ${safeTokens.color_secondary};
+  --color-secondary-hover: ${safeTokens.color_secondary_hover};
+  --color-secondary-light: ${safeTokens.color_secondary_light};
+  --color-accent: ${safeTokens.color_accent};
+  --color-accent-hover: ${safeTokens.color_accent_hover};
 
   /* --- Neutral Scale --- */
-  --color-neutral-50: ${tokens.color_neutral_50};
-  --color-neutral-100: ${tokens.color_neutral_100};
-  --color-neutral-200: ${tokens.color_neutral_200};
-  --color-neutral-300: ${tokens.color_neutral_300};
-  --color-neutral-600: ${tokens.color_neutral_600};
-  --color-neutral-700: ${tokens.color_neutral_700};
-  --color-neutral-800: ${tokens.color_neutral_800};
-  --color-neutral-900: ${tokens.color_neutral_900};
+  --color-neutral-50: ${safeTokens.color_neutral_50};
+  --color-neutral-100: ${safeTokens.color_neutral_100};
+  --color-neutral-200: ${safeTokens.color_neutral_200};
+  --color-neutral-300: ${safeTokens.color_neutral_300};
+  --color-neutral-600: ${safeTokens.color_neutral_600};
+  --color-neutral-700: ${safeTokens.color_neutral_700};
+  --color-neutral-800: ${safeTokens.color_neutral_800};
+  --color-neutral-900: ${safeTokens.color_neutral_900};
 
   /* --- Semantic Colors --- */
   --color-text-primary: var(--color-neutral-900);
@@ -332,9 +372,9 @@ function buildCSS(tokens) {
   --color-border: var(--color-neutral-200);
 
   /* --- Typography --- */
-  --font-heading: '${tokens.font_heading}', sans-serif;
-  --font-body: '${tokens.font_body}', sans-serif;
-  --font-size-base: ${tokens.font_size_base};
+  --font-heading: '${safeTokens.font_heading}', sans-serif;
+  --font-body: '${safeTokens.font_body}', sans-serif;
+  --font-size-base: ${safeTokens.font_size_base};
   --font-size-lg: 1.125rem;
   --font-size-xl: 1.25rem;
   --font-size-2xl: 1.5rem;
@@ -344,7 +384,7 @@ function buildCSS(tokens) {
   --line-height-tight: 1.15;
   --line-height-normal: 1.6;
 
-  /* --- Shapes (border radius: ${tokens.border_radius}) --- */
+  /* --- Shapes (border radius: ${safeTokens.border_radius}) --- */
   --radius-sm: ${radius.sm};
   --radius-md: ${radius.md};
   --radius-lg: ${radius.lg};
@@ -354,7 +394,7 @@ function buildCSS(tokens) {
   --radius-card: ${radius.card};
   --radius-input: ${radius.input};
 
-  /* --- Shadows (style: ${tokens.shadow_style}) --- */
+  /* --- Shadows (style: ${safeTokens.shadow_style}) --- */
   --shadow-sm: ${shadow.sm};
   --shadow-md: ${shadow.md};
   --shadow-lg: ${shadow.lg};
@@ -364,9 +404,9 @@ function buildCSS(tokens) {
   --section-padding-y: 4rem;
   --section-padding-y-lg: 6rem;
   --container-max-width: 80rem;
-  --container-padding-x: ${tokens.border_radius === 'full' ? '2rem' : '1.5rem'};
-  --card-padding: ${tokens.border_radius === 'full' ? '1.5rem' : '1.25rem'};
-  --card-padding-lg: ${tokens.border_radius === 'full' ? '1.75rem' : '1.5rem'};
+  --container-padding-x: ${safeTokens.border_radius === 'full' ? '2rem' : '1.5rem'};
+  --card-padding: ${safeTokens.border_radius === 'full' ? '1.5rem' : '1.25rem'};
+  --card-padding-lg: ${safeTokens.border_radius === 'full' ? '1.75rem' : '1.5rem'};
 }
 `;
 }
