@@ -94,6 +94,9 @@ node --check src/routes/traffic.js
 
 - `Load failed` on admin login:
   - API unreachable, CORS mismatch, wrong API URL, or TLS/DNS issue.
+- API returns `503` after deploy:
+  - inspect `~/repositories/<domain>/api/stderr.log` immediately,
+  - common root cause: runtime syntax error in API JS files that frontend build does not catch.
 - Health returns `500`:
   - DB credentials invalid, DB unavailable, missing env variables.
 - Deploy looked green but behavior is old:
@@ -106,8 +109,20 @@ node --check src/routes/traffic.js
 In Actions log, verify deploy step contains:
 
 - `npm ci --omit=dev || npm install --production`
+- build with `STRICT_CONTENT_FETCH=1` so content-fetch failures fail the build (no fallback deploy)
 - `mkdir -p tmp && touch tmp/restart.txt`
 - API health retry loop that fails the workflow if `/health` never returns `200`.
+
+## 9. Real Incident Reference (2026-02-20, ljdesignstudio.dk)
+
+- Deploy run: `22245722242` (GitHub Actions) went green.
+- Post-migration API returned `503`.
+- Root cause in `stderr.log`: `SyntaxError: Unexpected end of input` in `api/src/services/anthropic.js`.
+- Resolution:
+  1. fix syntax in `api/src/services/anthropic.js`,
+  2. push hotfix,
+  3. deploy run `22245840248` (green),
+  4. re-check all gates (`health`, `design-settings/public`, `page-components/public`, `auth/login`, site `HEAD /`).
 
 ## 8. Multi-Domain Notes
 

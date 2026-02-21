@@ -101,6 +101,7 @@ function normalizeProps(slug: string, rawProps: any): any {
 
 let pageComponents: any[] = [];
 let pageMeta: { meta_title?: string; meta_description?: string; schema_markup?: any } | null = null;
+const strictContentFetch = process.env.STRICT_CONTENT_FETCH === '1';
 
 try {
   const API_URL = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
@@ -112,12 +113,17 @@ try {
     const all = await componentsRes.json();
     pageComponents = Array.isArray(all) ? all : [];
     pageComponents.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  } else if (strictContentFetch) {
+    throw new Error(`Homepage component fetch failed with HTTP ${componentsRes.status}`);
   }
   if (metaRes.ok) {
     const metaMap = await metaRes.json();
     pageMeta = metaMap['/'] || metaMap[''] || null;
+  } else if (strictContentFetch) {
+    throw new Error(`Homepage meta fetch failed with HTTP ${metaRes.status}`);
   }
 } catch (e) {
+  if (strictContentFetch) throw e;
   console.warn('Could not fetch homepage components:', (e as Error).message);
 }
 

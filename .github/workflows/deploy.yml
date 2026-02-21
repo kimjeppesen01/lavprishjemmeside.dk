@@ -1,3 +1,4 @@
+          STRICT_CONTENT_FETCH: "1"
 name: Build & Deploy
 
 on:
