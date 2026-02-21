@@ -124,3 +124,68 @@ html.smooth-scroll {
     animation: none;
   }
 }
+
+/* --- 2026 UI primitives --- */
+.modern-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.modern-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, color-mix(in srgb, var(--color-primary) 15%, transparent), transparent 70%),
+    radial-gradient(1000px 450px at 90% 0%, color-mix(in srgb, var(--color-secondary) 12%, transparent), transparent 72%);
+  pointer-events: none;
+}
+
+.glass-surface {
+  background: color-mix(in srgb, var(--color-bg-page) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
+  backdrop-filter: blur(12px) saturate(140%);
+}
+
+.card-modern {
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-bg-page) 96%, transparent);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+}
+
+.card-modern:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+}
+
+.heading-fluid {
+  font-size: clamp(1.9rem, 1.1rem + 2.3vw, 3.2rem);
+  letter-spacing: -0.02em;
+  line-height: 1.06;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-full);
+  border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
+  background: color-mix(in srgb, var(--color-bg-page) 92%, transparent);
+  color: var(--color-text-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.focus-modern:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--color-bg-page) 100%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--color-primary) 45%, transparent);
+}

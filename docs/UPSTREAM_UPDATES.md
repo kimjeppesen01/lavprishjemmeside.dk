@@ -4,7 +4,7 @@ If your site is a **fork** or **template copy** of the main lavprishjemmeside.dk
 
 **Principle:** Only **config** (and optionally a few project-specific files) are local. All code (`src/`, `api/`, `.github/`) is updated from upstream. Your **content lives in your database** and is not touched by pulls.
 
-See [CHANGELOG.md](../CHANGELOG.md) for what changed in each version.
+See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 
 ---
 
@@ -81,7 +81,7 @@ ssh thirdwave "export PATH=/opt/alt/alt-nodejs22/root/usr/bin:\$PATH \
   && echo 'Schema OK, API restarting'"
 ```
 
-Check [CHANGELOG.md](../CHANGELOG.md) under the version you merged for the specific SQL files added and what they do.
+Check [CHANGELOG.md](CHANGELOG.md) under the version you merged for the specific SQL files added and what they do.
 
 **New env vars?** If the release added new env vars (listed in CHANGELOG), add them to `api/.env` on the server and restart.
 

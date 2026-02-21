@@ -17,9 +17,9 @@ import FoundersNoteSection from '../../../../components/FoundersNoteSection.astr
 import TabsSection from '../../../../components/TabsSection.astro';
 import ModalSection from '../../../../components/ModalSection.astro';
 import BentoGridSection from '../../../../components/BentoGridSection.astro';
-import OverlapImageSection from '../../../../components/OverlapImageSection.astro';
 import OverlapCardsSection from '../../../../components/OverlapCardsSection.astro';
 import AlternatingFeatureList from '../../../../components/AlternatingFeatureList.astro';
+import ImmersiveContentVisual from '../../../../components/ImmersiveContentVisual.astro';
 import HeroSection from '../../../../components/HeroSection.astro';
 import FeaturesGrid from '../../../../components/FeaturesGrid.astro';
 import IconCards from '../../../../components/IconCards.astro';
@@ -33,7 +33,6 @@ import TeamGrid from '../../../../components/TeamGrid.astro';
 import VideoEmbed from '../../../../components/VideoEmbed.astro';
 import ContactForm from '../../../../components/ContactForm.astro';
 import NewsletterSignup from '../../../../components/NewsletterSignup.astro';
-import ContentImageSplit from '../../../../components/ContentImageSplit.astro';
 import Timeline from '../../../../components/Timeline.astro';
 import LogoCloud from '../../../../components/LogoCloud.astro';
 import GalleryGrid from '../../../../components/GalleryGrid.astro';
@@ -57,9 +56,9 @@ const componentMap: Record<string, any> = {
   'tabs-section': TabsSection,
   'modal-section': ModalSection,
   'bento-grid-section': BentoGridSection,
-  'overlap-image-section': OverlapImageSection,
   'overlap-cards-section': OverlapCardsSection,
   'alternating-feature-list': AlternatingFeatureList,
+  'immersive-content-visual': ImmersiveContentVisual,
   'hero-section': HeroSection,
   'features-grid': FeaturesGrid,
   'icon-cards': IconCards,
@@ -73,7 +72,6 @@ const componentMap: Record<string, any> = {
   'video-embed': VideoEmbed,
   'contact-form': ContactForm,
   'newsletter-signup': NewsletterSignup,
-  'content-image-split': ContentImageSplit,
   'timeline': Timeline,
   'logo-cloud': LogoCloud,
   'gallery-grid': GalleryGrid,
@@ -167,16 +165,6 @@ function normalizeProps(slug: string, rawProps: any): any {
       if (!Array.isArray(props.items)) props.items = [];
       if (!props.headline) props.headline = 'Vores løsninger';
       break;
-    case 'overlap-image-section':
-      if (!props.headline) props.headline = 'Sektion';
-      if (!props.imagePlacement) props.imagePlacement = 'right';
-      if (props.overlapAmount == null) props.overlapAmount = 80;
-      if (props.backgroundColor === 'primary') props.theme = 'teal';
-      else props.theme = props.theme || 'white';
-      delete props.backgroundColor;
-      if (!props.bottomDivider) props.bottomDivider = 'none';
-      if (props.bottomDivider === 'zigzag') props.bottomDivider = 'none';
-      break;
     case 'overlap-cards-section':
       if (!Array.isArray(props.cards)) props.cards = [];
       if (props.overlapOffset == null) props.overlapOffset = 40;
@@ -185,6 +173,15 @@ function normalizeProps(slug: string, rawProps: any): any {
       if (!Array.isArray(props.features)) props.features = [];
       if (!props.firstTheme) props.firstTheme = 'teal';
       if (props.overlapAmount == null) props.overlapAmount = 80;
+      break;
+    case 'immersive-content-visual':
+      if (!props.headline) props.headline = 'Sektion';
+      if (!props.content) props.content = '<p>Tilføj indhold her.</p>';
+      if (!props.imageUrl) props.imageUrl = '';
+      if (!Array.isArray(props.highlights)) props.highlights = [];
+      if (!Array.isArray(props.visualCards)) props.visualCards = [];
+      if (!props.variant) props.variant = 'cinematic-overlap';
+      if (!props.imagePlacement) props.imagePlacement = 'right';
       break;
     case 'product-carousel':
       if (!Array.isArray(props.slides)) props.slides = [];

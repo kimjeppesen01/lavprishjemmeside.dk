@@ -1,11 +1,9 @@
 ---
 /**
- * AlternatingFeatureList — Parent component that renders 2–4 OverlapImageSection
- * blocks as one coherent module. Themes alternate (teal/white), image placement
- * alternates (left/right), images overlap strongly into the next section.
- * No spacers between items—seamless blending.
+ * AlternatingFeatureList — Parent component that renders 2–4 immersive
+ * long-form blocks as one coherent module. Themes and image placement alternate.
  */
-import OverlapImageSection from './OverlapImageSection.astro';
+import ImmersiveContentVisual from './ImmersiveContentVisual.astro';
 
 interface Feature {
   headline: string;
@@ -37,31 +35,27 @@ const items = features.slice(0, 4);
 
 <div class="alternating-feature-list relative">
   {items.map((feature, index) => {
-    const isLast = index === items.length - 1;
-    const itemOverlap = isLast ? 0 : overlapAmount;
     const imagePlacement = index % 2 === 0 ? 'right' : 'left';
     const theme = index % 2 === 0 ? firstTheme : firstTheme === 'teal' ? 'white' : 'teal';
-    const nextTheme = isLast ? null : index % 2 === 0 ? (firstTheme === 'teal' ? 'white' : 'teal') : firstTheme;
-    const bottomDivider =
-      isLast ? 'none' : theme !== nextTheme ? 'straight' : 'none';
+    const mappedTheme = theme === 'teal' ? 'accent' : 'default';
 
     return (
-      <OverlapImageSection
+      <div style={index > 0 ? `margin-top: -${Math.round(overlapAmount * 0.3)}px` : undefined}>
+      <ImmersiveContentVisual
         headline={feature.headline}
-        introText={feature.introText}
-        content={feature.content}
-        bulletPoints={feature.bulletPoints || []}
+        leadText={feature.introText}
+        content={feature.content || '<p></p>'}
+        highlights={feature.bulletPoints || []}
         imageUrl={feature.imageUrl}
         imageAlt={feature.imageAlt}
         imagePlacement={imagePlacement}
-        overlapAmount={itemOverlap}
-        theme={theme}
-        bottomDivider={bottomDivider}
-        cta={feature.cta}
+        overlapDepth={overlapAmount}
+        variant="cinematic-overlap"
+        theme={mappedTheme}
+        cta={feature.cta ? { text: feature.cta.text, href: feature.cta.href } : undefined}
         instanceId={`${instanceId}-${index}`}
-        withinGroup
-        topOverlap={index > 0 ? overlapAmount : undefined}
       />
+      </div>
     );
   })}
 </div>

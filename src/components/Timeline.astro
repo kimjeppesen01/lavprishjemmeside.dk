@@ -10,7 +10,7 @@ const { headline = 'Tidslinje', events = [], instanceId = 'default' } = Astro.pr
 
 <section
   class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
-  aria-labelledby="timeline-heading"
+  aria-labelledby={`timeline-heading-${instanceId}`}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
     <h2

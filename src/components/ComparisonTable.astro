@@ -19,7 +19,7 @@ function renderCell(value: string | boolean | null): string {
 
 <section
   class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
-  aria-labelledby="comparison-heading"
+  aria-labelledby={`comparison-heading-${instanceId}`}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
     <h2

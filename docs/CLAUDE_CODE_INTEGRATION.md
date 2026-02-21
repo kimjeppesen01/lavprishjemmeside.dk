@@ -2,7 +2,7 @@
 
 This document describes the **Claude Code** integration in the Master Hub: how the dashboard runs the Claude CLI on the server, how authentication and safeguards work, and how to operate and extend it. It reflects the **current implementation** and maps plan actions to status (done vs pending).
 
-**See also:** [PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md) — Admin Dashboard and *Claude Code integration* section. [docs/COMPREHENSIVE_PLAN.md](COMPREHENSIVE_PLAN.md) — Consolidated plan including Claude goals and roadmap.
+**See also:** [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) — Admin Dashboard and *Claude Code integration* section. [docs/COMPREHENSIVE_PLAN.md](docs/COMPREHENSIVE_PLAN.md) — Consolidated plan including Claude goals and roadmap.
 
 ---
 
@@ -58,8 +58,8 @@ sequenceDiagram
   API-->>Browser: data: { type: done }
 ```
 
-- **Frontend:** [src/pages/admin/master.astro](../src/pages/admin/master.astro) — Claude Code tab: repo dropdown (from `GET /master/claude-repos`), model selector, account selector, prompt textarea, Run/Kill, and an output area that consumes SSE.
-- **Backend:** [api/src/routes/master.js](../api/src/routes/master.js) — All Claude-related routes and the spawn/SSE logic; uses [api/src/middleware/auth.js](../api/src/middleware/auth.js) (`requireMaster`) and [api/src/middleware/rateLimit.js](../api/src/middleware/rateLimit.js) (`claudeRunRateLimiter`).
+- **Frontend:** [src/pages/admin/master.astro](src/pages/admin/master.astro) — Claude Code tab: repo dropdown (from `GET /master/claude-repos`), model selector, account selector, prompt textarea, Run/Kill, and an output area that consumes SSE.
+- **Backend:** [api/src/routes/master.js](api/src/routes/master.js) — All Claude-related routes and the spawn/SSE logic; uses [api/src/middleware/auth.js](api/src/middleware/auth.js) (`requireMaster`) and [api/src/middleware/rateLimit.js](api/src/middleware/rateLimit.js) (`claudeRunRateLimiter`).
 - **Data:** Repo list and working directory are derived from the **sites** table (convention: repo path = `/home/theartis/repositories/<domain>`). No separate “Claude repos” table.
 
 ---
@@ -116,7 +116,7 @@ The runner uses **Claude Pro (OAuth)** on the server, not `ANTHROPIC_API_KEY`. T
 ## 6. Safeguards
 
 - **Master-only access:** `requireMaster` on all `/master/*` routes except `GET /master/me`. Frontend hides “Master Hub” for non-master and redirects direct visits to `/admin/master` to the dashboard with “Kun master-brugere har adgang”.
-- **Audit log:** Table `master_audit_log` (user_id, email, path, method, meta, ip, created_at). For `POST /master/claude-run`, meta includes repo, taskId, prompt_length, prompt_preview. Implemented in [api/src/routes/master.js](../api/src/routes/master.js) (middleware that runs on every master route).
+- **Audit log:** Table `master_audit_log` (user_id, email, path, method, meta, ip, created_at). For `POST /master/claude-run`, meta includes repo, taskId, prompt_length, prompt_preview. Implemented in [api/src/routes/master.js](api/src/routes/master.js) (middleware that runs on every master route).
 - **Rate limiting:** `POST /master/claude-run` is limited per user per hour (default 10; env `MASTER_CLAUDE_RUN_LIMIT`). Response 429 with message “For mange Claude-kørsler. Prøv igen om en time.” and code `CLAUDE_RUN_RATE_LIMIT`.
 - **Optional IP allow-list:** If `MASTER_ALLOWED_IPS` (comma-separated) is set, only those IPs can reach any `/master/*` endpoint; others get 403 `IP_NOT_ALLOWED`. Client IP is taken from `X-Forwarded-For` (first value) or `req.ip`. Middleware runs before `requireAuth`/`requireMaster`.
 
@@ -139,8 +139,8 @@ Repo path convention is fixed: `/home/theartis/repositories/<domain>` where `dom
 ## 8. Database and schema
 
 - **sites:** Used to build the repo list and cwd. Required columns for Claude: `id`, `name`, `domain`, `api_url`, `admin_url`, `is_active`. Repo path is not stored; it is derived as `REPO_BASE + '/' + domain`.
-- **users:** Must include role `master`. Run [api/src/schema_master_role.sql](../api/src/schema_master_role.sql) to extend `role` to `ENUM('user','admin','master')`, then set `role = 'master'` for allowed users. To grant master to a specific email, run [api/src/seed_master_user_info.sql](../api/src/seed_master_user_info.sql) (or `UPDATE users SET role = 'master' WHERE email = '...'`) after the schema change.
-- **master_audit_log:** Required for audit. Run [api/src/schema_master_audit.sql](../api/src/schema_master_audit.sql) to create it.
+- **users:** Must include role `master`. Run [api/src/schema_master_role.sql](api/src/schema_master_role.sql) to extend `role` to `ENUM('user','admin','master')`, then set `role = 'master'` for allowed users. To grant master to a specific email, run [api/src/seed_master_user_info.sql](api/src/seed_master_user_info.sql) (or `UPDATE users SET role = 'master' WHERE email = '...'`) after the schema change.
+- **master_audit_log:** Required for audit. Run [api/src/schema_master_audit.sql](api/src/schema_master_audit.sql) to create it.
 
 ---
 
@@ -171,16 +171,16 @@ Repo path convention is fixed: `/home/theartis/repositories/<domain>` where `dom
 
 | File | Role |
 |------|------|
-| [api/src/routes/master.js](../api/src/routes/master.js) | Claude routes, spawn, SSE, OAuth flow, audit, IP check. |
-| [api/src/middleware/auth.js](../api/src/middleware/auth.js) | `requireAuth`, `requireMaster`. |
-| [api/src/middleware/rateLimit.js](../api/src/middleware/rateLimit.js) | `claudeRunRateLimiter`. |
-| [api/src/schema_master_role.sql](../api/src/schema_master_role.sql) | Add `master` to `users.role`. |
-| [api/src/schema_master_audit.sql](../api/src/schema_master_audit.sql) | Create `master_audit_log`. |
-| [api/src/seed_master_user_info.sql](../api/src/seed_master_user_info.sql) | Example: set `info@lavprishjemmeside.dk` to master (run after schema_master_role). |
-| [api/src/schema_master.sql](../api/src/schema_master.sql) | `sites`, `kanban_items`, etc. |
-| [src/pages/admin/master.astro](../src/pages/admin/master.astro) | Master Hub UI and Claude tab (repo, model, account, prompt, output). |
-| [src/layouts/AdminLayout.astro](../src/layouts/AdminLayout.astro) | Hides “Master Hub” link for non-master. |
-| [src/pages/admin/dashboard.astro](../src/pages/admin/dashboard.astro) | Shows “Kun master-brugere har adgang” when redirected with `?message=master_required`. |
+| [api/src/routes/master.js](api/src/routes/master.js) | Claude routes, spawn, SSE, OAuth flow, audit, IP check. |
+| [api/src/middleware/auth.js](api/src/middleware/auth.js) | `requireAuth`, `requireMaster`. |
+| [api/src/middleware/rateLimit.js](api/src/middleware/rateLimit.js) | `claudeRunRateLimiter`. |
+| [api/src/schema_master_role.sql](api/src/schema_master_role.sql) | Add `master` to `users.role`. |
+| [api/src/schema_master_audit.sql](api/src/schema_master_audit.sql) | Create `master_audit_log`. |
+| [api/src/seed_master_user_info.sql](api/src/seed_master_user_info.sql) | Example: set `info@lavprishjemmeside.dk` to master (run after schema_master_role). |
+| [api/src/schema_master.sql](api/src/schema_master.sql) | `sites`, `kanban_items`, etc. |
+| [src/pages/admin/master.astro](src/pages/admin/master.astro) | Master Hub UI and Claude tab (repo, model, account, prompt, output). |
+| [src/layouts/AdminLayout.astro](src/layouts/AdminLayout.astro) | Hides “Master Hub” link for non-master. |
+| [src/pages/admin/dashboard.astro](src/pages/admin/dashboard.astro) | Shows “Kun master-brugere har adgang” when redirected with `?message=master_required`. |
 
 ---
 
@@ -200,7 +200,7 @@ VALUES (
 );
 ```
 
-Or run the seed file [api/src/seed_kanban_claude_doc.sql](../api/src/seed_kanban_claude_doc.sql).
+Or run the seed file [api/src/seed_kanban_claude_doc.sql](api/src/seed_kanban_claude_doc.sql).
 
 ---
 
@@ -216,8 +216,15 @@ Or run the seed file [api/src/seed_kanban_claude_doc.sql](../api/src/seed_kanban
 
 Goal: make task execution safer and more intuitive by forcing every Claude run to be anchored to a project `.md` file.
 
+Canonical source: planning files used by dashboard runs live in `tasks/**/*.md`.
+
+Process policy alignment:
+- `docs/` is reference-only and must not be used as the pending task source.
+- New actionable items are created under `tasks/pending/`.
+- Dashboard run flows must require selected plan context (`tasks/**/*.md`) or explicit create-plan confirmation.
+
 - [x] **Modern task composer UI (desktop + mobile):** redesigned Claude tab with a clear 3-step flow: `Select site/repo` -> `Select Kanban task` -> `Select or create .md plan`.
-- [x] **Kanban-linked `.md` picker:** when a Kanban task is selected, associated markdown files are shown first with suggested/all groups.
+- [x] **Kanban-linked `.md` picker:** when a Kanban task is selected, associated markdown files are shown first from `tasks/**/*.md`.
 - [x] **Mandatory `.md` requirement before Run:** `Run` is disabled until an `.md` file is chosen.
 - [x] **Required fallback prompt:** if no `.md` file is linked/found, run flow asks: **"Should we plan a new .md file?"** with explicit actions:
   - `Create new .md and continue`

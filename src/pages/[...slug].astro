@@ -14,7 +14,6 @@ import TeamGrid from '../components/TeamGrid.astro';
 import VideoEmbed from '../components/VideoEmbed.astro';
 import ContactForm from '../components/ContactForm.astro';
 import NewsletterSignup from '../components/NewsletterSignup.astro';
-import ContentImageSplit from '../components/ContentImageSplit.astro';
 import Timeline from '../components/Timeline.astro';
 import LogoCloud from '../components/LogoCloud.astro';
 import GalleryGrid from '../components/GalleryGrid.astro';
@@ -29,9 +28,9 @@ import FoundersNoteSection from '../components/FoundersNoteSection.astro';
 import TabsSection from '../components/TabsSection.astro';
 import ModalSection from '../components/ModalSection.astro';
 import BentoGridSection from '../components/BentoGridSection.astro';
-import OverlapImageSection from '../components/OverlapImageSection.astro';
 import OverlapCardsSection from '../components/OverlapCardsSection.astro';
 import AlternatingFeatureList from '../components/AlternatingFeatureList.astro';
+import ImmersiveContentVisual from '../components/ImmersiveContentVisual.astro';
 
 // Map component slugs to Astro components
 const componentMap = {
@@ -45,9 +44,10 @@ const componentMap = {
   'tabs-section': TabsSection,
   'modal-section': ModalSection,
   'bento-grid-section': BentoGridSection,
-  'overlap-image-section': OverlapImageSection,
+  'overlap-image-section': ImmersiveContentVisual,
   'overlap-cards-section': OverlapCardsSection,
   'alternating-feature-list': AlternatingFeatureList,
+  'immersive-content-visual': ImmersiveContentVisual,
   'features-grid': FeaturesGrid,
   'icon-cards': IconCards,
   'stats-banner': StatsBanner,
@@ -60,7 +60,7 @@ const componentMap = {
   'video-embed': VideoEmbed,
   'contact-form': ContactForm,
   'newsletter-signup': NewsletterSignup,
-  'content-image-split': ContentImageSplit,
+  'content-image-split': ImmersiveContentVisual,
   'timeline': Timeline,
   'logo-cloud': LogoCloud,
   'gallery-grid': GalleryGrid,
@@ -149,10 +149,16 @@ function normalizeProps(slug: string, rawProps: any): any {
       if (!props.headline) props.headline = 'Sektion';
       if (!props.imageUrl) props.imageUrl = '';
       if (!Array.isArray(props.bulletPoints)) props.bulletPoints = [];
-      if (props.backgroundColor === 'primary') props.theme = 'teal';
-      if (props.backgroundColor === 'default' || props.backgroundColor === 'alt') props.theme = 'white';
-      if (!props.theme) props.theme = 'white';
-      if (props.bottomDivider === 'zigzag') props.bottomDivider = 'none';
+      props.highlights = props.bulletPoints;
+      props.leadText = props.introText || props.leadText || '';
+      props.variant = 'cinematic-overlap';
+      props.theme = props.theme === 'teal' || props.backgroundColor === 'primary' ? 'accent' : 'default';
+      props.overlapDepth = props.overlapAmount || 64;
+      props.imagePlacement = props.imagePlacement === 'center' ? 'right' : (props.imagePlacement || 'right');
+      delete props.bulletPoints;
+      delete props.introText;
+      delete props.bottomDivider;
+      delete props.overlapAmount;
       delete props.backgroundColor;
       break;
 
@@ -166,11 +172,26 @@ function normalizeProps(slug: string, rawProps: any): any {
       if (props.overlapAmount == null) props.overlapAmount = 80;
       break;
 
+    case 'immersive-content-visual':
+      if (!props.headline) props.headline = 'Sektion';
+      if (!props.content) props.content = '<p>Tilføj indhold her.</p>';
+      if (!props.imageUrl) props.imageUrl = '';
+      if (!Array.isArray(props.highlights)) props.highlights = [];
+      if (!Array.isArray(props.visualCards)) props.visualCards = [];
+      if (!props.variant) props.variant = 'cinematic-overlap';
+      if (!props.imagePlacement) props.imagePlacement = 'right';
+      break;
+
     case 'content-image-split':
-      if (props.backgroundColor === 'white') props.backgroundColor = 'default';
-      if (props.backgroundColor === 'light') props.backgroundColor = 'alt';
-      if (props.backgroundColor === 'blue') props.backgroundColor = 'default';
-      if (!props.backgroundColor) props.backgroundColor = 'default';
+      props.leadText = props.leadText || '';
+      props.highlights = Array.isArray(props.highlights) ? props.highlights : [];
+      props.visualCards = Array.isArray(props.visualCards) ? props.visualCards : [];
+      props.imageAlt = props.imageAlt || props.headline;
+      props.imagePlacement = props.imagePosition || props.imagePlacement || 'right';
+      props.variant = 'editorial-split';
+      props.theme = 'default';
+      delete props.imagePosition;
+      delete props.backgroundColor;
       break;
 
     case 'features-grid':

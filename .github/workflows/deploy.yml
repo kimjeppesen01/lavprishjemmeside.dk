@@ -8,11 +8,21 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: true
+
 # Multi-domain: set repository vars (optional) — PUBLIC_SITE_URL, PUBLIC_API_URL, DEPLOY_REPO_PATH, DEPLOY_SITE_ROOT. Defaults keep lavprishjemmeside.dk behaviour.
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://lavprishjemmeside.dk' }}
+      API_URL: ${{ vars.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk' }}
+      REPO_PATH: ${{ vars.DEPLOY_REPO_PATH || 'repositories/lavprishjemmeside.dk' }}
+      SITE_ROOT: ${{ vars.DEPLOY_SITE_ROOT || 'lavprishjemmeside.dk' }}
+      API_HEALTH_URL: ${{ vars.DEPLOY_API_HEALTH_URL || 'https://api.lavprishjemmeside.dk/health' }}
 
     steps:
       - name: Checkout code
@@ -30,8 +40,8 @@ jobs:
       - name: Build Astro site
         run: npm run build
         env:
-          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://lavprishjemmeside.dk' }}
-          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk' }}
+          PUBLIC_SITE_URL: ${{ env.SITE_URL }}
+          PUBLIC_API_URL: ${{ env.API_URL }}
           STRICT_CONTENT_FETCH: "1"
 
       - name: Commit built files
@@ -42,43 +52,101 @@ jobs:
           git diff --staged --quiet && echo "No changes" || git commit -m "Build: update dist output"
           git push
 
-      - name: Deploy to cPanel via SSH
+      - name: Autonomous deploy with rollback (SSH)
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
+          envs: REPO_PATH,SITE_ROOT,API_HEALTH_URL,SITE_URL,API_URL
           script: |
             set -euo pipefail
-            REPO_PATH="${{ vars.DEPLOY_REPO_PATH || 'repositories/lavprishjemmeside.dk' }}"
-            SITE_ROOT="${{ vars.DEPLOY_SITE_ROOT || 'lavprishjemmeside.dk' }}"
-            API_HEALTH_URL="${{ vars.DEPLOY_API_HEALTH_URL || 'https://api.lavprishjemmeside.dk/health' }}"
+            API_BASE_URL="${API_URL%/}"
+
+            check_200() {
+              local url="$1"
+              local label="$2"
+              local retries="${3:-12}"
+              local delay="${4:-5}"
+              local body_file="/tmp/deploy_check_$(echo "$label" | tr ' ' '_' | tr -cd '[:alnum:]_').json"
+              local code
+              for i in $(seq 1 "$retries"); do
+                code="$(curl -sS -m 20 -o "$body_file" -w "%{http_code}" "$url" || true)"
+                if [ "$code" = "200" ]; then
+                  echo "PASS [$label] attempt $i (HTTP 200)"
+                  return 0
+                fi
+                echo "WAIT [$label] attempt $i got HTTP $code"
+                sleep "$delay"
+              done
+              echo "FAIL [$label] expected HTTP 200 from $url"
+              cat "$body_file" || true
+              return 1
+            }
+
+            check_non_5xx() {
+              local url="$1"
+              local method="${2:-GET}"
+              local data="${3:-}"
+              local label="$4"
+              local body_file="/tmp/deploy_check_$(echo "$label" | tr ' ' '_' | tr -cd '[:alnum:]_').json"
+              local code
+              if [ -n "$data" ]; then
+                code="$(curl -sS -m 20 -o "$body_file" -w "%{http_code}" -X "$method" -H "Content-Type: application/json" -d "$data" "$url" || true)"
+              else
+                code="$(curl -sS -m 20 -o "$body_file" -w "%{http_code}" -X "$method" "$url" || true)"
+              fi
+              if [ "$code" -ge 100 ] && [ "$code" -lt 500 ]; then
+                echo "PASS [$label] HTTP $code"
+                return 0
+              fi
+              echo "FAIL [$label] expected non-5xx response, got HTTP $code"
+              cat "$body_file" || true
+              return 1
+            }
+
+            run_full_checks() {
+              check_200 "$API_HEALTH_URL" "api health"
+              check_200 "$API_BASE_URL/design-settings/public" "design settings"
+              check_200 "$API_BASE_URL/page-components/public?page=all" "page components"
+              check_non_5xx "$API_BASE_URL/auth/login" "POST" '{"email":"invalid@example.com","password":"wrong"}' "auth login transport"
+              check_non_5xx "$SITE_URL/" "HEAD" "" "site reachability"
+            }
+
+            rollback_deploy() {
+              local rollback_sha="$1"
+              echo "ROLLBACK to $rollback_sha"
+              cd ~/"$REPO_PATH"
+              git reset --hard "$rollback_sha"
+              cp -Rf dist/* ~/"$SITE_ROOT"/
+              cd api
+              npm ci --omit=dev || npm install --production
+              mkdir -p tmp && touch tmp/restart.txt
+              check_200 "$API_HEALTH_URL" "rollback api health" 18 5
+            }
 
             cd ~/$REPO_PATH
+            PREV_SHA="$(git rev-parse --short=12 HEAD)"
             git fetch origin
             git reset --hard origin/main
+            TARGET_SHA="$(git rev-parse --short=12 HEAD)"
+            echo "Deploying target commit $TARGET_SHA (previous $PREV_SHA)"
             cp -Rf dist/* ~/$SITE_ROOT/
             cd api
             npm ci --omit=dev || npm install --production
             mkdir -p tmp && touch tmp/restart.txt
 
-            # Post-deploy smoke test: API must recover after restart signal.
-            echo "Waiting for API health: $API_HEALTH_URL"
-            ok=0
-            for i in {1..12}; do
-              code="$(curl -sS -o /tmp/api_health.json -w "%{http_code}" "$API_HEALTH_URL" || true)"
-              if [ "$code" = "200" ]; then
-                echo "API health check passed (attempt $i)"
-                ok=1
-                break
-              fi
-              echo "Attempt $i: health returned HTTP $code, retrying..."
-              sleep 5
-            done
+            set +e
+            run_full_checks
+            DEPLOY_STATUS="$?"
+            set -e
 
-            if [ "$ok" -ne 1 ]; then
-              echo "API health check failed after deploy"
-              cat /tmp/api_health.json || true
+            if [ "$DEPLOY_STATUS" -ne 0 ]; then
+              echo "Post-deploy checks failed for $TARGET_SHA"
+              rollback_deploy "$PREV_SHA"
+              echo "Rollback complete. Deploy marked failed."
               exit 1
             fi
+
+            echo "Deploy checks passed for $TARGET_SHA"

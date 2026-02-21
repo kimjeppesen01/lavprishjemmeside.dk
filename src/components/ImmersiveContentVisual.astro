@@ -1,0 +1,238 @@
+---
+import { buildSrcset } from '../utils/image';
+
+interface VisualCard {
+  title: string;
+  content?: string;
+  kicker?: string;
+}
+
+interface Props {
+  headline: string;
+  leadText?: string;
+  content: string;
+  imageUrl: string;
+  imageAlt?: string;
+  secondaryImageUrl?: string;
+  secondaryImageAlt?: string;
+  imagePlacement?: 'left' | 'right';
+  variant?: 'editorial-split' | 'cinematic-overlap' | 'stacked-cards';
+  theme?: 'default' | 'accent';
+  overlapDepth?: number;
+  highlights?: string[];
+  visualCards?: VisualCard[];
+  cta?: { text: string; href: string };
+  instanceId?: string | number;
+}
+
+const {
+  headline,
+  leadText,
+  content,
+  imageUrl,
+  imageAlt,
+  secondaryImageUrl,
+  secondaryImageAlt,
+  imagePlacement = 'right',
+  variant = 'cinematic-overlap',
+  theme = 'default',
+  overlapDepth = 56,
+  highlights = [],
+  visualCards = [],
+  cta,
+  instanceId = 'default',
+} = Astro.props;
+
+const headingId = `immersive-content-visual-heading-${instanceId}`;
+const mainSrcset = buildSrcset(imageUrl, [640, 960, 1280, 1600]);
+const secondarySrcset = secondaryImageUrl ? buildSrcset(secondaryImageUrl, [360, 540, 720]) : undefined;
+const overlapPx = Math.min(Math.max(overlapDepth || 0, 0), 120);
+const isLeft = imagePlacement === 'left';
+const isAccent = theme === 'accent';
+const cards = visualCards.slice(0, 3);
+---
+
+<section
+  class:list={[
+    'relative overflow-visible px-[var(--container-padding-x)] py-[var(--section-padding-y)]',
+    'modern-shell',
+  ]}
+  aria-labelledby={headingId}
+>
+  <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div
+      class:list={[
+        'grid items-center gap-10 lg:gap-14',
+        variant === 'editorial-split' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-12',
+      ]}
+    >
+      <div
+        class:list={[
+          'min-w-0',
+          variant === 'editorial-split' ? 'lg:col-span-1' : 'lg:col-span-5',
+          isLeft && variant !== 'editorial-split' ? 'lg:order-2' : 'lg:order-1',
+        ]}
+      >
+        <div class="eyebrow">Langform Sektion</div>
+        <h2
+          id={headingId}
+          class="heading-fluid mt-3 text-[var(--color-text-primary)]"
+          style="font-family: var(--font-heading)"
+        >
+          {headline}
+        </h2>
+
+        {leadText && (
+          <p
+            class="mt-5 max-w-2xl text-[var(--font-size-lg)] text-[var(--color-text-secondary)]"
+            style="font-family: var(--font-body)"
+          >
+            {leadText}
+          </p>
+        )}
+
+        <div
+          class="mt-6 max-w-2xl text-[var(--font-size-base)] leading-[var(--line-height-normal)] text-[var(--color-text-secondary)] [&>p]:mt-4 [&>p:first-child]:mt-0"
+          style="font-family: var(--font-body)"
+          set:html={content}
+        />
+
+        {highlights.length > 0 && (
+          <ul class="mt-6 space-y-2" role="list">
+            {highlights.slice(0, 6).map((item) => (
+              <li class="flex items-start gap-2.5 text-sm text-[var(--color-text-secondary)]" style="font-family: var(--font-body)">
+                <span
+                  class:list={[
+                    'mt-1.5 h-2 w-2 shrink-0 rounded-full',
+                    isAccent ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-text-primary)]',
+                  ]}
+                  aria-hidden="true"
+                />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {cta && (
+          <a
+            href={cta.href}
+            class:list={[
+              'focus-modern mt-8 inline-flex min-h-[44px] min-w-[44px] items-center rounded-full px-5 py-2.5 text-sm font-semibold transition-colors',
+              isAccent
+                ? 'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]'
+                : 'bg-[var(--color-text-primary)] text-white hover:opacity-90',
+            ]}
+            style="font-family: var(--font-body)"
+          >
+            {cta.text}
+          </a>
+        )}
+      </div>
+
+      <div
+        class:list={[
+          'relative min-w-0',
+          variant === 'editorial-split' ? 'lg:col-span-1' : 'lg:col-span-7',
+          isLeft && variant !== 'editorial-split' ? 'lg:order-1' : 'lg:order-2',
+        ]}
+      >
+        <div
+          class:list={[
+            'relative overflow-visible',
+            variant === 'editorial-split' ? 'rounded-[var(--radius-lg)]' : '',
+          ]}
+        >
+          <div
+            class:list={[
+              'relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)]',
+              variant === 'editorial-split' ? '' : 'card-modern',
+            ]}
+          >
+            <img
+              src={imageUrl}
+              srcset={mainSrcset}
+              sizes="(max-width: 1024px) 100vw, 56vw"
+              alt={imageAlt || headline}
+              class:list={[
+                'w-full object-cover',
+                variant === 'editorial-split' ? 'aspect-[4/3]' : 'aspect-[16/10]',
+              ]}
+              loading="lazy"
+            />
+          </div>
+
+          {variant === 'cinematic-overlap' && (
+            <>
+              <div
+                class:list={[
+                  'pointer-events-none absolute -left-4 -right-4 -bottom-4 -top-4 -z-10 rounded-[calc(var(--radius-lg)+12px)] blur-2xl',
+                  isAccent ? 'bg-[var(--color-primary)]/20' : 'bg-[var(--color-text-primary)]/10',
+                ]}
+                aria-hidden="true"
+              />
+              <div
+                class="glass-surface absolute -bottom-6 left-5 right-5 rounded-[var(--radius-card)] p-4 md:left-8 md:right-8"
+                style={`transform: translateY(${Math.round(overlapPx / 3)}px);`}
+              >
+                <p class="text-sm font-semibold text-[var(--color-text-primary)]" style="font-family: var(--font-heading)">
+                  Visual Narrative
+                </p>
+                <p class="mt-1 text-sm text-[var(--color-text-secondary)]" style="font-family: var(--font-body)">
+                  Udnyt overlap og dybde for at gøre længere indhold lettere at konsumere.
+                </p>
+              </div>
+            </>
+          )}
+
+          {variant === 'stacked-cards' && cards.length > 0 && (
+            <div class="pointer-events-none absolute inset-x-2 -bottom-7 hidden md:block">
+              <div class="flex justify-end gap-3">
+                {cards.map((card, idx) => (
+                  <div
+                    class="glass-surface w-[200px] rounded-[var(--radius-card)] p-4 shadow-[var(--shadow-card)]"
+                    style={`transform: translateY(${idx * 14}px); z-index: ${4 - idx};`}
+                  >
+                    {card.kicker && (
+                      <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-primary)]" style="font-family: var(--font-body)">
+                        {card.kicker}
+                      </p>
+                    )}
+                    <p class="mt-1 text-sm font-semibold text-[var(--color-text-primary)]" style="font-family: var(--font-heading)">
+                      {card.title}
+                    </p>
+                    {card.content && (
+                      <p class="mt-1 text-xs text-[var(--color-text-secondary)]" style="font-family: var(--font-body)">
+                        {card.content}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {secondaryImageUrl && variant !== 'editorial-split' && (
+            <div
+              class="absolute -bottom-8 -left-5 hidden w-[46%] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] shadow-[var(--shadow-lg)] md:block"
+              style={`transform: translateY(${overlapPx}px);`}
+            >
+              <img
+                src={secondaryImageUrl}
+                srcset={secondarySrcset}
+                sizes="(max-width: 1024px) 40vw, 24vw"
+                alt={secondaryImageAlt || `${headline} detalje`}
+                class="aspect-[4/3] w-full object-cover"
+                loading="lazy"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {(variant !== 'editorial-split' || secondaryImageUrl) && (
+    <div style={`height: ${Math.max(Math.round(overlapPx * 0.6), 28)}px`} aria-hidden="true" />
+  )}
+</section>

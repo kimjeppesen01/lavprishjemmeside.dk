@@ -31,7 +31,7 @@ const heroSrcset = backgroundImage ? buildSrcset(backgroundImage) : undefined;
 ---
 
 <header
-  class={`relative overflow-hidden ${pyClass} px-[var(--container-padding-x)]`}
+  class={`modern-shell relative overflow-hidden ${pyClass} px-[var(--container-padding-x)]`}
   role="banner"
 >
   {backgroundImage && !isSplit && (
@@ -59,8 +59,9 @@ const heroSrcset = backgroundImage ? buildSrcset(backgroundImage) : undefined;
       ]}
     >
       <div class={isSplit ? 'flex-1' : ''}>
+        <span class="eyebrow mb-4">Digital oplevelse</span>
         <h1
-          class={`font-bold leading-[var(--line-height-tight)] text-[var(--color-text-primary)] ${
+          class={`heading-fluid font-bold leading-[var(--line-height-tight)] text-[var(--color-text-primary)] ${
             isMinimal
               ? 'text-[var(--font-size-3xl)] md:text-[var(--font-size-4xl)]'
               : 'text-[var(--font-size-4xl)] md:text-[var(--font-size-5xl)]'
@@ -88,7 +89,7 @@ const heroSrcset = backgroundImage ? buildSrcset(backgroundImage) : undefined;
             {primaryCta && (
               <a
                 href={primaryCta.href}
-                class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+                class="focus-modern inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-full)] bg-[var(--color-primary)] px-7 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)]"
                 style="font-family: var(--font-body)"
               >
                 {primaryCta.text}
@@ -97,7 +98,7 @@ const heroSrcset = backgroundImage ? buildSrcset(backgroundImage) : undefined;
             {secondaryCta && (
               <a
                 href={secondaryCta.href}
-                class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] border-2 border-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-primary)] transition-colors hover:bg-[var(--color-primary-light)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+                class="focus-modern inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-full)] border-2 border-[var(--color-primary)] px-7 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-primary)] transition-colors hover:bg-[var(--color-primary-light)]"
                 style="font-family: var(--font-body)"
               >
                 {secondaryCta.text}
@@ -113,7 +114,7 @@ const heroSrcset = backgroundImage ? buildSrcset(backgroundImage) : undefined;
             srcset={heroSrcset}
             sizes="(max-width: 768px) 100vw, min(512px, 50vw)"
             alt=""
-            class="w-full h-auto rounded-[var(--radius-card)] shadow-[var(--shadow-card)] object-cover"
+            class="w-full h-auto rounded-[var(--radius-card)] border border-[var(--color-border)] shadow-[var(--shadow-card)] object-cover"
             loading="eager"
             fetchpriority="high"
           />

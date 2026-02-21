@@ -18,7 +18,7 @@ const { headline = 'Kort', cards = [], instanceId = 'default' } = Astro.props;
 
 <section
   class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
-  aria-labelledby="icon-cards-heading"
+  aria-labelledby={`icon-cards-heading-${instanceId}`}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
     <h2

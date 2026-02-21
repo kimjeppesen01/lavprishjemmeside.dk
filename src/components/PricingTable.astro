@@ -16,13 +16,16 @@ const { headline = 'Priser', tiers = [], instanceId = 'default' } = Astro.props;
 ---
 
 <section
-  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
-  aria-labelledby="pricing-heading"
+  class="modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby={`pricing-heading-${instanceId}`}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div class="text-center">
+      <span class="eyebrow">Pakker</span>
+    </div>
     <h2
       id={`pricing-heading-${instanceId}`}
-      class="text-center text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+      class="heading-fluid mt-4 text-center text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
       style="font-family: var(--font-heading)"
     >
       {headline}
@@ -32,12 +35,17 @@ const { headline = 'Priser', tiers = [], instanceId = 'default' } = Astro.props;
       {tiers.map((tier) => (
         <article
           class:list={[
-            'flex flex-col rounded-[var(--radius-card)] border p-[var(--card-padding-lg)] shadow-[var(--shadow-card)]',
+            'card-modern relative flex flex-col p-[var(--card-padding-lg)]',
             tier.featured
               ? 'border-[var(--color-primary)] shadow-[var(--shadow-lg)]'
               : 'border-[var(--color-border)]',
           ]}
         >
+          {tier.featured && (
+            <span class="absolute -top-3 right-4 rounded-[var(--radius-full)] bg-[var(--color-primary)] px-3 py-1 text-xs font-semibold tracking-wide text-[var(--color-text-on-primary)]">
+              Mest valgt
+            </span>
+          )}
           <h3
             class="text-[var(--font-size-xl)] font-semibold text-[var(--color-text-primary)]"
             style="font-family: var(--font-heading)"
@@ -73,7 +81,7 @@ const { headline = 'Priser', tiers = [], instanceId = 'default' } = Astro.props;
           </ul>
           <a
             href={tier.cta?.href || '#'}
-            class="mt-6 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+            class="focus-modern mt-6 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-full)] bg-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)]"
             style="font-family: var(--font-body)"
           >
             {tier.cta?.text || 'Læs mere'}

@@ -1,6 +1,13 @@
 # Deploy Healthcheck Runbook
 
-Purpose: verify every deploy is actually live and healthy, and give deterministic recovery steps when it is not.
+Purpose: define deterministic machine gates for deploy health and provide recovery steps only when automation fails.
+
+## 0. Autonomous policy (standard)
+
+- Release gate is CI-only. No human signoff required.
+- A deploy is successful only if all automated checks pass in `.github/workflows/deploy.yml`.
+- If checks fail, workflow rolls back automatically to previous deployed commit and exits failed.
+- Human action is fallback only (infrastructure outage, DNS failures, or broken server tooling).
 
 ## 1. Green/Red Criteria
 
@@ -13,7 +20,7 @@ Purpose: verify every deploy is actually live and healthy, and give deterministi
   - `/auth/login` unreachable / network error
   - Frontend deploy finished but API still serves old/broken behavior
 
-## 2. Fast Validation (after deploy)
+## 2. Fast Validation (optional observer checks)
 
 Run these from your terminal:
 
@@ -28,7 +35,7 @@ Expected:
 - Health returns `200 OK` with JSON.
 - Login returns JSON and **not** a transport error (HTTP `401` is acceptable for invalid credentials).
 
-## 3. Server-Side Verification (SSH)
+## 3. Server-Side Verification (fallback only)
 
 ```bash
 ssh -p 33 theartis@cp10.nordicway.dk
@@ -52,7 +59,7 @@ ls -la .env
 grep -E "^(DB_HOST|DB_NAME|DB_USER|JWT_SECRET|CORS_ORIGIN|MASTER_STEP_UP_REQUIRED|MASTER_STEP_UP_TTL_MIN)=" .env
 ```
 
-## 4. Restart API Safely (LiteSpeed)
+## 4. Restart API Safely (fallback only)
 
 From `~/repositories/lavprishjemmeside.dk/api`:
 
@@ -72,7 +79,7 @@ If still unhealthy, manual force restart (SSH only):
 pkill -f 'lsnode:.*lavprishjemmeside.dk' || true
 ```
 
-## 5. Dependency/Runtime Recovery
+## 5. Dependency/Runtime Recovery (fallback only)
 
 From `~/repositories/lavprishjemmeside.dk/api`:
 
@@ -104,14 +111,19 @@ node --check src/routes/traffic.js
 - Rate limiter startup validation issues:
   - ensure `api/src/middleware/rateLimit.js` uses `ipKeyGenerator` fallback for IP-based keys.
 
-## 7. GitHub Actions Checks
+## 7. GitHub Actions Gates (authoritative)
 
-In Actions log, verify deploy step contains:
+Deploy must include and pass:
 
 - `npm ci --omit=dev || npm install --production`
 - build with `STRICT_CONTENT_FETCH=1` so content-fetch failures fail the build (no fallback deploy)
 - `mkdir -p tmp && touch tmp/restart.txt`
-- API health retry loop that fails the workflow if `/health` never returns `200`.
+- API `/health` = HTTP 200
+- API `/design-settings/public` = HTTP 200
+- API `/page-components/public?page=all` = HTTP 200
+- API `/auth/login` invalid payload returns non-5xx
+- Site root (`HEAD /`) returns non-5xx
+- Automatic rollback to previous commit if any gate fails
 
 ## 9. Real Incident Reference (2026-02-20, ljdesignstudio.dk)
 

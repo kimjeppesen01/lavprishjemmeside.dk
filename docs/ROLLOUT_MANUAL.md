@@ -16,7 +16,7 @@ Step-by-step instructions to roll out the project: either the main site, a new c
 
 Do **not** use DEPLOY_NEW_DOMAIN.md, MULTI_DOMAIN_CMS_PLAN.md, or other .md files for the rollout steps — they are reference or strategy. Use **UPSTREAM_UPDATES.md** only after the site is live, when you want to pull CMS updates from upstream.
 
-**Reference:** [PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md) · [DEPLOY_NEW_DOMAIN.md](DEPLOY_NEW_DOMAIN.md) · [README_INSTALL.md](../README_INSTALL.md) · [MULTI_DOMAIN_CMS_PLAN.md](MULTI_DOMAIN_CMS_PLAN.md)
+**Reference:** [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) · [DEPLOY_NEW_DOMAIN.md](docs/DEPLOY_NEW_DOMAIN.md) · [README_INSTALL.md](README_INSTALL.md) · [MULTI_DOMAIN_CMS_PLAN.md](docs/MULTI_DOMAIN_CMS_PLAN.md)
 
 ---
 
@@ -64,7 +64,7 @@ On this server the cPanel user is **theartis**. The site folder is always **`/ho
 **All of Part A is on the server.** You do **not** create the domain folder locally. The folder **`~/[domain]`** (e.g. `~/client.dk`) is **on the hosting server** (cPanel). Upload the ZIP there, unzip there, and run `npm run setup` in a **server terminal** (SSH or cPanel → Terminal).
 
 Single path:
-1. **Human:** In cPanel add the domain; create the **API subdomain api.[domain]** (see A.2) before the Node.js app. Set document root for the main site to **`~/[domain]/deploy-output`**. Upload `lavpris-cms-v1.0.zip` into **`~/[domain]`** (cPanel **File Manager** → navigate to the domain folder → Upload). Unzip there (File Manager “Extract”) or leave unzip to AI.
+1. **Human:** In cPanel add the domain; create the **API subdomain api.[domain]** (see A.2) before the Node.js app. Set document root for the main site to **`~/[domain]/deploy-output`**. Upload `lavpris-cms-v1.1.zip` into **`~/[domain]`** (cPanel **File Manager** → navigate to the domain folder → Upload). Unzip there (File Manager “Extract”) or leave unzip to AI.
 2. **AI / Terminal (server only):** Open a **server terminal** (SSH or cPanel → **Terminal**). You start in home (`~`). Run: **`cd ~/client.dk`** (or your domain folder), then **`cd lavpris-cms`** (or the folder that contains `package.json`). Verify with **`ls package.json`**. Only then run **`npm run setup`** with output path **`./deploy-output`**. Then do **A.2** (create API subdomain), then A.3–A.5.
 
 ---
@@ -87,7 +87,7 @@ If the ZIP is **not** yet on the server: upload it via cPanel File Manager to `~
 
 ```bash
 cd ~/client.dk
-unzip lavpris-cms-v1.0.zip
+unzip lavpris-cms-v1.1.zip
 cd lavpris-cms
 ```
 
@@ -104,7 +104,7 @@ You should see a folder like **`lavpris-cms`** (the ZIP extracts into this subfo
 cd lavpris-cms
 ```
 
-(Replace `client.dk` with your domain folder, e.g. `cd ~/ljdesignstudio.dk` then `ls` then `cd lavpris-cms`.) If you get **“cd: lavpris-cms: No such file or directory”**, run **`ls`** — if you see the ZIP file only, run **`unzip lavpris-cms-v1.0.zip`** first, then `ls` again and `cd` into the folder that appeared. If you see a different folder name (e.g. `lavpris-cms-1.0`), `cd` into that and run **`ls package.json`** then **`npm run setup`**.
+(Replace `client.dk` with your domain folder, e.g. `cd ~/ljdesignstudio.dk` then `ls` then `cd lavpris-cms`.) If you get **“cd: lavpris-cms: No such file or directory”**, run **`ls`** — if you see the ZIP file only, run **`unzip lavpris-cms-v1.1.zip`** first, then `ls` again and `cd` into the folder that appeared. If you see a different folder name (e.g. `lavpris-cms-1.1`), `cd` into that and run **`ls package.json`** then **`npm run setup`**.
 
 **Verify you are in the project root** (must succeed before running setup):
 
@@ -201,7 +201,7 @@ The subdomain **api.[domain]** must exist before you create the Node.js applicat
 3. Check:
    - **Design & styling** loads.
    - **Sider (Pages)** loads.
-   - If something fails, see [DEPLOY_NEW_DOMAIN.md – Troubleshooting](DEPLOY_NEW_DOMAIN.md#troubleshooting).
+   - If something fails, see [DEPLOY_NEW_DOMAIN.md – Troubleshooting](docs/DEPLOY_NEW_DOMAIN.md#troubleshooting).
 
 ---
 
@@ -369,7 +369,7 @@ node api/run-schema.cjs
 ADMIN_EMAIL=admin@client.dk ADMIN_PASSWORD=YourChosenPassword node api/set-admin.cjs
 ```
 
-(Replace `admin@client.dk` and `YourChosenPassword` with the admin email and password for this site. If the schema runner fails, use cPanel → phpMyAdmin; see [DEPLOY_NEW_DOMAIN.md](DEPLOY_NEW_DOMAIN.md#6-run-database-schema-and-seed) for SQL order.)
+(Replace `admin@client.dk` and `YourChosenPassword` with the admin email and password for this site. If the schema runner fails, use cPanel → phpMyAdmin; see [DEPLOY_NEW_DOMAIN.md](docs/DEPLOY_NEW_DOMAIN.md#6-run-database-schema-and-seed) for SQL order.)
 
 **Note:** `set-admin.cjs` prints nothing on success (no output = OK). Verify with: `mysql -u DB_USER -p'DB_PASS' -h 127.0.0.1 DB_NAME -e "SELECT email, role FROM users;"`
 
@@ -532,8 +532,8 @@ Output path for dist [./deploy-output]: ./deploy-output
 
 | Symptom | What to do |
 |--------|------------|
-| `ENOENT … package.json` or “no such file or directory, open … package.json” | You ran `npm run setup` from the wrong directory (e.g. home `~`). Run `cd ~/yourdomain.dk`, `ls` — if you see a folder (e.g. `lavpris-cms`), `cd` into it; if you only see the ZIP, run `unzip lavpris-cms-v1.0.zip` first, then `cd` into the new folder. Then `ls package.json` and `npm run setup`. |
-| `cd: lavpris-cms: No such file or directory` | The folder doesn’t exist yet. Run `ls` in your domain folder — if you see the ZIP, run `unzip lavpris-cms-v1.0.zip`; if empty, upload the ZIP via cPanel File Manager and unzip there. Then `ls` and `cd` into the folder that appears. |
+| `ENOENT … package.json` or “no such file or directory, open … package.json” | You ran `npm run setup` from the wrong directory (e.g. home `~`). Run `cd ~/yourdomain.dk`, `ls` — if you see a folder (e.g. `lavpris-cms`), `cd` into it; if you only see the ZIP, run `unzip lavpris-cms-v1.1.zip` first, then `cd` into the new folder. Then `ls package.json` and `npm run setup`. |
+| `cd: lavpris-cms: No such file or directory` | The folder doesn’t exist yet. Run `ls` in your domain folder — if you see the ZIP, run `unzip lavpris-cms-v1.1.zip`; if empty, upload the ZIP via cPanel File Manager and unzip there. Then `ls` and `cd` into the folder that appears. |
 | `npm ci` fails with “Cannot read property …” | The default `node` on the server is v10. Run `export PATH=/opt/alt/alt-nodejs22/root/usr/bin:$PATH` first, then retry. |
 | `Cannot find module ‘./src/routes/traffic’` (or any route) | A new route file was added to `server.cjs` but not committed to the repo. On your local machine: `git add api/src/routes/traffic.js && git commit && git push`. Then on the server: `git fetch origin && git reset --hard origin/main`. |
 | API returns 503 Service Unavailable | Node.js app is not running or crashed on startup. In cPanel → Setup Node.js App, check the app is Started. Then test manually via SSH: `export PATH=/opt/alt/alt-nodejs22/root/usr/bin:$PATH && cd ~/repositories/[domain]/api && node server.cjs` — the error will be printed to stderr. |
@@ -552,7 +552,7 @@ Output path for dist [./deploy-output]: ./deploy-output
 | “Publicer” does nothing | Add `GITHUB_PAT` (and if needed `GITHUB_REPO`) to `api/.env` on the server. |
 | `uapi` command fails with “setuids failed” over SSH | This is expected — cPanel’s `uapi` cannot run over a regular SSH session. Create MySQL databases and users through the cPanel browser interface instead. |
 
-More: [DEPLOY_NEW_DOMAIN.md – Troubleshooting](DEPLOY_NEW_DOMAIN.md#troubleshooting), [PROJECT_CONTEXT.md – cPanel gotchas](../PROJECT_CONTEXT.md).
+More: [DEPLOY_NEW_DOMAIN.md – Troubleshooting](docs/DEPLOY_NEW_DOMAIN.md#troubleshooting), [PROJECT_CONTEXT.md – cPanel gotchas](PROJECT_CONTEXT.md).
 
 ---
 
@@ -561,8 +561,8 @@ More: [DEPLOY_NEW_DOMAIN.md – Troubleshooting](DEPLOY_NEW_DOMAIN.md#troublesho
 | Document | Use when |
 |----------|----------|
 | **This file (ROLLOUT_MANUAL.md)** | You need a single, step-by-step human manual for any rollout. |
-| [README_INSTALL.md](../README_INSTALL.md) | Quick install from ZIP or clone; `npm run setup`. |
-| [DEPLOY_NEW_DOMAIN.md](DEPLOY_NEW_DOMAIN.md) | Checklist for a new client domain (no ZIP). |
-| [UPSTREAM_UPDATES.md](UPSTREAM_UPDATES.md) | Client pulls upstream and redeploys. |
-| [MULTI_DOMAIN_CMS_PLAN.md](MULTI_DOMAIN_CMS_PLAN.md) | Multi-domain product vision, deployment model, ZIP installer. |
-| [PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md) | Tech stack, cPanel/CI gotchas, project structure. |
+| [README_INSTALL.md](README_INSTALL.md) | Quick install from ZIP or clone; `npm run setup`. |
+| [DEPLOY_NEW_DOMAIN.md](docs/DEPLOY_NEW_DOMAIN.md) | Checklist for a new client domain (no ZIP). |
+| [UPSTREAM_UPDATES.md](docs/UPSTREAM_UPDATES.md) | Client pulls upstream and redeploys. |
+| [MULTI_DOMAIN_CMS_PLAN.md](docs/MULTI_DOMAIN_CMS_PLAN.md) | Multi-domain product vision, deployment model, ZIP installer. |
+| [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) | Tech stack, cPanel/CI gotchas, project structure. |

@@ -6,7 +6,7 @@
 
 ## Description
 
-A composite component that renders 2–4 `OverlapImageSection` blocks as one coherent module. Themes alternate (teal/white/teal), image placement alternates (left/right), and images overlap strongly into the next section. No spacers between items—seamless blending. Thin dividers appear when transitioning between themes; otherwise sections blend seamlessly.
+A composite component that renders 2–4 `ImmersiveContentVisual` blocks as one coherent module. Themes alternate, image placement alternates (left/right), and sections overlap for a seamless visual flow.
 
 **Common use cases:**
 - Multiple product features in a flowing visual block
@@ -93,5 +93,5 @@ interface Props {
 ## When AI Should Use This
 
 - Use **alternating-feature-list** when the page needs 2–4 overlapping text/image blocks that blend visually (teal/white alternation, images overlapping into the next section).
-- Prefer this over multiple separate `overlap-image-section` instances when content naturally forms a coherent feature list or process sequence.
+- Prefer this over multiple separate `immersive-content-visual` instances when content naturally forms a coherent feature list or process sequence.
 - Maximum 4 features; minimum 2.

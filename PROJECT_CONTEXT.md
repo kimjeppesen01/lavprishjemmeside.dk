@@ -119,17 +119,23 @@ Astro's root `package.json` has `"type": "module"`. If you have a Node.js API in
 
 **Workflow file**: `.github/workflows/deploy.yml`
 
-**Flow**:
+**Flow (autonomous standard)**:
 1. Push to `main` branch triggers the workflow
 2. GitHub Actions checks out code, installs deps (`npm ci`), runs `npm run build`
 3. The built `dist/` folder is committed back to `main` by the `github-actions` bot
-4. SSH into cPanel server using `appleboy/ssh-action@v1`
-5. On the server:
+4. SSH into cPanel server using `appleboy/ssh-action@v1` and deploy target commit
+5. On the server (automated checks):
    - `git fetch origin && git reset --hard origin/main`
    - `cp -Rf dist/* ~/lavprishjemmeside.dk/` (deploy frontend)
    - `cd api && npm ci --omit=dev || npm install --production` (deterministic API deps, fallback for older environments)
    - `mkdir -p tmp && touch tmp/restart.txt` (signal restart)
-   - `curl https://api.lavprishjemmeside.dk/health` retry loop (deploy fails if API does not recover)
+   - strict post-deploy gates:
+     - `/health` = 200
+     - `/design-settings/public` = 200
+     - `/page-components/public?page=all` = 200
+     - `/auth/login` returns non-5xx transport response
+     - site root responds (HEAD) with non-5xx
+6. If any gate fails: workflow performs automatic rollback to previous deployed commit and marks the run failed.
 
 **GitHub Secrets** (configured on the repo):
 - `FTP_SERVER` — `176.9.90.24`
@@ -146,6 +152,7 @@ Astro's root `package.json` has `"type": "module"`. If you have a Node.js API in
 
 **Known quirks**:
 - Always `git pull --rebase` locally before pushing, because GitHub Actions commits `dist/` back to `main`
+- Deploy pipeline is now self-validating and self-healing (rollback). Manual browser verification is optional, not required for release gating.
 
 ---
 
@@ -569,6 +576,9 @@ script: |
 | Doc | Purpose |
 |---|---|
 | `docs/COMPREHENSIVE_PLAN.md` | **Single consolidated plan** — Merges project context, multi-domain CMS plan, Claude Code integration, and Claude access/safeguards. Vision, architecture, status, roadmap. |
+| `docs/README.md` | **Documentation entry point** — Must-read order and full docs map. |
+| `docs/MUST_READ.md` | **Session start protocol** — Required reading order for new AI sessions. |
+| `docs/AI_ENGINEERING_STANDARDS.md` | **Comprehensive best practices** — Industry-standard workflow for AI-assisted software delivery. |
 | `docs/COMPONENT_EDITOR.md` | **Full reference for the schema-driven component editor** — schema format, field type mapping, form builder internals, save flow, media picker, adding new components |
 | `docs/PHASE_6_Component-Library-&-Styling-Dashboard_v2.md` | **Phase 6 original spec** — Design tokens, DB schema, AI assembly, admin UI. Status: COMPLETED (implementation diverged; see "Implementation vs Spec" in doc). |
 | `docs/GLOBAL_FEATURES.md` | Styling features (smooth scroll, korn-overlay, sideloader, sticky header) from Admin → Design & styling |
@@ -581,6 +591,7 @@ script: |
 | `docs/ROLLOUT_MANUAL.md` | **Rollout manual** — Complete step-by-step human instructions and exact prompts for 1-click setup, new domain (GitHub + cPanel), and main site deploy. |
 | `docs/DEPLOY_HEALTHCHECK.md` | **Deploy health runbook** — Post-deploy verification, green/red criteria, SSH recovery steps, and API restart troubleshooting. |
 | `docs/IAN_PLAN.md` | **IAN client support AI** — Slack-based AI for client channels. Implementation, integration ideas (admin, AI-assembler, Shopping, Pro, multi-domain). |
+| `tasks/README.md` | **Task execution workspace** — `tasks/` is the canonical pending-work area used by Claude dashboard planning. |
 
 ---
 
@@ -591,12 +602,20 @@ Styling-funktioner (smooth scroll, korn-overlay, sideloader, klæbende header) s
 ---
 
 ## Pending
+- Canonical pending-work files now live in `tasks/pending/` (not `docs/`).
 - **Component editor UX**: Re-ordering of array items (drag-and-drop or up/down arrows)
 - **Component variations**: Add A/B content variant support per page component instance
 - **Dashboard enhancements**: Date filtering, charts, auto-refresh, CSV export (see Admin Dashboard section above)
 - **Dashboard pages**: Security logs, content management, user management, session detail view
 - **Public pages**: Priser, Om os, Kontakt
 - **SEO content optimization**
+
+## Process Enforcement (Docs vs Tasks)
+
+- `docs/` is mandatory reference context only (architecture, operations, specs, runbooks).
+- `tasks/pending/` is the only canonical location for executable pending work used by dashboard planning flows.
+- Do not create new TODO or execution-plan files under `docs/`.
+- Every dashboard Claude run must be anchored to a selected `.md` plan file from `tasks/**/*.md`.
 
 ## Planned Modules
 

@@ -1,0 +1,575 @@
+"""
+slack/handlers.py — Message handler for the polling-based Slack agent.
+
+Flow per message:
+  1. Strip @mentions, parse text
+  2. Admin command dispatch (!status, !help, !cost, !budget, !memory, !tools,
+     !history, !health, !reload, !reset)
+  3. Session load + auto-summarise at 20 turns
+  4. Budget gate (block if over limit)
+  5. Model router (pure Python — no API call)
+  6. Project context injection
+  7. Claude API call with full tool-use loop
+  8. Cost recording + history persistence
+  9. Post via Haiku or Sonnet account
+"""
+from __future__ import annotations
+
+import logging
+import re
+import json
+from typing import Any, Callable
+
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
+
+from agent.budget_tracker import BudgetTracker
+from agent.claude_client import ClaudeClient
+from agent.config import Config
+from agent.handoff import build_claude_code_handoff
+from agent.intent_router import IntentType, allowed_tools_for_intent, classify_intent
+from agent.model_router import select_model
+from agent.project_router import ProjectRouter
+from agent.security import sanitise_input
+from audit.logger import AuditLogger
+from memory.db import migrate
+from memory.history import ConversationHistory
+from memory.backlog import BacklogStore
+from memory.store import MemoryStore
+from memory.summarizer import SessionSummarizer
+from slack.admin_commands import (
+    cmd_budget,
+    cmd_cost,
+    cmd_health,
+    cmd_help,
+    cmd_history,
+    cmd_memory,
+    cmd_reload,
+    cmd_tools,
+)
+from slack.formatters import format_status
+from tools.approval import ApprovalGate
+from tools.base import ToolRegistry
+from tools.filesystem import FilesystemListTool, FilesystemReadTool, FilesystemWriteTool
+from tools.shell import ShellTool
+from tools.web_search import WebSearchTool
+
+_CLIENT_SUPPORT_CTX = """\
+You are IAN, an AI support assistant for lavprishjemmeside.dk — a Danish CMS \
+product for building affordable websites. You are responding to a client in \
+their dedicated support channel.
+
+Role:
+- Answer product questions clearly and helpfully
+- Help with website, account, billing, and feature questions
+- Always respond in the same language the client writes in (Danish or English)
+- Be professional, warm, and concise — clients are typically small business owners
+- If an issue cannot be resolved here, direct them to email support@lavprishjemmeside.dk
+
+Do NOT reveal internal tooling, owner information, or pricing margins.
+"""
+
+logger = logging.getLogger(__name__)
+
+Handler = Callable[[dict], None]
+
+MAX_TOOL_ROUNDS = 8
+
+
+def _run_with_tools(
+    *,
+    claude: ClaudeClient,
+    registry: ToolRegistry,
+    approval_gate: ApprovalGate,
+    messages: list[dict[str, Any]],
+    model: str,
+    extra_system_context: str | None,
+    allowed_tools: frozenset[str] | None,
+    audit: AuditLogger | None = None,
+) -> tuple[str, Any]:
+    """
+    Run the Claude tool-use loop until end_turn or max rounds.
+
+    Returns (final_text_reply, last_usage). If max rounds reached,
+    usage is None and reply is an error message.
+    """
+    for _ in range(MAX_TOOL_ROUNDS):
+        response = claude.chat(
+            messages=messages,
+            model=model,
+            extra_system_context=extra_system_context,
+            tools=(
+                [t for t in registry.get_definitions() if t["name"] in allowed_tools]
+                if allowed_tools is not None
+                else registry.get_definitions()
+            ),
+        )
+
+        if response.stop_reason != "tool_use":
+            return claude.extract_text(response), response.usage
+
+        # Build assistant content block and execute each tool call
+        assistant_content: list[dict[str, Any]] = []
+        tool_results: list[dict[str, Any]] = []
+
+        for block in response.content:
+            if block.type == "text":
+                assistant_content.append({"type": "text", "text": block.text})
+            elif block.type == "tool_use":
+                if audit is not None:
+                    audit.tool_call(block.name, block.input if isinstance(block.input, dict) else {"raw": str(block.input)})
+                if allowed_tools is not None and block.name not in allowed_tools:
+                    assistant_content.append({
+                        "type": "tool_use",
+                        "id": block.id,
+                        "name": block.name,
+                        "input": block.input,
+                    })
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": "Tool blocked by IAN policy for this intent.",
+                    })
+                    if audit is not None:
+                        audit.tool_result(block.name, False, "blocked by policy")
+                    continue
+                assistant_content.append({
+                    "type": "tool_use",
+                    "id": block.id,
+                    "name": block.name,
+                    "input": block.input,
+                })
+                if registry.approval_required(block.name):
+                    approved = approval_gate.request(block.name, block.input)
+                    result = registry.execute(block.name, block.input) if approved else "Tool rejected by user."
+                else:
+                    result = registry.execute(block.name, block.input)
+                if audit is not None:
+                    audit.tool_result(block.name, True, result)
+
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": result,
+                })
+
+        messages = [
+            *messages,
+            {"role": "assistant", "content": assistant_content},
+            {"role": "user", "content": tool_results},
+        ]
+
+    return "(max tool rounds reached — please try again)", None
+
+
+def make_handler(
+    cfg: Config,
+    haiku_client: WebClient,
+    sonnet_client: WebClient,
+    audit: AuditLogger | None = None,
+) -> Handler:
+    migrate(cfg.memory.db_path)
+
+    claude = ClaudeClient(cfg)
+    history = ConversationHistory(cfg.memory.db_path, cfg.memory.max_conversation_tokens)
+    store = MemoryStore(cfg.memory.db_path, cfg.memory.markdown_path)
+    backlog = BacklogStore(cfg.memory.db_path)
+    summarizer = SessionSummarizer(cfg, history, claude)
+    budget = BudgetTracker(
+        cfg.memory.db_path,
+        daily_limit=cfg.budget.daily_limit_usd,
+        daily_warn_pct=cfg.budget.daily_warn_pct,
+        monthly_limit=cfg.budget.monthly_limit_usd,
+        monthly_warn_pct=cfg.budget.monthly_warn_pct,
+    )
+    project_router = ProjectRouter(cfg.project_root / "projects")
+
+    # Tool registry
+    registry = ToolRegistry()
+    registry.register(FilesystemReadTool(cfg))
+    registry.register(FilesystemWriteTool(cfg))
+    registry.register(FilesystemListTool(cfg))
+    registry.register(ShellTool(cfg))
+    registry.register(WebSearchTool(cfg))
+
+    if cfg.linkedin.enabled and cfg.linkedin.session_cookie:
+        from tools.linkedin import (
+            LinkedInCommentTool,
+            LinkedInConnectTool,
+            LinkedInFeedTool,
+            LinkedInLikeTool,
+            LinkedInMessageTool,
+            LinkedInPostTool,
+        )
+        registry.register(LinkedInFeedTool(cfg))
+        registry.register(LinkedInPostTool(cfg))
+        registry.register(LinkedInLikeTool(cfg))
+        registry.register(LinkedInCommentTool(cfg))
+        registry.register(LinkedInConnectTool(cfg))
+        registry.register(LinkedInMessageTool(cfg))
+        logger.info("linkedin tools registered")
+
+    approval_gate = ApprovalGate(
+        client=haiku_client,
+        owner_user_id=cfg.slack.owner_user_id,
+        channel_id=cfg.slack.control_channel_id,
+        timeout_seconds=getattr(cfg.security, "approval_timeout_seconds", 120),
+    )
+
+    def _post(client: WebClient, channel: str, text: str, thread_ts: str | None) -> None:
+        try:
+            kwargs: dict = {"channel": channel, "text": text}
+            if thread_ts:
+                kwargs["thread_ts"] = thread_ts
+            client.chat_postMessage(**kwargs)
+        except SlackApiError:
+            logger.exception("Failed to post Slack message")
+
+    def _post_blocks(client: WebClient, channel: str, blocks: dict, thread_ts: str | None) -> None:
+        try:
+            kwargs: dict = {"channel": channel, **blocks}
+            if thread_ts:
+                kwargs["thread_ts"] = thread_ts
+            client.chat_postMessage(**kwargs)
+        except SlackApiError:
+            logger.exception("Failed to post blocks")
+
+    def _create_backlog_ticket(
+        *,
+        message: dict[str, Any],
+        intent: IntentType,
+        handoff_target: str,
+        title_prefix: str,
+    ) -> tuple[str, list[str]]:
+        text = message.get("text", "").strip()
+        summary = text[:500]
+        title = f"{title_prefix}: {summary[:80]}" if summary else title_prefix
+        requester = message.get("user", "unknown")
+        channel = message.get("channel", cfg.slack.control_channel_id)
+        ticket = backlog.create_ticket(
+            title=title,
+            requester=requester,
+            channel=channel,
+            summary=summary or "(no summary)",
+            requested_outcome=summary or "(not provided)",
+            impact="triage pending",
+            handoff_target=handoff_target,
+            intent=intent.value,
+            handoff_payload="",
+            linked_plan_files=[],
+        )
+        linked_plan_files = ticket.linked_plan_files
+        if handoff_target == "claude_code":
+            # Build structured contract for Claude Code handoff, including related planning files.
+            handoff = build_claude_code_handoff(
+                project_root=cfg.project_root,
+                ticket_id=ticket.ticket_id,
+                request_text=summary or "(not provided)",
+            )
+            linked_plan_files = handoff.linked_plan_files
+            handoff_payload = json.dumps(
+                {
+                    "handoff_target": handoff.handoff_target,
+                    "ticket_id": handoff.ticket_id,
+                    "request_summary": handoff.request_summary,
+                    "requested_outcome": handoff.requested_outcome,
+                    "linked_plan_files": handoff.linked_plan_files,
+                    "execution_policy": handoff.execution_policy,
+                },
+                ensure_ascii=False,
+            )
+            backlog.update_handoff_metadata(
+                ticket_id=ticket.ticket_id,
+                handoff_payload=handoff_payload,
+                linked_plan_files=linked_plan_files,
+            )
+        logger.info("backlog.ticket_created id=%s intent=%s", ticket.ticket_id, intent.value)
+        return ticket.ticket_id, linked_plan_files
+
+    def _policy_reply(
+        intent: IntentType,
+        confidence: float,
+        ticket_id: str | None = None,
+        linked_plan_files: list[str] | None = None,
+    ) -> str:
+        confidence_str = f"{confidence:.2f}"
+        linked_plan_files = linked_plan_files or []
+        plans_line = ", ".join(f"`{p}`" for p in linked_plan_files) if linked_plan_files else "`none found`"
+        if intent == IntentType.NEEDS_CLARIFICATION:
+            return (
+                "*NEEDS_CLARIFICATION*\n"
+                f"- intent: `{intent.value}`\n"
+                f"- confidence: `{confidence_str}`\n"
+                "- sources_used: `none`\n"
+                "- action_taken: awaiting clarification\n"
+                "- next_step: Please clarify whether this is a FAQ, status lookup, runbook guidance, triage, or a request to capture."
+            )
+
+        if intent == IntentType.DEV_HANDOFF:
+            return (
+                "*DEV_HANDOFF_TO_CLAUDE_CODE*\n"
+                f"- intent: `{intent.value}`\n"
+                f"- confidence: `{confidence_str}`\n"
+                "- sources_used: `request text`\n"
+                f"- ticket_id: `{ticket_id or 'N/A'}`\n"
+                f"- linked_plan_files: {plans_line}\n"
+                "- action_taken: development task execution blocked in IAN\n"
+                "- next_step: Route this to Claude Code with relevant `tasks/**/*.md` plan context."
+            )
+
+        return (
+            "*OUT_OF_SCOPE_BACKLOG_CREATED*\n"
+            f"- intent: `{intent.value}`\n"
+            f"- confidence: `{confidence_str}`\n"
+            "- sources_used: `request text`\n"
+            f"- ticket_id: `{ticket_id or 'N/A'}`\n"
+            "- action_taken: request marked out-of-scope for IAN fixed environment and backlog ticket created\n"
+            "- next_step: Triage ticket and assign owner (SLA: within 1 business day)."
+        )
+
+    def handle(message: dict) -> None:
+        raw_text: str = message.get("text", "").strip()
+        channel: str = message.get("channel", cfg.slack.control_channel_id)
+        thread_ts: str | None = message.get("thread_ts")
+
+        text = re.sub(r"^<@[A-Z0-9]+>\s*", "", raw_text).strip()
+        text = sanitise_input(text)
+        if not text:
+            return
+        if audit is not None:
+            audit.user_message(message.get("user", "unknown"), text, channel)
+
+        lower = text.lower()
+        is_client_ch = channel in cfg.slack.client_channels
+
+        # ---- Admin commands — owner-only, blocked in client channels ----
+        if not is_client_ch:
+            if lower == "!status":
+                _post_blocks(haiku_client, channel, format_status(cfg), thread_ts)
+                return
+
+            if lower == "!help":
+                _post(haiku_client, channel, cmd_help(), thread_ts)
+                return
+
+            if lower == "!cost":
+                _post(haiku_client, channel, cmd_cost(budget), thread_ts)
+                return
+
+            if lower == "!budget":
+                _post(haiku_client, channel, cmd_budget(budget), thread_ts)
+                return
+
+            if lower.startswith("!memory"):
+                query = text[7:].strip()
+                _post(haiku_client, channel, cmd_memory(query, store), thread_ts)
+                return
+
+            if lower == "!tools":
+                _post(haiku_client, channel, cmd_tools(registry), thread_ts)
+                return
+
+            if lower.startswith("!history"):
+                parts = text.split()
+                n = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 5
+                session_id = history.get_or_create_session(channel)
+                _post(haiku_client, channel, cmd_history(session_id, history, n), thread_ts)
+                return
+
+            if lower == "!health":
+                blocks = cmd_health(cfg, cfg.memory.db_path, haiku_client)
+                _post_blocks(haiku_client, channel, blocks, thread_ts)
+                return
+
+            if lower == "!reload":
+                _post(haiku_client, channel, cmd_reload(cfg.project_root, cfg.memory.startup_files), thread_ts)
+                return
+
+            if lower == "!reset":
+                session_id = history.get_or_create_session(channel)
+                history.end_session(session_id)
+                _post(haiku_client, channel, ":white_check_mark: Session reset. Starting fresh.", thread_ts)
+                return
+
+        # ----------------------------------------------------------------
+        # Conversational path
+        # ----------------------------------------------------------------
+        session_id = history.get_or_create_session(channel)
+        if summarizer.should_summarize(session_id):
+            _post(haiku_client, channel, "_Compressing conversation history..._", thread_ts)
+            session_id = summarizer.summarize_and_rotate(session_id, channel)
+
+        # Budget gate
+        bstatus = budget.check()
+        if bstatus.blocked:
+            _post(haiku_client, channel, f":no_entry: {bstatus.summary()}", thread_ts)
+            return
+        if bstatus.warned:
+            _post(haiku_client, channel, f":warning: {bstatus.summary()}", thread_ts)
+
+        # Fixed-environment intent gate
+        decision = classify_intent(text)
+        logger.info(
+            "intent=%s confidence=%.2f reason=%s",
+            decision.intent.value,
+            decision.confidence,
+            decision.reason,
+        )
+
+        if decision.intent in {
+            IntentType.NEEDS_CLARIFICATION,
+            IntentType.OUT_OF_SCOPE,
+            IntentType.DEV_HANDOFF,
+        }:
+            ticket_id = None
+            linked_plan_files: list[str] = []
+            policy_action = "policy_blocked"
+            if decision.intent == IntentType.OUT_OF_SCOPE:
+                ticket_id, linked_plan_files = _create_backlog_ticket(
+                    message=message,
+                    intent=decision.intent,
+                    handoff_target="backlog_triage",
+                    title_prefix="Out-of-scope request",
+                )
+                policy_action = "out_of_scope_backlog_created"
+            elif decision.intent == IntentType.DEV_HANDOFF:
+                ticket_id, linked_plan_files = _create_backlog_ticket(
+                    message=message,
+                    intent=decision.intent,
+                    handoff_target="claude_code",
+                    title_prefix="Dev handoff request",
+                )
+                policy_action = "dev_handoff_backlog_created"
+            if audit is not None:
+                audit.policy_decision(
+                    intent=decision.intent.value,
+                    confidence=decision.confidence,
+                    policy_decision=policy_action,
+                    ticket_id=ticket_id,
+                    model_used="none_policy_gate",
+                    reason=decision.reason,
+                )
+            _post(
+                haiku_client,
+                channel,
+                _policy_reply(decision.intent, decision.confidence, ticket_id, linked_plan_files),
+                thread_ts,
+            )
+            return
+
+        if decision.intent == IntentType.REQUEST_CAPTURE:
+            ticket_id, _ = _create_backlog_ticket(
+                message=message,
+                intent=decision.intent,
+                handoff_target="backlog_triage",
+                title_prefix="Captured request",
+            )
+            if audit is not None:
+                audit.policy_decision(
+                    intent=decision.intent.value,
+                    confidence=decision.confidence,
+                    policy_decision="request_captured_backlog_created",
+                    ticket_id=ticket_id,
+                    model_used="none_policy_gate",
+                    reason=decision.reason,
+                )
+            _post(
+                haiku_client,
+                channel,
+                (
+                    "*OUT_OF_SCOPE_BACKLOG_CREATED*\n"
+                    f"- intent: `{decision.intent.value}`\n"
+                    f"- confidence: `{decision.confidence:.2f}`\n"
+                    "- sources_used: `request text`\n"
+                    f"- ticket_id: `{ticket_id}`\n"
+                    "- action_taken: request captured as structured backlog item\n"
+                    "- next_step: Triage and prioritize this ticket (SLA: within 1 business day)."
+                ),
+                thread_ts,
+            )
+            return
+
+        # Model routing
+        model, reason = select_model(text, cfg.anthropic.model_default, cfg.anthropic.model_heavy)
+        logger.info("model=%s reason=%s", model, reason)
+        if audit is not None:
+            audit.model_selected(model=model, reason=reason, text_preview=text)
+            audit.policy_decision(
+                intent=decision.intent.value,
+                confidence=decision.confidence,
+                policy_decision="in_scope_allowed",
+                ticket_id="",
+                model_used=model,
+                reason=decision.reason,
+            )
+
+        prompt = text
+        if prompt.lower().startswith("!sonnet"):
+            prompt = prompt[7:].strip() or "Hello"
+
+        if is_client_ch:
+            # Always inject lavprishjemmeside product context in client channels
+            lph_path = cfg.project_root / "projects" / "lavprishjemmeside.md"
+            proj_content = lph_path.read_text(encoding="utf-8") if lph_path.exists() else ""
+            extra_ctx = _CLIENT_SUPPORT_CTX + ("\n\n[Product Context]\n" + proj_content if proj_content else "")
+        else:
+            extra_ctx = project_router.get_context(prompt)
+
+        policy_ctx = (
+            "\n\n[IAN Intent Policy]\n"
+            f"resolved_intent={decision.intent.value}\n"
+            f"confidence={decision.confidence:.2f}\n"
+            "Operate only within this intent and do not expand scope."
+        )
+        extra_ctx = (extra_ctx or "") + policy_ctx
+        allowed_tools = allowed_tools_for_intent(decision.intent)
+
+        history.add_message(session_id, "user", prompt)
+        messages = history.get_messages(session_id)
+
+        try:
+            reply, usage = _run_with_tools(
+                claude=claude,
+                registry=registry,
+                approval_gate=approval_gate,
+                messages=messages,
+                model=model,
+                extra_system_context=extra_ctx,
+                allowed_tools=allowed_tools,
+                audit=audit,
+            )
+        except Exception:
+            logger.exception("Claude API error")
+            if audit is not None:
+                audit.error("Claude API error in handler")
+            _post(haiku_client, channel, ":red_circle: Error calling Claude. Check logs.", thread_ts)
+            return
+
+        # Max rounds hit — post error and bail without recording usage
+        if usage is None:
+            _post(haiku_client, channel, reply, thread_ts)
+            return
+
+        cache_written = getattr(usage, "cache_creation_input_tokens", 0) or 0
+        cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
+        budget.record_usage(model, usage.input_tokens, usage.output_tokens, cache_written, cache_read)
+
+        history.add_message(
+            session_id, role="assistant", content=reply, model=model,
+            input_tokens=usage.input_tokens, output_tokens=usage.output_tokens,
+            cache_written=cache_written, cache_read=cache_read,
+        )
+        if audit is not None:
+            audit.agent_reply(
+                text=reply,
+                model=model,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                cache_written=cache_written,
+                cache_read=cache_read,
+            )
+
+        client = sonnet_client if model == cfg.anthropic.model_heavy else haiku_client
+        _post(client, channel, reply, thread_ts)
+
+    return handle

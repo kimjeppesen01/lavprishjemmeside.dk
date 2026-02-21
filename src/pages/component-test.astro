@@ -5,7 +5,7 @@ import CtaSection from '../components/CtaSection.astro';
 import StatsBanner from '../components/StatsBanner.astro';
 import FeaturesGrid from '../components/FeaturesGrid.astro';
 import IconCards from '../components/IconCards.astro';
-import ContentImageSplit from '../components/ContentImageSplit.astro';
+import ImmersiveContentVisual from '../components/ImmersiveContentVisual.astro';
 import VideoEmbed from '../components/VideoEmbed.astro';
 import Timeline from '../components/Timeline.astro';
 import TestimonialsCarousel from '../components/TestimonialsCarousel.astro';
@@ -83,11 +83,26 @@ const iconCardsData = {
   columns: 2 as const,
 };
 
-const contentImageData = {
-  headline: 'Vi bygger hjemmesider der virker',
-  content: '<p>Med over 10 års erfaring hjælper vi virksomheder med at komme online. Vi fokuserer på brugervenlige løsninger.</p>',
-  imageUrl: 'https://placehold.co/600x400/f3f4f6/6b7280?text=Billede',
-  imagePosition: 'right' as const,
+const immersiveContentVisualData = {
+  headline: 'Moderne langform med visuel dybde',
+  leadText: 'Denne sektion er bygget til forklarende indhold, hvor tekst og visuelle lag skal arbejde sammen.',
+  content: '<p>Når en side har mere kompleks information, hjælper det at kombinere tydelig typografi med overlap-effekter og sekundære visuelle lag. Det øger læsbarheden og gør indholdet mere engagerende.</p><p>Brug varianten cinematic-overlap til premium storytelling eller stacked-cards til fremhævede indsigter.</p>',
+  imageUrl: 'https://images.unsplash.com/photo-1515378791036-0648a814c963?w=1400',
+  secondaryImageUrl: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=900',
+  variant: 'cinematic-overlap' as const,
+  imagePlacement: 'right' as const,
+  overlapDepth: 64,
+  theme: 'accent' as const,
+  highlights: [
+    'Understøtter længere tekstsektioner',
+    'Skaber tydelig informationshierarki',
+    'Samler split, overlap og kort i én komponent',
+  ],
+  visualCards: [
+    { kicker: 'Flow', title: 'Narrativ rytme', content: 'Opdeler tung tekst i visuelle trin.' },
+    { kicker: 'Depth', title: 'Overlappende lag', content: 'Skaber moderne premium udtryk.' },
+  ],
+  cta: { text: 'Kontakt os', href: '/kontakt' },
 };
 
 const videoData = {
@@ -263,7 +278,7 @@ const stickyColumnData = {
     <div class="section-bg-page"><section id="preview-hero-section" class="scroll-mt-24"><HeroSection {...heroData} /></section></div>
     <div class="section-bg-alt"><section id="preview-features-grid" class="scroll-mt-24"><FeaturesGrid {...featuresData} /></section></div>
     <div class="section-bg-page"><section id="preview-icon-cards" class="scroll-mt-24"><IconCards {...iconCardsData} /></section></div>
-    <div class="section-bg-alt"><section id="preview-content-image-split" class="scroll-mt-24"><ContentImageSplit {...contentImageData} /></section></div>
+    <div class="section-bg-alt"><section id="preview-immersive-content-visual" class="scroll-mt-24"><ImmersiveContentVisual {...immersiveContentVisualData} /></section></div>
     <div class="section-bg-page"><section id="preview-product-carousel" class="scroll-mt-24"><ProductCarousel {...productCarouselData} /></section></div>
     <div class="section-bg-alt"><section id="preview-sticky-column" class="scroll-mt-24"><StickyColumnSection {...stickyColumnData} /></section></div>
     <div class="section-bg-page"><section id="preview-stats-banner" class="scroll-mt-24"><StatsBanner {...statsData} /></section></div>

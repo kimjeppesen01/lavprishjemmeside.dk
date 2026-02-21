@@ -4,11 +4,13 @@ const pool = require('../db');
 const { requireAuth, requireMaster } = require('../middleware/auth');
 const { claudeRunRateLimiter } = require('../middleware/rateLimit');
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcrypt');
 const fetch = (...args) => import('node-fetch').then(({ default: f }) => f(...args));
 const { spawn } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 
 // Claude OAuth constants (extracted from claude CLI source)
 const CLAUDE_OAUTH = {
@@ -28,11 +30,20 @@ let authSession = null;
 
 // Repo path convention: /home/theartis/repositories/<domain>
 const REPO_BASE = '/home/theartis/repositories';
-const CONTEXT_FILE_EXTENSIONS = new Set(['.md', '.txt']);
-const CONTEXT_FILE_MAX_COUNT = 12;
-const CONTEXT_FILE_MAX_BYTES_PER_FILE = 80 * 1024;
-const CONTEXT_FILE_MAX_CHARS_PER_FILE = 12000;
-const CONTEXT_FILE_MAX_TOTAL_CHARS = 90000;
+const MASTER_STEP_UP_REQUIRED = process.env.MASTER_STEP_UP_REQUIRED === '1';
+const MASTER_STEP_UP_TTL_MIN = Math.min(Math.max(parseInt(process.env.MASTER_STEP_UP_TTL_MIN || '30', 10), 5), 120);
+const PLAN_MAX_CHARS = 24000;
+
+const TASK_MD_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS kanban_task_md_files (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  task_id INT NOT NULL,
+  file_path VARCHAR(500) NOT NULL,
+  created_by_user_id INT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_task_file (task_id, file_path),
+  INDEX idx_task_id (task_id)
+)`;
 
 async function getSitesRepoMap() {
   const [rows] = await pool.query('SELECT id, name, domain, api_url, admin_url FROM sites WHERE is_active = 1 ORDER BY id ASC');
@@ -47,157 +58,6 @@ async function getSitesRepoMap() {
   return { map, list };
 }
 
-function resolveRepoCwd(repo, repoMap) {
-  return repoMap[repo] || repoMap['lavprishjemmeside.dk'];
-}
-
-function fileMtime(filePath) {
-  try {
-    return fs.statSync(filePath).mtime.toISOString();
-  } catch {
-    return null;
-  }
-}
-
-function safeWalkMarkdownFiles(rootDir, repoRoot, out, maxFiles = 250) {
-  if (!rootDir) return;
-  if (!fs.existsSync(rootDir)) return;
-  let entries = [];
-  try {
-    entries = fs.readdirSync(rootDir, { withFileTypes: true });
-  } catch {
-    return;
-  }
-  for (const entry of entries) {
-    if (out.length >= maxFiles) return;
-    const fullPath = path.join(rootDir, entry.name);
-    if (entry.isDirectory()) {
-      safeWalkMarkdownFiles(fullPath, repoRoot, out, maxFiles);
-      continue;
-    }
-    if (!entry.isFile()) continue;
-    const ext = path.extname(entry.name).toLowerCase();
-    if (!CONTEXT_FILE_EXTENSIONS.has(ext)) continue;
-    const rel = path.relative(repoRoot, fullPath);
-    if (!rel || rel.startsWith('..')) continue;
-    out.push({
-      path: rel.split(path.sep).join('/'),
-      modified_at: fileMtime(fullPath),
-    });
-  }
-}
-
-function listContextFilesForRepo(repoRoot) {
-  const files = [];
-  const roots = [
-    repoRoot,
-    path.join(repoRoot, 'docs'),
-    path.join(repoRoot, 'api', 'src', 'component-docs'),
-    path.join(repoRoot, 'personal-agent', 'docs'),
-  ];
-  for (const dir of roots) {
-    safeWalkMarkdownFiles(dir, repoRoot, files);
-  }
-  const unique = new Map();
-  for (const file of files) {
-    if (!unique.has(file.path)) unique.set(file.path, file);
-  }
-  return Array.from(unique.values())
-    .sort((a, b) => a.path.localeCompare(b.path))
-    .slice(0, 500);
-}
-
-function buildDocContextBlock(cwd, contextFiles) {
-  if (!Array.isArray(contextFiles) || contextFiles.length === 0) {
-    return { block: '', used: [], skipped: [] };
-  }
-
-  const seen = new Set();
-  const selected = [];
-  for (const p of contextFiles) {
-    if (typeof p !== 'string') continue;
-    const trimmed = p.trim();
-    if (!trimmed || seen.has(trimmed)) continue;
-    seen.add(trimmed);
-    selected.push(trimmed);
-  }
-  if (selected.length > CONTEXT_FILE_MAX_COUNT) {
-    selected.length = CONTEXT_FILE_MAX_COUNT;
-  }
-
-  const used = [];
-  const skipped = [];
-  let totalChars = 0;
-  const snippets = [];
-
-  for (const relInput of selected) {
-    const relNorm = path.posix.normalize(relInput);
-    if (relNorm.startsWith('/') || relNorm.startsWith('..')) {
-      skipped.push({ path: relInput, reason: 'invalid_path' });
-      continue;
-    }
-    const ext = path.extname(relNorm).toLowerCase();
-    if (!CONTEXT_FILE_EXTENSIONS.has(ext)) {
-      skipped.push({ path: relInput, reason: 'unsupported_extension' });
-      continue;
-    }
-
-    const abs = path.resolve(cwd, relNorm);
-    const relFromCwd = path.relative(cwd, abs);
-    if (relFromCwd.startsWith('..')) {
-      skipped.push({ path: relInput, reason: 'outside_repo' });
-      continue;
-    }
-
-    let stat;
-    try {
-      stat = fs.statSync(abs);
-    } catch {
-      skipped.push({ path: relInput, reason: 'not_found' });
-      continue;
-    }
-    if (!stat.isFile()) {
-      skipped.push({ path: relInput, reason: 'not_file' });
-      continue;
-    }
-    if (stat.size > CONTEXT_FILE_MAX_BYTES_PER_FILE) {
-      skipped.push({ path: relInput, reason: 'file_too_large' });
-      continue;
-    }
-
-    let content = '';
-    try {
-      content = fs.readFileSync(abs, 'utf8');
-    } catch {
-      skipped.push({ path: relInput, reason: 'read_error' });
-      continue;
-    }
-
-    const clipped = content.slice(0, CONTEXT_FILE_MAX_CHARS_PER_FILE);
-    if (totalChars + clipped.length > CONTEXT_FILE_MAX_TOTAL_CHARS) {
-      skipped.push({ path: relInput, reason: 'total_limit_reached' });
-      continue;
-    }
-    totalChars += clipped.length;
-    used.push(relNorm);
-    snippets.push(
-      `\n--- BEGIN FILE: ${relNorm} ---\n` +
-      clipped +
-      (content.length > clipped.length ? '\n[...truncated...]' : '') +
-      `\n--- END FILE: ${relNorm} ---\n`
-    );
-  }
-
-  if (!snippets.length) return { block: '', used, skipped };
-
-  const block = [
-    '[Selected documentation context follows. Treat these files as authoritative project context for this task.]',
-    ...snippets,
-  ].join('\n');
-
-  return { block, used, skipped };
-}
-
 // Path to the claude wrapper script (uses Node 22)
 const CLAUDE_BIN = '/home/theartis/local/bin/claude';
 
@@ -207,6 +67,121 @@ const MODEL_MAP = {
   sonnet: 'claude-sonnet-4-6',
   opus:   'claude-opus-4-6',
 };
+
+function readStepUpToken(req) {
+  const hdr = req.headers['x-master-step-up-token'];
+  if (hdr) return String(hdr).trim();
+  const auth = req.headers.authorization || '';
+  if (auth.startsWith('MasterStepUp ')) return auth.slice('MasterStepUp '.length).trim();
+  return null;
+}
+
+function verifyStepUpToken(token) {
+  if (!token) return null;
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
+    return null;
+  }
+}
+
+function requireMasterStepUp(req, res, next) {
+  if (!MASTER_STEP_UP_REQUIRED) return next();
+  const payload = verifyStepUpToken(readStepUpToken(req));
+  if (!payload || payload.type !== 'master_step_up' || payload.user_id !== req.user?.id) {
+    return res.status(403).json({ error: 'Step-up authentication required', code: 'STEP_UP_REQUIRED' });
+  }
+  next();
+}
+
+async function ensureTaskMdTable() {
+  await pool.query(TASK_MD_TABLE_SQL);
+}
+
+function slugifyFilename(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'plan';
+}
+
+function normalizeRepoRelativeMdPath(repoRoot, relPath) {
+  if (!relPath || typeof relPath !== 'string') return null;
+  const clean = relPath.replace(/\\/g, '/').replace(/^\/+/, '');
+  if (!clean.toLowerCase().endsWith('.md')) return null;
+  const abs = path.resolve(repoRoot, clean);
+  const root = path.resolve(repoRoot);
+  if (!abs.startsWith(root + path.sep) && abs !== root) return null;
+  return { rel: clean, abs };
+}
+
+function gatherMdFiles(repoRoot) {
+  // Canonical planning source for Claude task runs.
+  const roots = ['tasks'];
+  const files = [];
+  for (const base of roots) {
+    const start = path.join(repoRoot, base);
+    if (!fs.existsSync(start)) continue;
+    const stack = [start];
+    while (stack.length) {
+      const dir = stack.pop();
+      let entries = [];
+      try {
+        entries = fs.readdirSync(dir, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+      for (const e of entries) {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) {
+          stack.push(full);
+          continue;
+        }
+        if (!e.isFile() || !e.name.toLowerCase().endsWith('.md')) continue;
+        const rel = path.relative(repoRoot, full).replace(/\\/g, '/');
+        files.push(rel);
+      }
+    }
+  }
+  return files.sort((a, b) => a.localeCompare(b));
+}
+
+function buildPlanTemplate(task, repo, filePath) {
+  const today = new Date().toISOString().slice(0, 10);
+  return [
+    `# Plan: ${task.title}`,
+    '',
+    `- Task ID: ${task.id}`,
+    `- Version Target: ${task.version_target || '1.1.0'}`,
+    `- Repository: ${repo}`,
+    `- Plan File: ${filePath}`,
+    `- Created: ${today}`,
+    '',
+    '## Scope',
+    task.description || 'Define the exact scope for this task.',
+    '',
+    '## Constraints',
+    '- Keep existing architecture patterns and security safeguards.',
+    '- Avoid unrelated refactors.',
+    '',
+    '## Acceptance Criteria',
+    '- [ ] UI flow is clear and deterministic',
+    '- [ ] API validation prevents unscoped AI runs',
+    '- [ ] Audit metadata is complete for post-mortem reviews',
+    '',
+    '## Risks',
+    '- Missing linkage between task and plan file',
+    '- Prompt context too large or irrelevant',
+    '',
+    '## Implementation Checklist',
+    '- [ ] Backend endpoints implemented',
+    '- [ ] Frontend flow implemented',
+    '- [ ] Validation and error states handled',
+    '- [ ] Basic manual test completed',
+    '',
+  ].join('\n');
+}
 
 // Strip ANSI escape codes from CLI output before sending to browser
 function stripAnsi(s) {
@@ -281,6 +256,33 @@ async function siteConn(site) {
 // GET /master/me — returns is_master for current user (used by frontend to redirect /admin/master)
 router.get('/me', requireAuth, (req, res) => {
   res.json({ is_master: req.user.role === 'master' });
+});
+
+router.get('/step-up-status', requireAuth, requireMaster, (req, res) => {
+  if (!MASTER_STEP_UP_REQUIRED) return res.json({ required: false, verified: true });
+  const payload = verifyStepUpToken(readStepUpToken(req));
+  const verified = Boolean(payload && payload.type === 'master_step_up' && payload.user_id === req.user.id);
+  res.json({ required: true, verified, expires_at: verified ? payload.exp * 1000 : null });
+});
+
+router.post('/step-up', requireAuth, requireMaster, async (req, res) => {
+  const password = req.body?.password;
+  if (!password) return res.status(400).json({ error: 'password required' });
+  try {
+    const [rows] = await pool.query('SELECT id, password_hash FROM users WHERE id = ?', [req.user.id]);
+    if (!rows.length) return res.status(404).json({ error: 'User not found' });
+    const ok = await bcrypt.compare(password, rows[0].password_hash);
+    if (!ok) return res.status(401).json({ error: 'Invalid password' });
+    const token = jwt.sign(
+      { type: 'master_step_up', user_id: req.user.id, email: req.user.email, role: 'master' },
+      process.env.JWT_SECRET,
+      { expiresIn: `${MASTER_STEP_UP_TTL_MIN}m` }
+    );
+    res.json({ ok: true, token, expires_in_min: MASTER_STEP_UP_TTL_MIN });
+  } catch (err) {
+    console.error('POST /master/step-up error:', err);
+    res.status(500).json({ error: 'Failed to verify password' });
+  }
 });
 
 // GET /master/claude-repos — list repos for Claude tab (from sites table, convention path)
@@ -426,6 +428,19 @@ router.get('/kanban', requireAuth, requireMaster, async (req, res) => {
   }
 });
 
+// GET /master/kanban-tasks — flat list for Claude task selector
+router.get('/kanban-tasks', requireAuth, requireMaster, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, title, description, column_name, priority, assigned_to, version_target FROM kanban_items ORDER BY FIELD(column_name, "in_progress","backlog","review","done"), sort_order ASC, id ASC'
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /master/kanban-tasks error:', err);
+    res.status(500).json({ error: 'Failed to load kanban tasks' });
+  }
+});
+
 // POST /master/kanban — create item (JWT or API key)
 router.post('/kanban', [
   (req, res, next) => {
@@ -485,6 +500,99 @@ router.delete('/kanban/:id', requireAuth, requireMaster, async (req, res) => {
   } catch (err) {
     console.error('DELETE /master/kanban/:id error:', err);
     res.status(500).json({ error: 'Failed to delete kanban item' });
+  }
+});
+
+// GET /master/task-md-files?task_id=...&repo=...
+router.get('/task-md-files', requireAuth, requireMaster, async (req, res) => {
+  const taskId = parseInt(req.query.task_id, 10);
+  const repo = String(req.query.repo || '');
+  if (!taskId) return res.status(400).json({ error: 'task_id required' });
+  try {
+    const { map } = await getSitesRepoMap();
+    const cwd = map[repo] || map['lavprishjemmeside.dk'];
+    if (!cwd) return res.status(400).json({ error: 'Invalid repo' });
+    fs.accessSync(cwd, fs.constants.R_OK);
+
+    await ensureTaskMdTable();
+    const [taskRows] = await pool.query('SELECT id, title, version_target FROM kanban_items WHERE id = ?', [taskId]);
+    if (!taskRows.length) return res.status(404).json({ error: 'Task not found' });
+    const task = taskRows[0];
+
+    const [linkedRows] = await pool.query(
+      'SELECT file_path FROM kanban_task_md_files WHERE task_id = ? ORDER BY created_at DESC',
+      [taskId]
+    );
+    const linked = linkedRows.map((r) => r.file_path);
+    const all = gatherMdFiles(cwd);
+
+    const titleWords = String(task.title || '')
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((w) => w.length > 2);
+    const suggested = all.filter((p) => {
+      const l = p.toLowerCase();
+      if (linked.includes(p)) return false;
+      if (task.version_target && l.includes(String(task.version_target).toLowerCase())) return true;
+      return titleWords.some((w) => l.includes(w));
+    }).slice(0, 25);
+
+    res.json({ task_id: taskId, associated: linked, suggested, all });
+  } catch (err) {
+    console.error('GET /master/task-md-files error:', err);
+    res.status(500).json({ error: 'Failed to load task markdown files' });
+  }
+});
+
+// POST /master/task-md-files — create new task plan or link existing .md
+router.post('/task-md-files', requireAuth, requireMaster, async (req, res) => {
+  const taskId = parseInt(req.body?.task_id, 10);
+  const repo = String(req.body?.repo || '');
+  const mode = String(req.body?.mode || 'create');
+  const rawPath = req.body?.file_path ? String(req.body.file_path) : null;
+  if (!taskId) return res.status(400).json({ error: 'task_id required' });
+  if (!repo) return res.status(400).json({ error: 'repo required' });
+  try {
+    const { map } = await getSitesRepoMap();
+    const cwd = map[repo] || map['lavprishjemmeside.dk'];
+    if (!cwd) return res.status(400).json({ error: 'Invalid repo' });
+
+    await ensureTaskMdTable();
+    const [taskRows] = await pool.query('SELECT id, title, description, version_target FROM kanban_items WHERE id = ?', [taskId]);
+    if (!taskRows.length) return res.status(404).json({ error: 'Task not found' });
+    const task = taskRows[0];
+
+    let filePath;
+    let absPath;
+    let createdNewPlan = false;
+
+    if (mode === 'link') {
+      const norm = normalizeRepoRelativeMdPath(cwd, rawPath);
+      if (!norm) return res.status(400).json({ error: 'file_path must be a repo-relative .md path' });
+      if (!fs.existsSync(norm.abs)) return res.status(404).json({ error: 'File not found' });
+      filePath = norm.rel;
+      absPath = norm.abs;
+    } else {
+      const dir = path.join(cwd, 'tasks', 'kanban');
+      fs.mkdirSync(dir, { recursive: true });
+      const base = `${task.version_target || 'v1-1'}-task-${task.id}-${slugifyFilename(task.title)}`;
+      filePath = `tasks/kanban/${base}.md`;
+      absPath = path.join(cwd, filePath);
+      if (!fs.existsSync(absPath)) {
+        fs.writeFileSync(absPath, buildPlanTemplate(task, repo, filePath), 'utf8');
+        createdNewPlan = true;
+      }
+    }
+
+    await pool.query(
+      'INSERT IGNORE INTO kanban_task_md_files (task_id, file_path, created_by_user_id) VALUES (?, ?, ?)',
+      [taskId, filePath, req.user.id]
+    );
+
+    res.json({ ok: true, task_id: taskId, file_path: filePath, created_new_plan: createdNewPlan });
+  } catch (err) {
+    console.error('POST /master/task-md-files error:', err);
+    res.status(500).json({ error: 'Failed to save task markdown file' });
   }
 });
 
@@ -580,40 +688,17 @@ router.get('/claude-accounts', requireAuth, requireMaster, (req, res) => {
   res.json(accounts);
 });
 
-// GET /master/claude-context-files?repo=<domain|id> — list markdown/txt docs available for context
-router.get('/claude-context-files', requireAuth, requireMaster, async (req, res) => {
-  let repoMap;
-  try {
-    const out = await getSitesRepoMap();
-    repoMap = out.map;
-  } catch (err) {
-    console.error('claude-context-files getSitesRepoMap:', err);
-    return res.status(500).json({ error: 'Failed to load sites' });
-  }
-
-  const repo = req.query.repo;
-  const cwd = resolveRepoCwd(repo, repoMap);
-  if (!cwd) return res.status(400).json({ error: 'Invalid repo; use a site domain or id from claude-repos' });
-  try {
-    fs.accessSync(cwd, fs.constants.R_OK);
-  } catch {
-    return res.status(400).json({ error: `Repo path not found or not readable: ${cwd}` });
-  }
-
-  try {
-    const files = listContextFilesForRepo(cwd);
-    res.json({ repo, cwd, files });
-  } catch (err) {
-    console.error('GET /master/claude-context-files error:', err);
-    res.status(500).json({ error: 'Failed to list context files' });
-  }
-});
-
 // POST /master/claude-run — spawn claude CLI and stream output via SSE
 // Uses Claude Pro account login (NOT ANTHROPIC_API_KEY) — same auth as VS Code
-router.post('/claude-run', requireAuth, requireMaster, claudeRunRateLimiter, async (req, res) => {
-  const { prompt, repo, model, account_dir, timeout_min, context_files, kanban_item_id } = req.body;
+router.post('/claude-run', requireAuth, requireMaster, requireMasterStepUp, claudeRunRateLimiter, async (req, res) => {
+  const { prompt, repo, model, account_dir, timeout_min, task_id, md_path, created_new_plan } = req.body;
   if (!prompt) return res.status(400).json({ error: 'prompt required' });
+  if (!md_path || typeof md_path !== 'string' || !md_path.toLowerCase().endsWith('.md')) {
+    return res.status(400).json({
+      error: 'A planning .md file is required before running Claude. Should we plan a new .md file?',
+      code: 'PLAN_MD_REQUIRED',
+    });
+  }
   if (runningTaskId) return res.status(409).json({ error: 'A task is already running', taskId: runningTaskId });
 
   let repoMap, sitesList;
@@ -626,7 +711,7 @@ router.post('/claude-run', requireAuth, requireMaster, claudeRunRateLimiter, asy
     return res.status(500).json({ error: 'Failed to load sites' });
   }
 
-  const cwd = resolveRepoCwd(repo, repoMap);
+  const cwd = repoMap[repo] || repoMap['lavprishjemmeside.dk'];
   if (!cwd) return res.status(400).json({ error: 'Invalid repo; use a site domain or id from claude-repos' });
   try {
     fs.accessSync(cwd, fs.constants.R_OK);
@@ -634,48 +719,27 @@ router.post('/claude-run', requireAuth, requireMaster, claudeRunRateLimiter, asy
     return res.status(400).json({ error: `Repo path not found or not readable: ${cwd}` });
   }
 
-  const modelId = MODEL_MAP[model] || MODEL_MAP.sonnet;
-  const taskId = crypto.randomUUID();
-  const { block: docContextBlock, used: usedDocs, skipped: skippedDocs } = buildDocContextBlock(cwd, context_files);
+  const normMd = normalizeRepoRelativeMdPath(cwd, md_path);
+  if (!normMd) return res.status(400).json({ error: 'Invalid md_path; must be a repo-relative .md file' });
+  if (!fs.existsSync(normMd.abs)) return res.status(400).json({ error: `Selected .md file not found: ${normMd.rel}` });
 
-  let kanbanTaskBlock = '';
-  let kanbanItem = null;
-  if (kanban_item_id !== undefined && kanban_item_id !== null && String(kanban_item_id).trim() !== '') {
-    const kanbanId = Number(kanban_item_id);
-    if (Number.isFinite(kanbanId) && kanbanId > 0) {
-      try {
-        const [rows] = await pool.query(
-          'SELECT id, title, description, column_name, priority, assigned_to, version_target FROM kanban_items WHERE id = ? LIMIT 1',
-          [kanbanId]
-        );
-        if (rows.length) {
-          kanbanItem = rows[0];
-          kanbanTaskBlock = [
-            '[Kanban task context]',
-            `id: ${kanbanItem.id}`,
-            `title: ${kanbanItem.title}`,
-            `column: ${kanbanItem.column_name}`,
-            `priority: ${kanbanItem.priority}`,
-            `assigned_to: ${kanbanItem.assigned_to || 'n/a'}`,
-            `version_target: ${kanbanItem.version_target || 'n/a'}`,
-            `description: ${kanbanItem.description || ''}`,
-            'Use this task as the primary scope unless the user prompt explicitly overrides it.',
-          ].join('\n');
-        }
-      } catch (err) {
-        console.error('claude-run kanban lookup error:', err.message);
-      }
-    }
+  let planContent = '';
+  try {
+    planContent = fs.readFileSync(normMd.abs, 'utf8').slice(0, PLAN_MAX_CHARS);
+  } catch {
+    return res.status(400).json({ error: `Could not read selected .md file: ${normMd.rel}` });
   }
 
+  const modelId = MODEL_MAP[model] || MODEL_MAP.sonnet;
+  const taskId = crypto.randomUUID();
   req.masterAuditMeta = {
     repo: repo || null,
     taskId,
     prompt_length: (prompt && prompt.length) || 0,
     prompt_preview: (typeof prompt === 'string' ? prompt.slice(0, 200) : ''),
-    context_files_used: usedDocs,
-    context_files_skipped: skippedDocs,
-    kanban_item_id: kanbanItem ? kanbanItem.id : null,
+    kanban_task_id: task_id || null,
+    md_path: normMd.rel,
+    created_new_plan: Boolean(created_new_plan),
   };
   const timeoutMs = Math.min(Math.max((parseInt(timeout_min) || 10), 1), 60) * 60_000;
 
@@ -683,13 +747,10 @@ router.post('/claude-run', requireAuth, requireMaster, claudeRunRateLimiter, asy
     '[Context: You are working in the repository for one of the following sites. All sites use the same CMS codebase; each has its own DB and deploy.',
     'Sites: ' + sitesList.map((s) => `${s.name} (${s.domain}) api=${s.api_url} admin=${s.admin_url} repo=${s.repo_path}`).join(' | '),
     `Current repo for this task: ${repo} (${cwd})]`,
+    `[Task anchor: kanban_task_id=${task_id || 'n/a'} plan_file=${normMd.rel}]`,
+    `[Plan markdown content start]\n${planContent}\n[Plan markdown content end]`,
   ].join('\n');
-  const fullPrompt = [
-    contextBlock,
-    kanbanTaskBlock,
-    docContextBlock,
-    typeof prompt === 'string' ? prompt : String(prompt),
-  ].filter(Boolean).join('\n\n');
+  const fullPrompt = contextBlock + '\n\n' + (typeof prompt === 'string' ? prompt : String(prompt));
 
   // Build spawn env: delete ANTHROPIC_API_KEY so Claude Code uses account OAuth login
   const spawnEnv = { ...process.env };
@@ -721,7 +782,7 @@ router.post('/claude-run', requireAuth, requireMaster, claudeRunRateLimiter, asy
   res.flushHeaders();
 
   runningTaskId = taskId;
-  res.write(`data: ${JSON.stringify({ type: 'start', taskId, cwd, model: modelId, context_files_used: usedDocs, kanban_item_id: kanbanItem ? kanbanItem.id : null })}\n\n`);
+  res.write(`data: ${JSON.stringify({ type: 'start', taskId, cwd, model: modelId, md_path: normMd.rel, kanban_task_id: task_id || null })}\n\n`);
 
   const proc = spawn(CLAUDE_BIN, ['--print', '--dangerously-skip-permissions', '--model', modelId, '-p', fullPrompt], {
     cwd,
@@ -774,7 +835,7 @@ router.post('/claude-run', requireAuth, requireMaster, claudeRunRateLimiter, asy
 });
 
 // DELETE /master/claude-run/:taskId — kill a running task
-router.delete('/claude-run/:taskId', requireAuth, requireMaster, (req, res) => {
+router.delete('/claude-run/:taskId', requireAuth, requireMaster, requireMasterStepUp, (req, res) => {
   const proc = activeTasks.get(req.params.taskId);
   if (!proc) return res.status(404).json({ error: 'Task not found or already finished' });
   proc.kill();
@@ -787,7 +848,7 @@ router.delete('/claude-run/:taskId', requireAuth, requireMaster, (req, res) => {
 // The server generates code_verifier/challenge, builds the authorization URL, stores the session,
 // and returns the URL. The user opens it in their browser, authorizes, and copies the auth code.
 // This bypasses the claude auth login spawn entirely (avoids TTY issues + claude.ai network block).
-router.post('/claude-auth-start', requireAuth, requireMaster, (req, res) => {
+router.post('/claude-auth-start', requireAuth, requireMaster, requireMasterStepUp, (req, res) => {
   // Kill any dangling auth session
   if (authSession) authSession = null;
 
@@ -821,7 +882,7 @@ router.post('/claude-auth-start', requireAuth, requireMaster, (req, res) => {
 //   - Just the auth code (if from the text field on the callback page)
 //   - "authcode#code_verifier" (if the callback page bundles both — older CLI behaviour)
 // We always use the code_verifier we generated in claude-auth-start.
-router.post('/claude-auth-code', requireAuth, requireMaster, async (req, res) => {
+router.post('/claude-auth-code', requireAuth, requireMaster, requireMasterStepUp, async (req, res) => {
   const { code: rawCode } = req.body || {};
   if (!rawCode) return res.status(400).json({ error: 'code required' });
   if (!authSession) return res.status(404).json({ error: 'No active auth session — click Start Auth first' });
@@ -951,7 +1012,7 @@ router.post('/claude-auth-code', requireAuth, requireMaster, async (req, res) =>
 });
 
 // GET /master/claude-auth-status?account_dir=... — check if credentials exist and are valid
-router.get('/claude-auth-status', requireAuth, requireMaster, (req, res) => {
+router.get('/claude-auth-status', requireAuth, requireMaster, requireMasterStepUp, (req, res) => {
   const account_dir = req.query.account_dir || '/home/theartis/.claude';
   const credPath    = path.join(account_dir, '.credentials.json');
   const cfgPath     = path.join(account_dir, '.claude.json');

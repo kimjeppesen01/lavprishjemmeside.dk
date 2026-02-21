@@ -8,6 +8,8 @@
 
 Two or three cards displayed in a row with horizontal overlap (one card slightly in front of the next). Each card can have image, title, content, and CTA. Creates a layered, connected feel for feature comparison or process steps.
 
+> **Note:** For a single consolidated long-form section (text + image + overlap cards), prefer `immersive-content-visual`.
+
 **Common use cases:**
 - Feature comparison (2–3 features)
 - Process overview (steps 1, 2, 3)

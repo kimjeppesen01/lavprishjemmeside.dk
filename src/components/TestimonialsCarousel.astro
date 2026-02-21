@@ -16,13 +16,16 @@ const { headline = 'Anmeldelser', testimonials = [], instanceId = 'default' } = 
 ---
 
 <section
-  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
-  aria-labelledby="testimonials-heading"
+  class="modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby={`testimonials-heading-${instanceId}`}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div class="text-center">
+      <span class="eyebrow">Kundeoplevelser</span>
+    </div>
     <h2
       id={`testimonials-heading-${instanceId}`}
-      class="text-center text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+      class="heading-fluid mt-4 text-center text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
       style="font-family: var(--font-heading)"
     >
       {headline}
@@ -35,7 +38,7 @@ const { headline = 'Anmeldelser', testimonials = [], instanceId = 'default' } = 
     >
       {testimonials.map((t, i) => (
         <article
-          class="min-w-[85vw] shrink-0 snap-center rounded-[var(--radius-card)] bg-[var(--color-bg-page)] p-[var(--card-padding-lg)] shadow-[var(--shadow-card)] md:min-w-[45vw] lg:min-w-[calc(var(--container-max-width)/3-1rem)]"
+          class="card-modern min-w-[85vw] shrink-0 snap-center p-[var(--card-padding-lg)] md:min-w-[45vw] lg:min-w-[calc(var(--container-max-width)/3-1rem)]"
           aria-roledescription="slide"
           aria-label={`Tilfredshed ${i + 1} af ${testimonials.length}`}
         >
@@ -46,9 +49,9 @@ const { headline = 'Anmeldelser', testimonials = [], instanceId = 'default' } = 
               ))}
             </div>
           )}
-          <blockquote class="mt-4">
+          <blockquote class="mt-5">
             <p
-              class="text-[var(--font-size-lg)] italic text-[var(--color-text-primary)]"
+              class="text-[var(--font-size-lg)] italic leading-[1.65] text-[var(--color-text-primary)]"
               style="font-family: var(--font-body)"
             >
               "{t.quote}"

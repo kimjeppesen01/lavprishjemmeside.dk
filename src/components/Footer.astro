@@ -6,20 +6,20 @@ const columns = Array.isArray(headerFooter.footer_columns) ? headerFooter.footer
 const copyright = headerFooter.footer_copyright ?? null;
 ---
 
-<footer class="mt-auto bg-gray-900 text-gray-400 py-12">
-  <div class="mx-auto max-w-6xl px-4">
+<footer class="modern-shell mt-auto border-t border-[var(--color-border)] bg-[var(--color-neutral-900)] py-14 text-[var(--color-neutral-300)]">
+  <div class="mx-auto max-w-[var(--container-max-width)] px-[var(--container-padding-x)]">
     {columns.length > 0 && (
       <div class={`grid gap-8 ${columns.length === 1 ? 'grid-cols-1' : columns.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
         {columns.map((col: { title?: string; text?: string; links?: { href: string; label: string }[] }) => (
           <div>
-            <h4 class="text-white font-semibold mb-3">{col.title || 'Kolonnetitel'}</h4>
+            <h4 class="mb-3 text-sm font-semibold uppercase tracking-[0.08em] text-[var(--color-neutral-100)]">{col.title || 'Kolonnetitel'}</h4>
             {col.text ? (
-              <p class="text-sm">{col.text}</p>
+              <p class="text-sm leading-6 text-[var(--color-neutral-300)]">{col.text}</p>
             ) : col.links && col.links.length > 0 ? (
               <ul class="space-y-2 text-sm">
                 {col.links.map((link: { href: string; label: string }) => (
                   <li>
-                    <a href={link.href} class="hover:text-white transition-colors">{link.label}</a>
+                    <a href={link.href} class="focus-modern rounded-[var(--radius-sm)] text-[var(--color-neutral-300)] transition-colors hover:text-[var(--color-neutral-50)]">{link.label}</a>
                   </li>
                 ))}
               </ul>
@@ -28,7 +28,7 @@ const copyright = headerFooter.footer_copyright ?? null;
         ))}
       </div>
     )}
-    <div class="border-t border-gray-800 mt-8 pt-8 text-sm text-center">
+    <div class="mt-10 border-t border-[var(--color-neutral-700)] pt-8 text-center text-sm text-[var(--color-neutral-400)]">
       {copyright || `© ${year}. Alle rettigheder forbeholdes.`}
     </div>
   </div>

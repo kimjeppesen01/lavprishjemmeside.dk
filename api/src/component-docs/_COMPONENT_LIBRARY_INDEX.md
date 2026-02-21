@@ -1,7 +1,7 @@
 # Component Library Index
 
 > **Last updated:** 2025-02-15  
-> **Total components:** 27  
+> **Total components:** 26  
 > **Framework:** Astro + Tailwind CSS v4
 
 This is the master index of all available components in the lavprishjemmeside.dk component library. All components use CSS custom properties from `theme.css` and are designed for Danish content.
@@ -15,16 +15,15 @@ This is the master index of all available components in the lavprishjemmeside.dk
 - **cta-section** - Call-to-action banner with centered or split layout
 - **stats-banner** - Eye-catching statistics display (e.g., "500+ kunder", "99% tilfredshed")
 
-### 📋 Content Sections (14 components)
+### 📋 Content Sections (12 components)
 - **problem-section** - User pain points positioned with product as solution
 - **how-it-works-section** - Step-by-step process explanation
 - **case-studies-section** - Project showcase with image, title, client, outcome, link
-- **overlap-image-section** - Section with headline, content, and image that extends/overlaps into next section
 - **overlap-cards-section** - 2–3 cards in a row with horizontal overlap
+- **immersive-content-visual** - Unified long-form text + visual module with editorial split, cinematic overlap, and stacked card modes
 - **alternating-feature-list** - 2–4 overlap sections as one block; teal/white alternation, images overlap
 - **features-grid** - Grid of features with icons, headlines, and descriptions
 - **icon-cards** - Card-based layout with icons and short text
-- **content-image-split** - Text content beside an image (left/right variants)
 - **video-embed** - Responsive video player with title and description
 - **timeline** - Vertical timeline for processes or company history
 - **product-carousel** - Scroll-pinned horizontal carousel (GSAP ScrollTrigger)
@@ -60,7 +59,7 @@ All components MUST use CSS custom properties from `theme.css`:
 **CRITICAL:** Never use hardcoded Tailwind classes like `bg-blue-600` or `text-gray-800`.
 
 ### Section Background Alternation
-Section backgrounds alternate automatically (page → alt → page → …) via the page wrapper in `[...slug].astro`. Do NOT add section-level `bg-[var(--color-bg-page)]` or `bg-[var(--color-bg-section-alt)]` to content components — they inherit from the wrapper. Only CtaSection, StatsBanner, and ContentImageSplit have `backgroundColor` prop; use `'primary'` for accent blocks. Component order in page_components drives the alternation.
+Section backgrounds alternate automatically (page → alt → page → …) via the page wrapper in `[...slug].astro`. Do NOT add section-level `bg-[var(--color-bg-page)]` or `bg-[var(--color-bg-section-alt)]` to content components — they inherit from the wrapper. Only `cta-section` and `stats-banner` should use `backgroundColor: "primary"`. Component order in page_components drives the alternation.
 
 ### Danish Language
 - All user-facing text must be in Danish

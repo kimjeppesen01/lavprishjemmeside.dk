@@ -1,0 +1,7 @@
+-- Add product-carousel and sticky-column-section to components table
+-- For schema_phase6 (schema_fields, doc_path, default_content, category enum).
+-- Run in phpMyAdmin SQL tab. INSERT IGNORE = safe to run multiple times.
+
+INSERT IGNORE INTO components (slug, name_da, category, description_da, tier, schema_fields, default_content, doc_path, is_active, sort_order) VALUES
+('product-carousel', 'Produkt Karussel', 'content', 'Scroll-pinned horisontal karussel - sektion holder sig fast mens slides bevæger sig', 1, '{"slides":{"type":"array","required":true,"items":{"type":"object","properties":{"img":"string","alt":"string","caption":"string"}}},"heading":{"type":"string","required":false}}', '{"slides":[{"img":"https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800","alt":"Produkt 1"}],"heading":"Udvalgte produkter"}', 'product-carousel.md', 1, 50),
+('sticky-column-section', 'Sticky Kolonne Sektion', 'content', 'Sticky sidebar med overskrift og scrollbart kort-grid', 1, '{"tagline":{"type":"string","required":false},"heading":{"type":"string","required":true},"description":{"type":"string","required":false},"items":{"type":"array","required":true,"items":{"type":"object","properties":{"img":"string","title":"string","desc":"string"}}}}', '{"heading":"Sektion","items":[{"img":"https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=64","title":"Element","desc":"Beskrivelse"}]}', 'sticky-column-section.md', 1, 51);
