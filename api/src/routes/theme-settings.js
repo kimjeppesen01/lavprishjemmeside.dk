@@ -22,6 +22,32 @@ async function ensureThemeTable() {
     ON DUPLICATE KEY UPDATE site_id = VALUES(site_id)
   `);
 
+  // Self-heal older table variants (created in earlier iterations).
+  const [updatedByCols] = await pool.query(`SHOW COLUMNS FROM site_theme_settings LIKE 'updated_by'`);
+  if (!Array.isArray(updatedByCols) || updatedByCols.length === 0) {
+    await pool.query(`ALTER TABLE site_theme_settings ADD COLUMN updated_by INT DEFAULT NULL`);
+  }
+
+  const [motionCols] = await pool.query(`SHOW COLUMNS FROM site_theme_settings LIKE 'motion_profile'`);
+  if (!Array.isArray(motionCols) || motionCols.length === 0) {
+    await pool.query(`ALTER TABLE site_theme_settings ADD COLUMN motion_profile ENUM('standard','reduced','expressive') NOT NULL DEFAULT 'standard'`);
+  } else {
+    const type = String(motionCols[0].Type || '').toLowerCase();
+    if (!type.includes('expressive')) {
+      await pool.query(`ALTER TABLE site_theme_settings MODIFY COLUMN motion_profile ENUM('standard','reduced','expressive') NOT NULL DEFAULT 'standard'`);
+    }
+  }
+
+  const [themeCols] = await pool.query(`SHOW COLUMNS FROM site_theme_settings LIKE 'active_theme_key'`);
+  if (!Array.isArray(themeCols) || themeCols.length === 0) {
+    await pool.query(`ALTER TABLE site_theme_settings ADD COLUMN active_theme_key ENUM('simple','modern','kreativ') NOT NULL DEFAULT 'simple'`);
+  } else {
+    const type = String(themeCols[0].Type || '').toLowerCase();
+    if (!type.includes('kreativ')) {
+      await pool.query(`ALTER TABLE site_theme_settings MODIFY COLUMN active_theme_key ENUM('simple','modern','kreativ') NOT NULL DEFAULT 'simple'`);
+    }
+  }
+
   await pool.query(`
     UPDATE site_theme_settings sts
     JOIN design_settings ds ON ds.site_id = sts.site_id
@@ -108,7 +134,7 @@ router.post('/update', requireAuth, async (req, res) => {
     return res.json(normalize(rows[0]));
   } catch (error) {
     console.error('Error updating theme settings:', error.message);
-    return res.status(500).json({ error: 'Kunne ikke opdatere tema indstillinger' });
+    return res.status(500).json({ error: `Kunne ikke opdatere tema indstillinger (${error.message})` });
   }
 });
 
