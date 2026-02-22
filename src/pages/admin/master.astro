@@ -297,6 +297,20 @@ function normalizeApiBase(url) {
   return String(url || '').replace(/\/+$/, '');
 }
 
+function normalizedHost(host) {
+  return String(host || '').toLowerCase().replace(/^www\./, '');
+}
+
+function isApiLikeBase(url) {
+  try {
+    var u = new URL(url);
+    var h = normalizedHost(u.hostname);
+    return h.indexOf('api.') === 0 || /\/api(\/|$)/.test(u.pathname);
+  } catch (_) {
+    return false;
+  }
+}
+
 function buildApiCandidates(primary) {
   var candidates = [];
   function add(url) {
@@ -305,15 +319,31 @@ function buildApiCandidates(primary) {
     if (candidates.indexOf(clean) === -1) candidates.push(clean);
   }
 
-  add(primary);
-  add(window.location.origin);
+  var currentOrigin = window.location.origin;
+  var currentHost = normalizedHost(window.location.hostname);
+  var fallbackApi = '';
   try {
-    var host = String(window.location.hostname || '');
-    var normalizedHost = host.replace(/^www\./, '');
-    if (normalizedHost && normalizedHost.indexOf('api.') !== 0) {
-      add(window.location.protocol + '//api.' + normalizedHost);
+    if (currentHost && currentHost.indexOf('api.') !== 0) {
+      fallbackApi = window.location.protocol + '//api.' + currentHost;
     }
   } catch (_) {}
+
+  var primaryClean = normalizeApiBase(primary);
+  var primaryHost = '';
+  try {
+    primaryHost = normalizedHost(new URL(primaryClean).hostname);
+  } catch (_) {}
+
+  if (primaryClean && !isApiLikeBase(primaryClean) && primaryHost === currentHost && fallbackApi) {
+    add(fallbackApi);
+    add(primaryClean);
+  } else {
+    add(primaryClean);
+    add(fallbackApi);
+  }
+
+  // Keep site-origin as absolute last resort only for explicitly non-master calls.
+  add(currentOrigin);
 
   return candidates;
 }
@@ -348,7 +378,15 @@ function parseJsonResponse(res, endpointUrl) {
 }
 
 function masterFetchJson(path, options) {
-  var attempts = API_CANDIDATES.slice();
+  var attempts = API_CANDIDATES.filter(function(base) {
+    var baseHost = '';
+    try {
+      baseHost = normalizedHost(new URL(base).hostname);
+    } catch (_) {}
+    // Never use site-origin fallback for /master/* requests.
+    return isApiLikeBase(base) || baseHost !== normalizedHost(window.location.hostname);
+  });
+  if (!attempts.length) attempts = API_CANDIDATES.slice();
   var index = 0;
 
   function attempt() {
