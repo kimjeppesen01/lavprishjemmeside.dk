@@ -723,10 +723,11 @@ router.post('/ian-heartbeat', requireApiKey, async (req, res) => {
       ? 'busy'
       : (normalizedWorkState === 'off' ? 'offline' : 'online');
 
-    const msgCount = (messages_sent_today === undefined || messages_sent_today === null) ? null : Number(messages_sent_today);
-    const tokenCount = (tokens_used_today === undefined || tokens_used_today === null) ? null : Number(tokens_used_today);
-    const costCount = (cost_usd_today === undefined || cost_usd_today === null) ? null : Number(cost_usd_today);
-    const assignCount = (assignments_completed_today === undefined || assignments_completed_today === null) ? null : Number(assignments_completed_today);
+    // Heartbeats may omit usage counters; persist zero for NOT NULL-safe writes.
+    const msgCount = (messages_sent_today === undefined || messages_sent_today === null) ? 0 : Number(messages_sent_today);
+    const tokenCount = (tokens_used_today === undefined || tokens_used_today === null) ? 0 : Number(tokens_used_today);
+    const costCount = (cost_usd_today === undefined || cost_usd_today === null) ? 0 : Number(cost_usd_today);
+    const assignCount = (assignments_completed_today === undefined || assignments_completed_today === null) ? 0 : Number(assignments_completed_today);
 
     await pool.query(
       `INSERT INTO ian_heartbeat (agent_type, status, work_state, current_task, messages_sent_today, tokens_used_today, cost_usd_today, assignments_completed_today, metadata)
