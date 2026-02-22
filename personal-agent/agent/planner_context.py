@@ -99,6 +99,17 @@ class PlannerContextLoader:
         )
         return combined
 
+    def load_product_summary(self, max_chars: int = 2000) -> str:
+        """
+        Return the first `max_chars` of PROJECT_CONTEXT.md for lightweight context injection.
+        Used by the Brainstormer so it knows what the product is without loading all docs.
+        """
+        project_ctx = self._root / "PROJECT_CONTEXT.md"
+        if project_ctx.exists():
+            return project_ctx.read_text(encoding="utf-8")[:max_chars]
+        logger.warning("planner_context: PROJECT_CONTEXT.md not found for product summary")
+        return ""
+
     @staticmethod
     def _section(title: str, content: str) -> str:
         bar = "=" * 60

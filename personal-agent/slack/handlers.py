@@ -26,8 +26,11 @@ from slack_sdk.errors import SlackApiError
 from agent.brainstormer import (
     advance_state,
     build_system_prompt as brainstorm_system_prompt,
+    build_task_md,
     build_ticket_fields,
     detect_approval_signal,
+    detect_user_approval,
+    slugify,
     strip_sentinel,
 )
 from agent.budget_tracker import BudgetTracker
@@ -349,6 +352,8 @@ def make_handler(
         Brainstormer persona handler — multi-turn idea refinement workflow.
         Uses Haiku model. State persisted in session_metadata.
         """
+        from datetime import datetime
+
         meta = history.get_session_metadata(session_id)
         if meta.get("persona") != Persona.BRAINSTORMER:
             # First entry — initialise state
@@ -363,8 +368,22 @@ def make_handler(
         raw_idea = meta.get("raw_idea", text)
         refined_idea = meta.get("refined_idea")
 
-        # Build state-specific system context
-        extra_ctx = brainstorm_system_prompt(state, raw_idea, refined_idea)
+        # Detect if user is approving the Task Definition this turn
+        user_approving = state == "SYNTHESIS" and detect_user_approval(text)
+
+        # Load compact product context so Brainstormer knows what this product is
+        # (prevents asking users technical questions like "what's your tech stack?")
+        product_summary = planner_loader.load_product_summary(max_chars=2000)
+        product_block = (
+            "\n\n=== PRODUCT CONTEXT (background reference — never expose details to user) ===\n"
+            + product_summary
+            + "\n"
+        )
+
+        # Build state-specific system context with approval-pending flag
+        extra_ctx = product_block + brainstorm_system_prompt(
+            state, raw_idea, refined_idea, approval_pending=user_approving
+        )
 
         history.add_message(session_id, "user", text)
         messages = history.get_messages(session_id)
@@ -393,7 +412,15 @@ def make_handler(
         next_state = advance_state(state, reply, text)
         meta["brainstorm_state"] = next_state
 
-        # If approved, create a Kanban ticket and update state to terminal
+        # Store synthesis text for ticket building on approval turn
+        if state == "SYNTHESIS" and not user_approving:
+            meta["synthesis_text"] = reply
+
+        # Track refinements
+        if state == "REFINEMENT":
+            meta["refined_idea"] = text
+
+        # If approved, create Kanban ticket + write MD file + post completion message
         if detect_approval_signal(reply):
             synthesis_text = meta.get("synthesis_text", "")
             ticket_fields = build_ticket_fields(raw_idea, refined_idea or raw_idea, synthesis_text)
@@ -407,13 +434,20 @@ def make_handler(
             meta["ticket_id"] = ticket_id
             logger.info("brainstormer.ticket_created id=%s", ticket_id)
 
-        # Store synthesis text for ticket building on next turn
-        if state == "SYNTHESIS":
-            meta["synthesis_text"] = reply
-
-        # Track refinements
-        if state == "REFINEMENT":
-            meta["refined_idea"] = text
+            # Write task MD file to repo tasks/pending/
+            slug = slugify(ticket_fields["title"])
+            task_md_path = cfg.project_root / "tasks" / "pending" / f"TASK_{slug}.md"
+            try:
+                task_md_path.parent.mkdir(parents=True, exist_ok=True)
+                task_md_path.write_text(
+                    build_task_md(ticket_fields, session_id, datetime.now().isoformat()),
+                    encoding="utf-8",
+                )
+                logger.info("brainstormer.task_md_written path=%s", task_md_path)
+                md_note = f"📄 `tasks/pending/TASK_{slug}.md`"
+            except OSError as e:
+                logger.warning("brainstormer.task_md_write_failed: %s", e)
+                md_note = "(file save failed — check logs)"
 
         history.set_session_metadata(session_id, meta)
 
@@ -432,8 +466,20 @@ def make_handler(
             cache_written=cache_written, cache_read=cache_read,
         )
 
+        # Post Claude's reply (sentinel stripped)
         clean_reply = strip_sentinel(reply)
         _post(haiku_client, channel, clean_reply, thread_ts)
+
+        # If task was just created, post a clear completion + next-step message
+        if detect_approval_signal(reply):
+            _post(
+                haiku_client,
+                channel,
+                f"✅ *Task saved to Kanban → Ideas*\n"
+                f"{md_note}\n\n"
+                f"Say `!plan` to have the Planner design the implementation.",
+                thread_ts,
+            )
 
     def _handle_planner(
         message: dict,

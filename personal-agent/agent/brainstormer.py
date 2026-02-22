@@ -14,6 +14,7 @@ the user signals approval. The handler strips this before posting to Slack.
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 APPROVAL_SENTINEL = "[BRAINSTORM:APPROVED]"
@@ -59,47 +60,71 @@ def _load_workflow_doc() -> str:
         return ""
 
 
-def build_system_prompt(state: str, raw_idea: str, refined_idea: str | None = None) -> str:
+def build_system_prompt(
+    state: str,
+    raw_idea: str,
+    refined_idea: str | None = None,
+    approval_pending: bool = False,
+) -> str:
     """
     Build a state-specific system prompt block for the Brainstormer persona.
     This is prepended to the IAN SOUL/USER context before calling Claude.
+
+    approval_pending=True: user just said "yes" in SYNTHESIS — Claude must emit the
+    sentinel in THIS reply, not a future one.
     """
     workflow_doc = _load_workflow_doc()
 
-    state_instruction = {
-        "IDEATION": (
-            "You are in the IDEATION state. The user has just shared a raw idea. "
-            "Your job is to:\n"
-            "1. Acknowledge the idea briefly (1 sentence)\n"
-            "2. Ask exactly 2-3 targeted clarifying questions to understand scope, "
-            "target users, and success criteria\n"
-            "3. NEVER suggest the idea is ready or propose creating a task yet\n"
-            "4. Be a critical thinker — probe for weak spots"
-        ),
-        "REFINEMENT": (
-            "You are in the REFINEMENT state. The user has answered your clarifying questions. "
-            "Your job is to:\n"
-            "1. Synthesize what you've learned\n"
-            "2. Suggest at least ONE world-class improvement or upgrade to the idea\n"
-            "3. Ask 1-2 deeper questions about constraints, edge cases, or risks\n"
-            "4. Still do NOT create a task — keep refining"
-        ),
-        "SYNTHESIS": (
-            "You are in the SYNTHESIS state. You have enough information. "
-            "Your job is to present a complete structured brief:\n\n"
-            "**[IDEA BRIEF]**\n"
-            "- **Title**: (concise, action-oriented)\n"
-            "- **Problem Statement**: (what pain does this solve?)\n"
-            "- **Proposed Solution**: (refined from dialogue)\n"
-            "- **Target Users**: (who benefits?)\n"
-            "- **Success Metrics**: (how do we know it worked?)\n"
-            "- **Estimated Complexity**: Low / Medium / High\n"
-            "- **Risks**: (1-3 key risks)\n\n"
-            "End with: 'Shall I create a Kanban task for this idea? Reply **yes** to approve.'\n\n"
-            "If the user approves (says yes/approve/looks good/etc.), end your NEXT reply with: "
-            f"{APPROVAL_SENTINEL}"
-        ),
-    }.get(state, "")
+    # When approval is pending, override with a focused instruction that guarantees
+    # the sentinel appears in the current reply — no ambiguity.
+    if approval_pending and state == "SYNTHESIS":
+        state_instruction = (
+            "ACTION REQUIRED — the user has just approved the Task Definition.\n\n"
+            "Write exactly 2 plain-language sentences:\n"
+            "1. What was captured (reference the title from the Task Definition)\n"
+            "2. What happens next (the Planner will design exactly how to build it)\n\n"
+            "Then on a new line, write exactly: "
+            f"{APPROVAL_SENTINEL}\n\n"
+            "Do not add anything else. Do not repeat the Task Definition."
+        )
+    else:
+        state_instruction = {
+            "IDEATION": (
+                "You are in the IDEATION state. The user has just shared a raw idea.\n"
+                "Your job:\n"
+                "1. Acknowledge the idea in 1 enthusiastic plain-language sentence\n"
+                "2. Ask exactly 2-3 clarifying questions — business/user/value focused ONLY\n"
+                "   (Who is it for? What problem does it solve? What would success look like?)\n"
+                "3. NEVER mention technology, code, databases, or implementation\n"
+                "4. NEVER suggest the idea is ready or talk about creating a task yet"
+            ),
+            "REFINEMENT": (
+                "You are in the REFINEMENT state. The user has answered your questions.\n"
+                "Your job:\n"
+                "1. Summarise what you've learned in 2-3 plain-language sentences\n"
+                "2. Suggest 1-2 improvements that increase impact or reduce scope\n"
+                "3. Ask 1-2 follow-up questions about priority, timing, or business scope\n"
+                "4. Still NO technology talk — stay outcome-focused\n"
+                "5. Do NOT create a task yet"
+            ),
+            "SYNTHESIS": (
+                "You are in the SYNTHESIS state. You have enough information.\n"
+                "Present the Task Definition using this EXACT format:\n\n"
+                "**TASK DEFINITION**\n\n"
+                "**Title**: [concise, action-oriented, plain language]\n"
+                "**The Problem**: [1-2 sentences — what's broken/missing and who feels it]\n"
+                "**The Solution**: [the refined idea in plain language]\n"
+                "**Who Benefits**: [specific users and how]\n"
+                "**What Success Looks Like**: [measurable plain-language outcomes]\n"
+                "**Estimated Effort**: Small / Medium / Large\n"
+                "**Key Risks**: [1-2 things that could go wrong]\n\n"
+                "End with:\n"
+                "'Does this capture it correctly? Reply **yes** to approve and I'll create "
+                "the task — or let me know what to adjust.'\n\n"
+                "IMPORTANT: Do NOT emit [BRAINSTORM:APPROVED] in this reply. Wait for the "
+                "user's explicit approval message first."
+            ),
+        }.get(state, "")
 
     context_lines = [
         "=== BRAINSTORMER PERSONA ===",
@@ -110,10 +135,10 @@ def build_system_prompt(state: str, raw_idea: str, refined_idea: str | None = No
     ]
 
     if raw_idea:
-        context_lines += ["", f"=== ORIGINAL IDEA ===", raw_idea]
+        context_lines += ["", "=== ORIGINAL IDEA ===", raw_idea]
 
     if refined_idea:
-        context_lines += ["", f"=== REFINED IDEA SO FAR ===", refined_idea]
+        context_lines += ["", "=== REFINED IDEA SO FAR ===", refined_idea]
 
     return "\n".join(context_lines)
 
@@ -165,12 +190,25 @@ def build_ticket_fields(raw_idea: str, refined_idea: str, synthesis_text: str) -
     """
     Construct structured fields for a backlog/Kanban ticket from the brainstorm session.
     Returns a dict suitable for passing to BacklogStore.create_ticket() or kanban API.
+    Parses the new TASK DEFINITION format with plain-language field names.
     """
-    # Extract title from synthesis if it contains [IDEA BRIEF] structure
-    title = _extract_field(synthesis_text, "Title") or raw_idea[:80]
-    summary = _extract_field(synthesis_text, "Problem Statement") or refined_idea[:200]
-    outcome = _extract_field(synthesis_text, "Success Metrics") or ""
-    impact = _extract_field(synthesis_text, "Proposed Solution") or ""
+    # New TASK DEFINITION format fields
+    title = (
+        _extract_field(synthesis_text, "Title")
+        or raw_idea[:80]
+    )
+    summary = (
+        _extract_field(synthesis_text, "The Problem")
+        or refined_idea[:200]
+    )
+    outcome = (
+        _extract_field(synthesis_text, "What Success Looks Like")
+        or ""
+    )
+    impact = (
+        _extract_field(synthesis_text, "The Solution")
+        or ""
+    )
 
     return {
         "title": title,
@@ -181,6 +219,32 @@ def build_ticket_fields(raw_idea: str, refined_idea: str, synthesis_text: str) -
         "status": "ideas",
         "intent": "idea_brainstorm",
     }
+
+
+def slugify(text: str) -> str:
+    """Convert a title to a safe uppercase filename slug (max 50 chars)."""
+    slug = re.sub(r"[^\w]+", "_", text.lower()).strip("_")
+    return slug[:50].upper()
+
+
+def build_task_md(fields: dict, session_id: str, created_at: str) -> str:
+    """
+    Build a formatted Markdown task file from brainstorm ticket fields.
+    Saved to tasks/pending/TASK_{SLUG}.md in the project repo.
+    """
+    return (
+        f"# TASK: {fields['title']}\n\n"
+        f"**Status**: Pending — Awaiting Planner\n"
+        f"**Created**: {created_at}\n"
+        f"**Session**: {session_id}\n\n"
+        f"---\n\n"
+        f"## The Problem\n{fields['summary']}\n\n"
+        f"## The Solution\n{fields['impact']}\n\n"
+        f"## What Success Looks Like\n{fields['requested_outcome']}\n\n"
+        f"---\n\n"
+        f"*Created by IAN Brainstormer (v1.1) — awaiting Planner implementation design.*\n"
+        f"*To design the implementation plan, say `!plan` in Slack.*\n"
+    )
 
 
 def _extract_field(text: str, field_name: str) -> str:
