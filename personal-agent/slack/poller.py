@@ -20,6 +20,7 @@ Why not webhooks or RTM?
 from __future__ import annotations
 
 import logging
+import queue
 import time
 from typing import Callable
 
@@ -31,7 +32,7 @@ from slack.middleware import is_owner_message
 logger = logging.getLogger(__name__)
 
 # Type alias for the handler function
-MessageHandler = Callable[[dict, str], None]  # (message_dict, reply_model) -> None
+MessageHandler = Callable[[dict], None]
 
 MessageFilter = Callable[[dict, str], bool]
 
@@ -40,12 +41,20 @@ class SlackPoller:
     """
     Polls a Slack channel for new messages and dispatches them to a handler.
 
+    When message_queue is provided, qualifying messages are enqueued instead of
+    calling the handler on the poll thread. A separate worker (started by the
+    caller) should drain the queue and call the handler. This keeps the poll
+    loop responsive so new messages are seen on schedule even while one is
+    being processed.
+
     Args:
         read_client: WebClient used to read channel history (either token works).
         owner_user_id: Only messages from this user ID are dispatched.
         channel_id: The Slack channel to monitor.
         poll_interval_seconds: Seconds between polls (default: 5).
         handler: Callable invoked with each qualifying message dict.
+        message_filter: Predicate (message, owner_user_id) -> bool.
+        message_queue: If set, enqueue messages here instead of calling handler.
     """
 
     def __init__(
@@ -56,6 +65,7 @@ class SlackPoller:
         handler: MessageHandler,
         poll_interval_seconds: int = 5,
         message_filter: MessageFilter = is_owner_message,
+        message_queue: queue.Queue[dict] | None = None,
     ) -> None:
         self._client = read_client
         self._owner_user_id = owner_user_id
@@ -63,6 +73,7 @@ class SlackPoller:
         self._handler = handler
         self._interval = poll_interval_seconds
         self._message_filter = message_filter
+        self._message_queue = message_queue
         self._running = False
 
     def start(self) -> None:
@@ -122,9 +133,19 @@ class SlackPoller:
 
             if self._message_filter(msg, self._owner_user_id):
                 logger.debug("Dispatching message ts=%s", msg_ts)
-                try:
-                    self._handler(msg)
-                except Exception:
-                    logger.exception("Handler raised on message ts=%s", msg_ts)
+                if self._message_queue is not None:
+                    try:
+                        self._message_queue.put_nowait(msg)
+                    except queue.Full:
+                        logger.warning(
+                            "Handler queue full, dropping message ts=%s channel=%s",
+                            msg_ts,
+                            self._channel_id,
+                        )
+                else:
+                    try:
+                        self._handler(msg)
+                    except Exception:
+                        logger.exception("Handler raised on message ts=%s", msg_ts)
 
         return new_last_ts

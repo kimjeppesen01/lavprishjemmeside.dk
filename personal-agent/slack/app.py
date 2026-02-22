@@ -19,8 +19,9 @@ Architecture:
 from __future__ import annotations
 
 import logging
+import queue
 import threading
-from typing import Optional
+from typing import Callable, Optional
 
 from slack_sdk import WebClient
 
@@ -34,6 +35,24 @@ from slack.handlers import make_handler
 from slack.poller import SlackPoller
 
 logger = logging.getLogger(__name__)
+
+# Bounded queue size so poller doesn't enqueue unboundedly if workers fall behind
+_HANDLER_QUEUE_MAXSIZE = 100
+
+
+def _handler_worker(
+    msg_queue: queue.Queue[dict | None],
+    handler: Callable[[dict], None],
+) -> None:
+    """Drain queue and call handler for each message. Exits when None is enqueued."""
+    while True:
+        item = msg_queue.get()
+        if item is None:
+            break
+        try:
+            handler(item)
+        except Exception:
+            logger.exception("Handler worker raised on message")
 
 
 def start(cfg: Config, audit: AuditLogger | None = None) -> None:
@@ -78,6 +97,14 @@ def start(cfg: Config, audit: AuditLogger | None = None) -> None:
         return message.get("user", "") not in agent_user_ids
 
     for channel_id in client_channels:
+        client_queue: queue.Queue[dict | None] = queue.Queue(maxsize=_HANDLER_QUEUE_MAXSIZE)
+        client_worker = threading.Thread(
+            target=_handler_worker,
+            args=(client_queue, handler),
+            name=f"client-handler-{channel_id}",
+            daemon=True,
+        )
+        client_worker.start()
         client_poller = SlackPoller(
             read_client=haiku_client,
             owner_user_id=cfg.slack.owner_user_id,
@@ -85,6 +112,7 @@ def start(cfg: Config, audit: AuditLogger | None = None) -> None:
             handler=handler,
             poll_interval_seconds=cfg.slack.poll_interval_seconds,
             message_filter=_client_filter,
+            message_queue=client_queue,
         )
         t = threading.Thread(
             target=client_poller.start,
@@ -95,18 +123,31 @@ def start(cfg: Config, audit: AuditLogger | None = None) -> None:
         logger.info("Client poller started | channel=%s", channel_id)
 
     # --- Control channel poller (main thread, blocking) ---
+    control_queue: queue.Queue[dict | None] = queue.Queue(maxsize=_HANDLER_QUEUE_MAXSIZE)
+    control_worker = threading.Thread(
+        target=_handler_worker,
+        args=(control_queue, handler),
+        name="control-handler",
+        daemon=False,
+    )
+    control_worker.start()
     poller = SlackPoller(
         read_client=haiku_client,
         owner_user_id=cfg.slack.owner_user_id,
         channel_id=cfg.slack.control_channel_id,
         handler=handler,
         poll_interval_seconds=cfg.slack.poll_interval_seconds,
+        message_queue=control_queue,
     )
     try:
         poller.start()
     finally:
         runtime_control.stop()
         scheduler.stop()
+        control_queue.put(None)
+        control_worker.join(timeout=10)
+        if control_worker.is_alive():
+            logger.warning("Control handler worker did not exit within 10s")
 
 
 def _verify_token(client: WebClient, label: str) -> Optional[str]:
