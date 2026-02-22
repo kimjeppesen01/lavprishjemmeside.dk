@@ -19,6 +19,7 @@ import logging
 import re
 import json
 from typing import Any, Callable
+from pathlib import Path
 
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -87,6 +88,35 @@ logger = logging.getLogger(__name__)
 Handler = Callable[[dict], None]
 
 MAX_TOOL_ROUNDS = 8
+
+
+def _resolve_repo_root(cfg: Config) -> Path:
+    """Resolve repository root where PROJECT_CONTEXT.md and tasks/ live."""
+    candidates = [cfg.projects.the_artisan_path, cfg.project_root, cfg.project_root.parent]
+    for candidate in candidates:
+        root = Path(candidate)
+        if (root / "PROJECT_CONTEXT.md").exists():
+            return root
+    return cfg.project_root
+
+
+def _clean_request_headline(text: str, fallback: str = "Request") -> str:
+    """Build a concise, clean task headline from free-form Slack text."""
+    if not text:
+        return fallback
+    cleaned = re.sub(r"<([^>|]+)\|([^>]+)>", r"\2", text)
+    cleaned = re.sub(r"https?://\S+", "", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" -:\n\t")
+    cleaned = re.sub(
+        r"^(i want|i need|please|can you|could you|jeg vil|jeg har brug for|kan du)\s+",
+        "",
+        cleaned,
+        flags=re.IGNORECASE,
+    ).strip()
+    cleaned = cleaned.rstrip(":;,- ")
+    if not cleaned:
+        return fallback
+    return cleaned[:120]
 
 
 def _run_with_tools(
@@ -182,6 +212,7 @@ def make_handler(
     audit: AuditLogger | None = None,
     runtime_control: RuntimeControl | None = None,
 ) -> Handler:
+    repo_root = _resolve_repo_root(cfg)
     migrate(cfg.memory.db_path)
 
     claude = ClaudeClient(cfg)
@@ -196,7 +227,7 @@ def make_handler(
         monthly_limit=cfg.budget.monthly_limit_usd,
         monthly_warn_pct=cfg.budget.monthly_warn_pct,
     )
-    project_router = ProjectRouter(cfg.project_root / "projects")
+    project_router = ProjectRouter(repo_root / "projects")
 
     # Tool registry
     registry = ToolRegistry()
@@ -257,7 +288,8 @@ def make_handler(
     ) -> tuple[str, list[str]]:
         text = message.get("text", "").strip()
         summary = text[:500]
-        title = f"{title_prefix}: {summary[:80]}" if summary else title_prefix
+        headline = _clean_request_headline(summary, fallback=title_prefix)
+        title = f"{title_prefix}: {headline}" if headline else title_prefix
         requester = message.get("user", "unknown")
         channel = message.get("channel", cfg.slack.control_channel_id)
         ticket = backlog.create_ticket(
@@ -276,7 +308,7 @@ def make_handler(
         if handoff_target == "claude_code":
             # Build structured contract for Claude Code handoff, including related planning files.
             handoff = build_claude_code_handoff(
-                project_root=cfg.project_root,
+                project_root=repo_root,
                 ticket_id=ticket.ticket_id,
                 request_text=summary or "(not provided)",
             )
@@ -352,7 +384,7 @@ def make_handler(
             "- next_step: Triage ticket and assign owner (SLA: within 1 business day)."
         )
 
-    planner_loader = PlannerContextLoader(cfg.project_root)
+    planner_loader = PlannerContextLoader(repo_root)
 
     def _active_agent_type(persona: str | None = None, model: str | None = None) -> str:
         if persona == Persona.BRAINSTORMER:
@@ -412,8 +444,6 @@ def make_handler(
         history.add_message(session_id, "user", text)
         messages = history.get_messages(session_id)
         if runtime_control is not None:
-            runtime_control.mark_operating(agent_type="planner", current_task="Planner workflow")
-        if runtime_control is not None:
             runtime_control.mark_operating(agent_type="brainstormer", current_task="Brainstormer workflow")
 
         try:
@@ -468,7 +498,7 @@ def make_handler(
 
             # Write task MD file to repo tasks/pending/
             slug = slugify(ticket_fields["title"])
-            task_md_path = cfg.project_root / "tasks" / "pending" / f"TASK_{slug}.md"
+            task_md_path = repo_root / "tasks" / "pending" / f"TASK_{slug}.md"
             try:
                 task_md_path.parent.mkdir(parents=True, exist_ok=True)
                 task_md_path.write_text(
@@ -509,9 +539,28 @@ def make_handler(
                 channel,
                 f"✅ *Task saved to Kanban → Ideas*\n"
                 f"{md_note}\n\n"
-                f"Say `!plan` to have the Planner design the implementation.",
+                "Planner starter nu automatisk og laver implementeringsplan + estimat.",
                 thread_ts,
             )
+            plan_prompt = (
+                "Create a full implementation plan for this approved task.\n"
+                f"Title: {ticket_fields.get('title', raw_idea)}\n"
+                f"Problem: {ticket_fields.get('summary', '')}\n"
+                f"Solution: {ticket_fields.get('impact', '')}\n"
+                f"Success criteria: {ticket_fields.get('requested_outcome', '')}\n"
+                f"Task file: tasks/pending/TASK_{slug}.md\n"
+                "Return full planner output including development cost estimate."
+            )
+            try:
+                _handle_planner(message, session_id, plan_prompt, channel, thread_ts)
+            except Exception:
+                logger.exception("brainstormer.auto_planner_failed")
+                _post(
+                    haiku_client,
+                    channel,
+                    ":warning: Automatisk planner-kørsel fejlede. Skriv `!plan` for manuel kørsel.",
+                    thread_ts,
+                )
         if runtime_control is not None:
             runtime_control.assignment_complete(
                 agent_type="brainstormer",
@@ -858,7 +907,7 @@ def make_handler(
 
         if is_client_ch:
             # Always inject lavprishjemmeside product context in client channels
-            lph_path = cfg.project_root / "projects" / "lavprishjemmeside.md"
+            lph_path = repo_root / "projects" / "lavprishjemmeside.md"
             proj_content = lph_path.read_text(encoding="utf-8") if lph_path.exists() else ""
             extra_ctx = _CLIENT_SUPPORT_CTX + ("\n\n[Product Context]\n" + proj_content if proj_content else "")
         else:
