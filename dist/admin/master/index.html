@@ -127,13 +127,90 @@ Generate Auth URL
     })();
     </script>  </body></html> <script>(function(){const apiUrl = "https://api.lavprishjemmeside.dk";
 
-var API = apiUrl;
+function normalizeApiBase(url) {
+  return String(url || '').replace(/\/+$/, '');
+}
+
+function buildApiCandidates(primary) {
+  var candidates = [];
+  function add(url) {
+    var clean = normalizeApiBase(url);
+    if (!clean) return;
+    if (candidates.indexOf(clean) === -1) candidates.push(clean);
+  }
+
+  add(primary);
+  add(window.location.origin);
+  try {
+    var host = String(window.location.hostname || '');
+    var normalizedHost = host.replace(/^www\./, '');
+    if (normalizedHost && normalizedHost.indexOf('api.') !== 0) {
+      add(window.location.protocol + '//api.' + normalizedHost);
+    }
+  } catch (_) {}
+
+  return candidates;
+}
+
+var API_CANDIDATES = buildApiCandidates(apiUrl);
+var API = API_CANDIDATES[0] || normalizeApiBase(apiUrl);
 var activeTab = 'sites';
 var kanbanData = {};
 var currentTaskId = null;
 var masterStepUpToken = sessionStorage.getItem('master_step_up_token') || '';
 var agentsPollTimer = null;
 var ianControlState = { enabled: true, desired_state: 'on', updated_at: null, note: null };
+
+function parseJsonResponse(res, endpointUrl) {
+  var contentType = String((res.headers && res.headers.get('content-type')) || '').toLowerCase();
+  if (contentType.indexOf('application/json') >= 0) return res.json();
+  return res.text().then(function(text) {
+    var sample = String(text || '').trim();
+    if (sample.charAt(0) === '<') {
+      var err = new Error('Non-JSON response [' + res.status + '] ' + endpointUrl);
+      err.code = 'NON_JSON';
+      throw err;
+    }
+    try {
+      return sample ? JSON.parse(sample) : {};
+    } catch (_) {
+      var err2 = new Error('Invalid JSON [' + res.status + '] ' + endpointUrl);
+      err2.code = 'INVALID_JSON';
+      throw err2;
+    }
+  });
+}
+
+function masterFetchJson(path, options) {
+  var attempts = API_CANDIDATES.slice();
+  var index = 0;
+
+  function attempt() {
+    var base = attempts[index];
+    API = base || API;
+    var url = normalizeApiBase(base) + path;
+    return fetch(url, options || {})
+      .then(function(res) {
+        if (!res.ok) {
+          var e = new Error('HTTP ' + res.status + ' ' + url);
+          e.status = res.status;
+          throw e;
+        }
+        return parseJsonResponse(res, url);
+      })
+      .catch(function(err) {
+        var canRetryParse = err && (err.code === 'NON_JSON' || err.code === 'INVALID_JSON' || /Unexpected token </.test(String(err.message || '')));
+        var canRetryStatus = err && (err.status === 404 || err.status === 405);
+        if ((canRetryParse || canRetryStatus) && index < attempts.length - 1) {
+          index += 1;
+          return attempt();
+        }
+        throw err;
+      });
+  }
+
+  return attempt();
+}
 
 // ─── Auth helper ──────────────────────────────────────────────
 function authHeaders() {
@@ -334,8 +411,7 @@ function setIAnBadge() {
 }
 
 function loadIAnControl(silent) {
-  return fetch(API + '/master/ian-control', { headers: authHeaders() })
-    .then(function(r) { return r.json(); })
+  return masterFetchJson('/master/ian-control', { headers: authHeaders() })
     .then(function(data) {
       if (typeof data.enabled === 'boolean') ianControlState = data;
       setIAnBadge();
@@ -348,12 +424,11 @@ function loadIAnControl(silent) {
 function toggleIAnControl() {
   var nextEnabled = !ianControlState.enabled;
   if (!nextEnabled && !confirm('Sluk IAN nu? Dette stopper alle assignment flows.')) return;
-  fetch(API + '/master/ian-control', {
+  masterFetchJson('/master/ian-control', {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ enabled: nextEnabled, note: nextEnabled ? 'Enabled from master dashboard' : 'Disabled from master dashboard' }),
   })
-    .then(function(r) { return r.json(); })
     .then(function(j) {
       if (j.error) throw new Error(j.error);
       ianControlState.enabled = nextEnabled;
@@ -392,8 +467,7 @@ function renderAgentCard(agent) {
 }
 
 function loadAgents() {
-  fetch(API + '/master/ian-status', { headers: authHeaders() })
-    .then(function(r) { return r.json(); })
+  masterFetchJson('/master/ian-status', { headers: authHeaders() })
     .then(function(agents) {
       var grid = document.getElementById('agent-cards');
       grid.innerHTML = agents.length
