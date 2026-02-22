@@ -113,6 +113,7 @@ def _clean_request_headline(text: str, fallback: str = "Request") -> str:
         cleaned,
         flags=re.IGNORECASE,
     ).strip()
+    cleaned = re.sub(r":\s*(in|på|on)\s*$", "", cleaned, flags=re.IGNORECASE).strip()
     cleaned = cleaned.rstrip(":;,- ")
     if not cleaned:
         return fallback
