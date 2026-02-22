@@ -289,8 +289,11 @@ def make_handler(
     ) -> tuple[str, list[str]]:
         text = message.get("text", "").strip()
         summary = text[:500]
-        headline = _clean_request_headline(summary, fallback=title_prefix)
-        title = f"{title_prefix}: {headline}" if headline else title_prefix
+        if intent in {IntentType.IDEA_BRAINSTORM, IntentType.PLAN_DESIGN}:
+            title = _clean_request_headline(title_prefix, fallback=title_prefix)
+        else:
+            headline = _clean_request_headline(summary, fallback=title_prefix)
+            title = f"{title_prefix}: {headline}" if headline else title_prefix
         requester = message.get("user", "unknown")
         channel = message.get("channel", cfg.slack.control_channel_id)
         ticket = backlog.create_ticket(
@@ -553,7 +556,14 @@ def make_handler(
                 "Return full planner output including development cost estimate."
             )
             try:
-                _handle_planner(message, session_id, plan_prompt, channel, thread_ts)
+                _handle_planner(
+                    message,
+                    session_id,
+                    plan_prompt,
+                    channel,
+                    thread_ts,
+                    task_title_hint=ticket_fields.get("title", "Approved task"),
+                )
             except Exception:
                 logger.exception("brainstormer.auto_planner_failed")
                 _post(
@@ -579,6 +589,7 @@ def make_handler(
         text: str,
         channel: str,
         thread_ts: str | None,
+        task_title_hint: str | None = None,
     ) -> None:
         """
         Planner persona handler — full-context implementation plan design.
@@ -590,7 +601,10 @@ def make_handler(
                 "persona": Persona.PLANNER,
                 "planner_state": "PLANNING",
                 "task_description": text,
+                "task_title_hint": task_title_hint or _clean_request_headline(text, fallback="Planner task"),
             }
+        elif task_title_hint:
+            meta["task_title_hint"] = task_title_hint
 
         _post(haiku_client, channel, "_Planner loading full project context..._", thread_ts)
 
@@ -653,15 +667,17 @@ def make_handler(
 
         # If plan is ready, create a Kanban ticket in "plans" column
         if "[PLAN:READY]" in reply:
-            ticket_id, _ = _create_backlog_ticket(
-                message=message,
-                intent=IntentType.PLAN_DESIGN,
-                handoff_target="human",
-                title_prefix=f"Plan: {meta.get('task_description', text)[:60]}",
-            )
-            meta["planner_state"] = "PLAN_CREATED"
-            meta["ticket_id"] = ticket_id
-            logger.info("planner.plan_created id=%s", ticket_id)
+            if meta.get("planner_state") != "PLAN_CREATED":
+                title_hint = meta.get("task_title_hint") or _clean_request_headline(meta.get("task_description", text))
+                ticket_id, _ = _create_backlog_ticket(
+                    message=message,
+                    intent=IntentType.PLAN_DESIGN,
+                    handoff_target="human",
+                    title_prefix=f"Plan: {title_hint}",
+                )
+                meta["planner_state"] = "PLAN_CREATED"
+                meta["ticket_id"] = ticket_id
+                logger.info("planner.plan_created id=%s", ticket_id)
 
         history.set_session_metadata(session_id, meta)
 

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import logging
 import threading
+from typing import Optional
 
 from slack_sdk import WebClient
 
@@ -42,8 +43,9 @@ def start(cfg: Config, audit: AuditLogger | None = None) -> None:
     haiku_client = WebClient(token=cfg.slack.user_token_haiku)
     sonnet_client = WebClient(token=cfg.slack.user_token_sonnet)
 
-    _verify_token(haiku_client, "Haiku")
-    _verify_token(sonnet_client, "Sonnet")
+    haiku_user_id = _verify_token(haiku_client, "Haiku")
+    sonnet_user_id = _verify_token(sonnet_client, "Sonnet")
+    agent_user_ids = {uid for uid in (haiku_user_id, sonnet_user_id) if uid}
 
     logger.info(
         "Slack clients ready | channel=%s | poll=%ds",
@@ -61,14 +63,28 @@ def start(cfg: Config, audit: AuditLogger | None = None) -> None:
     handler = make_handler(cfg, haiku_client, sonnet_client, _audit, runtime_control)
 
     # --- Client channel pollers (daemon threads, one per client) ---
-    for channel_id in cfg.slack.client_channels:
+    client_channels = list(dict.fromkeys(cfg.slack.client_channels))
+    if cfg.slack.control_channel_id in client_channels:
+        logger.warning(
+            "Control channel is also listed as client channel; skipping duplicate client poller for %s",
+            cfg.slack.control_channel_id,
+        )
+        client_channels = [c for c in client_channels if c != cfg.slack.control_channel_id]
+
+    def _client_filter(message: dict, owner_user_id: str) -> bool:
+        if not is_client_message(message, owner_user_id):
+            return False
+        # Avoid self-reply loops: ignore messages posted by IAN agent accounts.
+        return message.get("user", "") not in agent_user_ids
+
+    for channel_id in client_channels:
         client_poller = SlackPoller(
             read_client=haiku_client,
             owner_user_id=cfg.slack.owner_user_id,
             channel_id=channel_id,
             handler=handler,
             poll_interval_seconds=cfg.slack.poll_interval_seconds,
-            message_filter=is_client_message,
+            message_filter=_client_filter,
         )
         t = threading.Thread(
             target=client_poller.start,
@@ -93,17 +109,20 @@ def start(cfg: Config, audit: AuditLogger | None = None) -> None:
         scheduler.stop()
 
 
-def _verify_token(client: WebClient, label: str) -> None:
-    """Call auth.test to confirm the token is valid. Raises on failure."""
+def _verify_token(client: WebClient, label: str) -> Optional[str]:
+    """Call auth.test to confirm the token is valid and return account user ID."""
     from slack_sdk.errors import SlackApiError
     try:
         resp = client.auth_test()
+        user_id = resp.get("user_id")
         logger.info(
-            "Token verified | account=%s | user=%s | team=%s",
+            "Token verified | account=%s | user=%s | user_id=%s | team=%s",
             label,
             resp.get("user"),
+            user_id,
             resp.get("team"),
         )
+        return user_id
     except SlackApiError as exc:
         raise RuntimeError(
             f"[slack] {label} token failed auth.test: {exc.response.get('error')}. "
