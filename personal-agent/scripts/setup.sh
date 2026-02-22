@@ -27,10 +27,6 @@ echo "==> Installing dependencies..."
 pip install --upgrade pip
 pip install -r "$AGENT_DIR/requirements.txt"
 
-# Install Playwright browsers (Week 3 tool)
-echo "==> Installing Playwright Chromium..."
-playwright install chromium || echo "(Playwright install deferred — run manually when ready)"
-
 # Verify .env exists
 if [ ! -f "$AGENT_DIR/.env" ]; then
     echo "==> Creating .env from template..."

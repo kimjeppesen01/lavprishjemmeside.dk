@@ -1,153 +1,78 @@
-# RUNBOOK — Personal Agent
+# RUNBOOK — IAN (Server + Slack)
 
-## How to Get Slack User Tokens (xoxp-)
+## 1. Purpose
 
-The agent posts as two real Slack user accounts — not as a bot.
-Each account needs its own `xoxp-` user token.
+Operate IAN reliably in production with:
+- Slack polling (dual user tokens)
+- Master control-plane ON/OFF integration
+- Kanban + assignment metric sync to CMS API
 
-### Step 1 — Create a Slack App (once)
+## 2. Production Setup (Server)
 
-1. Go to [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From scratch**
-2. Name it anything (e.g. "Personal Agent Token Generator") — the app is just used to generate tokens; it won't post anything itself
-3. Select your workspace
-
-### Step 2 — Add User Token Scopes
-
-In the app settings → **OAuth & Permissions** → scroll to **User Token Scopes** → add:
-
-| Scope | Why |
-|-------|-----|
-| `channels:history` | Read messages in public channels |
-| `channels:read` | List channels to find the control channel |
-| `groups:history` | Read messages in private channels |
-| `groups:read` | List private channels |
-| `im:history` | Read DMs |
-| `im:read` | List DM conversations |
-| `chat:write` | Post messages as the user |
-| `users:read` | Look up user info |
-
-**Do NOT add bot token scopes** — only user token scopes.
-
-### Step 3 — Get Token for Account 1 (Brainstormer)
-
-1. Make sure you are logged into Slack in your browser **as Account 1** (the Brainstormer account)
-2. In the app → **OAuth & Permissions** → click **Install to Workspace**
-3. Click **Allow** on the OAuth consent screen
-4. Copy the **User OAuth Token** — it starts with `xoxp-`
-5. Paste it as `SLACK_USER_TOKEN_HAIKU=xoxp-...` in your `.env`
-
-### Step 4 — Get Token for Account 2 (Planner)
-
-1. **Log out** of Slack in your browser and log in **as Account 2** (the Planner account)
-2. Go back to [api.slack.com/apps](https://api.slack.com/apps) → find your app → **OAuth & Permissions**
-3. Click **Install to Workspace** (or **Reinstall**)
-4. Click **Allow**
-5. Copy the new **User OAuth Token** — it starts with `xoxp-` (different from Account 1's)
-6. Paste it as `SLACK_USER_TOKEN_SONNET=xoxp-...` in your `.env`
-
-> **Note:** Each install/reinstall generates a token for the currently logged-in user. The app settings don't change — only the token owner changes.
-
-### Step 5 — Find Your Owner User ID
-
-1. In Slack, click your profile picture → **Profile**
-2. Click the three-dot menu → **Copy member ID**
-3. It looks like `U0XXXXXXXXX`
-4. Paste as `SLACK_OWNER_USER_ID=U...` in `.env`
-
-### Step 6 — Find Your Control Channel ID
-
-1. Right-click the channel in Slack sidebar → **View channel details**
-2. Scroll to the bottom — Channel ID starts with `C` (e.g. `C0XXXXXXXXX`)
-3. Paste as `SLACK_CONTROL_CHANNEL_ID=C...` in `.env`
-
-### Step 7 — Invite Both Accounts to the Channel
-
-Both Brainstormer and Planner accounts must be members of the control channel so they can read and post:
-
-```
-/invite @brainstormer-account-name
-/invite @planner-account-name
-```
-
----
-
-## First Run
+From `personal-agent/`:
 
 ```bash
-# 1. Fill in your .env (all blank fields)
-nano .env
-
-# 2. Install Python packages
-bash scripts/setup.sh
-
-# 3. Test the agent runs (Ctrl+C to stop)
-.venv/bin/python agent/main.py
-
-# 4. Once verified, install as a background service
-bash scripts/install_service.sh
+bash scripts/deploy.sh
+cp .env.server-example .env
+# edit .env with real keys
+bash scripts/watchdog.sh
 ```
 
-**Signs it's working:**
-- Both tokens pass `auth.test` (you'll see log lines: `Token verified | account=Brainstormer | user=...` and `account=Planner`)
-- Polling starts: `Poller started | channel=C... | interval=5s`
-- Send a message in your control channel → Brainstormer account replies
-- Send `!plan what is the architecture of this project` → Planner account replies
+Watchdog cron runs every minute and:
+- checks `/master/ian-control`
+- stops IAN when disabled
+- restarts IAN when enabled and not running
 
----
-
-## Admin Commands
-
-| Command | What it does | Posted by |
-|---------|-------------|-----------|
-| `!status` | Agent status, model, budget | Brainstormer account |
-| `!help` | Command list | Brainstormer account |
-| `!plan <prompt>` | Force Planner for this message | Planner account |
-| `!brainstorm <prompt>` | Force Brainstormer for this message | Brainstormer account |
-
----
-
-## AppleScript TCC Permissions (Calendar & Email)
-
-**Run these BEFORE installing the launchd service** — macOS will show permission popups that you must click Allow on. If the agent is already running headless when these popups appear, it will silently hang forever.
+## 3. Service Control
 
 ```bash
-# Grant Calendar access
-.venv/bin/python tools/calendar_tool.py
-
-# Grant Mail.app access
-.venv/bin/python tools/email_tool.py
+bash scripts/ianctl.sh status
+bash scripts/ianctl.sh start
+bash scripts/ianctl.sh stop
+bash scripts/ianctl.sh restart
 ```
 
-Click **Allow** on each macOS permission dialog that appears, then install the service.
+Logs:
+- `audit/logs/system/stdout.log`
+- `audit/logs/system/stderr.log`
+- `audit/logs/system/watchdog.log`
 
----
+## 4. Required Env Keys
 
-## Launchd Service Management
+Minimum required:
+- `ANTHROPIC_API_KEY`
+- `SLACK_USER_TOKEN_HAIKU`
+- `SLACK_USER_TOKEN_SONNET`
+- `SLACK_OWNER_USER_ID`
+- `SLACK_CONTROL_CHANNEL_ID`
+- `KANBAN_API_URL`
+- `KANBAN_API_KEY`
+- `KANBAN_SYNC_ENABLED=true`
+- `IAN_CONTROL_SYNC_ENABLED=true`
+- `IAN_CONTROL_POLL_SECONDS=10`
+
+## 5. Slack Token Notes
+
+Use user OAuth tokens (`xoxp-`) for both identities:
+- Brainstormer account token -> `SLACK_USER_TOKEN_HAIKU`
+- Planner account token -> `SLACK_USER_TOKEN_SONNET`
+
+Both accounts must be in control channel + client channels.
+
+## 6. Runtime Verification
+
+1. `ianctl status` returns running PID.
+2. Master dashboard `/admin/master` shows IAN agents.
+3. Toggle OFF in Master -> dots become red; agent stops processing.
+4. Toggle ON in Master -> watchdog restarts; status returns idle/operating.
+
+## 7. Local Dev (Optional)
 
 ```bash
-# Install (starts automatically at login)
-bash scripts/install_service.sh
-
-# Check status
-launchctl print gui/$(id -u)/com.samlino.personalagent
-
-# Stop permanently
-bash scripts/uninstall_service.sh
-
-# View logs
-tail -f audit/logs/system/stdout.log
-tail -f audit/logs/system/stderr.log
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m agent.main
 ```
 
----
-
-## Troubleshooting
-
-| Symptom | Fix |
-|---------|-----|
-| `Token failed auth.test` | Check `xoxp-` token in `.env`; regenerate if expired |
-| Agent not posting | Verify both accounts are members of the control channel |
-| `conversations_history: channel_not_found` | Check `SLACK_CONTROL_CHANNEL_ID` is correct |
-| Only Brainstormer replies (Planner never triggered) | Check `SLACK_USER_TOKEN_SONNET` is set and different from Brainstormer token; also check Planner keyword triggers (`!plan`, `plan this`, `blueprint`, `spec`) |
-| Agent doesn't start at login | Run `bash scripts/install_service.sh` again; check plist path |
-| Context size > 8KB at startup | Check `MEMORY_STARTUP_FILES` — remove any large files |
+Use only for development. Production should run via server watchdog.

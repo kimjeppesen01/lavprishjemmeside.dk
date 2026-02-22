@@ -21,6 +21,16 @@ IAN uses the same Slack workspace, two Slack user accounts (Brainstormer + Plann
 
 **v1.1 — Brainstormer & Planner personas** (2026-02-21): The two accounts are now purpose-built workflow agents. Brainstormer (Haiku model) runs a multi-turn idea refinement state machine (`IDEATION → REFINEMENT → SYNTHESIS → APPROVED → TICKET_CREATED`). Planner (Sonnet model) loads full project context and produces 10-section implementation plans with token cost estimates. Kanban columns: Ideas, Plans, In Review, Completed. See `personal-agent/SOUL.md` and `personal-agent/docs/RUNBOOK.md`.
 
+### Production Control Plane (Master Hub)
+- **Control source**: `ian_control` table in master DB (`enabled`, `desired_state`).
+- **Dashboard control**: `/admin/master` toggles IAN ON/OFF via `POST /master/ian-control`.
+- **Runtime sync**: IAN polls `GET /master/ian-control` with API key and stops assignment processing when disabled.
+- **Status model**:
+  - `operating` -> green dot
+  - `idle` -> yellow dot
+  - `off` -> red dot
+- **Assignment accounting**: completed assignments post deltas to `POST /master/ian-assignment-complete`, updating cost/tokens/messages and `assignments_completed_today` immediately.
+
 ---
 
 ## 2. Integration Ideas — Website Project

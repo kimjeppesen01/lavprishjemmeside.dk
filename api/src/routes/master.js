@@ -598,25 +598,160 @@ router.post('/task-md-files', requireAuth, requireMaster, async (req, res) => {
 
 // ─── IAN Agent ────────────────────────────────────────────────────────────────
 
+const IAN_CONTROL_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS ian_control (
+  id TINYINT PRIMARY KEY,
+  enabled TINYINT(1) NOT NULL DEFAULT 1,
+  desired_state ENUM('on','off') NOT NULL DEFAULT 'on',
+  updated_by_user_id INT NULL,
+  note VARCHAR(255) NULL,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)`;
+
+const IAN_ASSIGNMENT_EVENTS_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS ian_assignment_events (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  agent_type ENUM('brainstormer','planner','ian') NOT NULL,
+  ticket_id VARCHAR(64) NULL,
+  assignment_type VARCHAR(64) NULL,
+  tokens_delta INT NOT NULL DEFAULT 0,
+  cost_delta_usd DECIMAL(10,6) NOT NULL DEFAULT 0,
+  messages_delta INT NOT NULL DEFAULT 0,
+  metadata JSON NULL,
+  completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_completed_at (completed_at),
+  INDEX idx_agent_type (agent_type),
+  INDEX idx_ticket_id (ticket_id)
+)`;
+
+const HEARTBEAT_WORK_STATE_ALTER_SQL =
+  "ALTER TABLE ian_heartbeat ADD COLUMN work_state ENUM('operating','idle','off') DEFAULT 'idle' AFTER status";
+const HEARTBEAT_ASSIGNMENTS_ALTER_SQL =
+  'ALTER TABLE ian_heartbeat ADD COLUMN assignments_completed_today INT NOT NULL DEFAULT 0 AFTER cost_usd_today';
+
+async function ensureIAnControlTables() {
+  await pool.query(IAN_CONTROL_TABLE_SQL);
+  await pool.query(IAN_ASSIGNMENT_EVENTS_TABLE_SQL);
+  try { await pool.query(HEARTBEAT_WORK_STATE_ALTER_SQL); } catch (_) {}
+  try { await pool.query(HEARTBEAT_ASSIGNMENTS_ALTER_SQL); } catch (_) {}
+  await pool.query(
+    "INSERT IGNORE INTO ian_control (id, enabled, desired_state, note) VALUES (1, 1, 'on', 'Default enabled state')"
+  );
+}
+
+function isValidWorkState(v) {
+  return v === 'operating' || v === 'idle' || v === 'off';
+}
+
+function normalizeWorkState(status, workState) {
+  if (isValidWorkState(workState)) return workState;
+  if (status === 'busy') return 'operating';
+  if (status === 'offline') return 'off';
+  return 'idle';
+}
+
+// GET /master/ian-control — current ON/OFF control state (master UI + runtime polling)
+router.get('/ian-control', [
+  (req, res, next) => {
+    const key = req.headers['x-api-key'];
+    if (process.env.MASTER_API_KEY && key === process.env.MASTER_API_KEY) {
+      req._viaApiKey = true;
+      return next();
+    }
+    requireAuth(req, res, () => requireMaster(req, res, next));
+  },
+], async (req, res) => {
+  try {
+    await ensureIAnControlTables();
+    const [rows] = await pool.query('SELECT id, enabled, desired_state, note, updated_at FROM ian_control WHERE id = 1');
+    const row = rows[0] || { enabled: 1, desired_state: 'on', note: null, updated_at: null };
+    res.json({
+      enabled: Number(row.enabled) === 1,
+      desired_state: row.desired_state || (Number(row.enabled) === 1 ? 'on' : 'off'),
+      note: row.note || null,
+      updated_at: row.updated_at || null,
+      source: req._viaApiKey ? 'api_key' : 'master',
+    });
+  } catch (err) {
+    console.error('GET /master/ian-control error:', err);
+    res.status(500).json({ error: 'Failed to load ian control state' });
+  }
+});
+
+// POST /master/ian-control — toggle ON/OFF state from Master dashboard
+router.post('/ian-control', requireAuth, requireMaster, requireMasterStepUp, async (req, res) => {
+  const enabled = req.body?.enabled;
+  const note = req.body?.note ? String(req.body.note).slice(0, 255) : null;
+  if (typeof enabled !== 'boolean') return res.status(400).json({ error: 'enabled (boolean) required' });
+  try {
+    await ensureIAnControlTables();
+    await pool.query(
+      `INSERT INTO ian_control (id, enabled, desired_state, updated_by_user_id, note)
+       VALUES (1, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         enabled=VALUES(enabled),
+         desired_state=VALUES(desired_state),
+         updated_by_user_id=VALUES(updated_by_user_id),
+         note=VALUES(note),
+         updated_at=NOW()`,
+      [enabled ? 1 : 0, enabled ? 'on' : 'off', req.user.id, note]
+    );
+    if (!enabled) {
+      await pool.query(
+        "UPDATE ian_heartbeat SET work_state='off', status='offline', current_task=NULL, last_seen=NOW()"
+      );
+    }
+    res.json({ ok: true, enabled, desired_state: enabled ? 'on' : 'off' });
+  } catch (err) {
+    console.error('POST /master/ian-control error:', err);
+    res.status(500).json({ error: 'Failed to update ian control state' });
+  }
+});
+
 // POST /master/ian-heartbeat — IAN Python agent posts its status (API key, no JWT)
 router.post('/ian-heartbeat', requireApiKey, async (req, res) => {
-  const { agent_type, status, current_task, messages_sent_today, tokens_used_today, cost_usd_today, metadata } = req.body;
+  const {
+    agent_type, status, work_state, current_task,
+    messages_sent_today, tokens_used_today, cost_usd_today,
+    assignments_completed_today, metadata,
+  } = req.body;
   if (!agent_type) return res.status(400).json({ error: 'agent_type required' });
   try {
+    await ensureIAnControlTables();
+    const normalizedWorkState = normalizeWorkState(status || 'online', work_state);
+    const normalizedStatus = normalizedWorkState === 'operating'
+      ? 'busy'
+      : (normalizedWorkState === 'off' ? 'offline' : 'online');
+
+    const msgCount = (messages_sent_today === undefined || messages_sent_today === null) ? null : Number(messages_sent_today);
+    const tokenCount = (tokens_used_today === undefined || tokens_used_today === null) ? null : Number(tokens_used_today);
+    const costCount = (cost_usd_today === undefined || cost_usd_today === null) ? null : Number(cost_usd_today);
+    const assignCount = (assignments_completed_today === undefined || assignments_completed_today === null) ? null : Number(assignments_completed_today);
+
     await pool.query(
-      `INSERT INTO ian_heartbeat (agent_type, status, current_task, messages_sent_today, tokens_used_today, cost_usd_today, metadata)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO ian_heartbeat (agent_type, status, work_state, current_task, messages_sent_today, tokens_used_today, cost_usd_today, assignments_completed_today, metadata)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
          status=VALUES(status),
+         work_state=VALUES(work_state),
          current_task=VALUES(current_task),
-         messages_sent_today=VALUES(messages_sent_today),
-         tokens_used_today=VALUES(tokens_used_today),
-         cost_usd_today=VALUES(cost_usd_today),
+         messages_sent_today=IFNULL(VALUES(messages_sent_today), messages_sent_today),
+         tokens_used_today=IFNULL(VALUES(tokens_used_today), tokens_used_today),
+         cost_usd_today=IFNULL(VALUES(cost_usd_today), cost_usd_today),
+         assignments_completed_today=IFNULL(VALUES(assignments_completed_today), assignments_completed_today),
          metadata=VALUES(metadata),
          last_seen=NOW()`,
-      [agent_type, status || 'online', current_task || null,
-       messages_sent_today || 0, tokens_used_today || 0, cost_usd_today || 0,
-       metadata ? JSON.stringify(metadata) : null]
+      [
+        agent_type,
+        normalizedStatus,
+        normalizedWorkState,
+        current_task || null,
+        msgCount,
+        tokenCount,
+        costCount,
+        assignCount,
+        metadata ? JSON.stringify(metadata) : null,
+      ],
     );
     res.json({ ok: true });
   } catch (err) {
@@ -625,10 +760,68 @@ router.post('/ian-heartbeat', requireApiKey, async (req, res) => {
   }
 });
 
-// GET /master/ian-status — latest heartbeat per agent type
-router.get('/ian-status', requireAuth, requireMaster, async (req, res) => {
+// POST /master/ian-assignment-complete — incremental usage/event accounting
+router.post('/ian-assignment-complete', requireApiKey, async (req, res) => {
+  const {
+    agent_type,
+    ticket_id,
+    assignment_type,
+    tokens_delta,
+    cost_delta_usd,
+    messages_delta,
+    metadata,
+  } = req.body || {};
+  if (!agent_type) return res.status(400).json({ error: 'agent_type required' });
   try {
-    const [rows] = await pool.query('SELECT * FROM ian_heartbeat ORDER BY agent_type ASC');
+    await ensureIAnControlTables();
+    const tDelta = Number(tokens_delta || 0);
+    const cDelta = Number(cost_delta_usd || 0);
+    const mDelta = Number(messages_delta || 0);
+    await pool.query(
+      `UPDATE ian_heartbeat
+         SET tokens_used_today = COALESCE(tokens_used_today,0) + ?,
+             cost_usd_today = COALESCE(cost_usd_today,0) + ?,
+             messages_sent_today = COALESCE(messages_sent_today,0) + ?,
+             assignments_completed_today = COALESCE(assignments_completed_today,0) + 1,
+             work_state = 'idle',
+             status = 'online',
+             current_task = NULL,
+             last_seen = NOW()
+       WHERE agent_type = ?`,
+      [tDelta, cDelta, mDelta, agent_type]
+    );
+    await pool.query(
+      `INSERT INTO ian_assignment_events
+       (agent_type, ticket_id, assignment_type, tokens_delta, cost_delta_usd, messages_delta, metadata)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        agent_type,
+        ticket_id ? String(ticket_id).slice(0, 64) : null,
+        assignment_type ? String(assignment_type).slice(0, 64) : null,
+        tDelta,
+        cDelta,
+        mDelta,
+        metadata ? JSON.stringify(metadata) : null,
+      ]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /master/ian-assignment-complete error:', err);
+    res.status(500).json({ error: 'Failed to register assignment completion' });
+  }
+});
+
+// GET /master/ian-status — latest heartbeat per agent type
+router.get('/ian-status', [
+  (req, res, next) => {
+    const key = req.headers['x-api-key'];
+    if (process.env.MASTER_API_KEY && key === process.env.MASTER_API_KEY) return next();
+    requireAuth(req, res, () => requireMaster(req, res, next));
+  },
+], async (req, res) => {
+  try {
+    await ensureIAnControlTables();
+    const [rows] = await pool.query('SELECT * FROM ian_heartbeat ORDER BY FIELD(agent_type, "brainstormer","planner","ian")');
     res.json(rows);
   } catch (err) {
     console.error('GET /master/ian-status error:', err);

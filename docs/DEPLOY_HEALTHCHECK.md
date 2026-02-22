@@ -120,7 +120,10 @@ Deploy must include and pass:
 - `mkdir -p tmp && touch tmp/restart.txt`
 - API `/health` = HTTP 200
 - API `/design-settings/public` = HTTP 200
+- API `/theme-settings/public` = HTTP 200
 - API `/page-components/public?page=all` = HTTP 200
+- API `/master/ian-control` = HTTP 200 (via `x-api-key: MASTER_API_KEY`)
+- API `/master/ian-status` = HTTP 200 (via `x-api-key: MASTER_API_KEY`)
 - API `/auth/login` invalid payload returns non-5xx
 - Site root (`HEAD /`) returns non-5xx
 - Automatic rollback to previous commit if any gate fails

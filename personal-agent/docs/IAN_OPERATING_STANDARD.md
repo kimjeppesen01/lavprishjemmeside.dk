@@ -44,6 +44,9 @@ For every request:
    - route to Claude Code workflow
    - do not execute technical changes directly
 
+This scope gate applies to all conversational channels (client channels and owner control channel),
+with admin commands remaining explicit command exceptions.
+
 ## Model Policy
 
 - Default model: Haiku (Brainstormer persona).
@@ -110,4 +113,3 @@ Out-of-scope requests must create a backlog entry with:
 - No hidden assumptions about intent.
 - No bypass of scope gates.
 - No development execution under IAN.
-

@@ -106,11 +106,37 @@ jobs:
               return 1
             }
 
+            check_200_with_key() {
+              local url="$1"
+              local label="$2"
+              local api_key="$3"
+              local retries="${4:-12}"
+              local delay="${5:-5}"
+              local body_file="/tmp/deploy_check_$(echo "$label" | tr ' ' '_' | tr -cd '[:alnum:]_').json"
+              local code
+              for i in $(seq 1 "$retries"); do
+                code="$(curl -sS -m 20 -H "x-api-key: $api_key" -o "$body_file" -w "%{http_code}" "$url" || true)"
+                if [ "$code" = "200" ]; then
+                  echo "PASS [$label] attempt $i (HTTP 200)"
+                  return 0
+                fi
+                echo "WAIT [$label] attempt $i got HTTP $code"
+                sleep "$delay"
+              done
+              echo "FAIL [$label] expected HTTP 200 from $url"
+              cat "$body_file" || true
+              return 1
+            }
+
             run_full_checks() {
               check_200 "$API_HEALTH_URL" "api health"
               check_200 "$API_BASE_URL/design-settings/public" "design settings"
               check_200 "$API_BASE_URL/theme-settings/public" "theme settings"
               check_200 "$API_BASE_URL/page-components/public?page=all" "page components"
+              if [ -n "${MASTER_API_KEY:-}" ]; then
+                check_200_with_key "$API_BASE_URL/master/ian-control" "ian control" "$MASTER_API_KEY"
+                check_200_with_key "$API_BASE_URL/master/ian-status" "ian status" "$MASTER_API_KEY"
+              fi
               check_non_5xx "$API_BASE_URL/auth/login" "POST" '{"email":"invalid@example.com","password":"wrong"}' "auth login transport"
               check_non_5xx "$SITE_URL/" "HEAD" "" "site reachability"
             }
@@ -137,6 +163,11 @@ jobs:
             cd api
             npm ci --omit=dev || npm install --production
             mkdir -p tmp && touch tmp/restart.txt
+            MASTER_API_KEY="$(grep -E '^MASTER_API_KEY=' .env | head -1 | cut -d '=' -f2- || true)"
+            cd ..
+            if [ -x personal-agent/scripts/ianctl.sh ]; then
+              personal-agent/scripts/ianctl.sh restart || true
+            fi
 
             set +e
             run_full_checks

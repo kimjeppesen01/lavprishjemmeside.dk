@@ -14,7 +14,6 @@ aiosqlite>=0.20.0
 pydantic>=2.10.0
 
 # Week 3 — Integrations
-playwright>=1.49.0
 httpx>=0.28.0
 duckduckgo-search>=7.2.0
 beautifulsoup4>=4.12.3

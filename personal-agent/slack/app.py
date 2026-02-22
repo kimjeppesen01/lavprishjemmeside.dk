@@ -26,6 +26,7 @@ from slack_sdk import WebClient
 from slack.middleware import is_client_message
 
 from agent.config import Config
+from agent.runtime_control import RuntimeControl
 from agent.scheduler import AgentScheduler
 from audit.logger import AuditLogger
 from slack.handlers import make_handler
@@ -55,7 +56,9 @@ def start(cfg: Config, audit: AuditLogger | None = None) -> None:
     scheduler = AgentScheduler(cfg, haiku_client, cfg.memory.db_path, _audit)
     scheduler.start()
 
-    handler = make_handler(cfg, haiku_client, sonnet_client, _audit)
+    runtime_control = RuntimeControl(cfg, _audit)
+    runtime_control.start()
+    handler = make_handler(cfg, haiku_client, sonnet_client, _audit, runtime_control)
 
     # --- Client channel pollers (daemon threads, one per client) ---
     for channel_id in cfg.slack.client_channels:
@@ -86,6 +89,7 @@ def start(cfg: Config, audit: AuditLogger | None = None) -> None:
     try:
         poller.start()
     finally:
+        runtime_control.stop()
         scheduler.stop()
 
 

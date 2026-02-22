@@ -88,7 +88,16 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
   <div id="panel-agents" class="hidden">
     <!-- IAN agent status cards -->
     <div class="mb-6">
-      <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">IAN Agent Status</h2>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider">IAN Agent Status</h2>
+        <div class="flex items-center gap-2">
+          <span id="ian-control-badge" class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">Ukendt</span>
+          <button id="ian-toggle-btn" onclick="toggleIAnControl()" class="px-3 py-1.5 text-xs rounded-lg border border-gray-300 hover:bg-gray-50">
+            IAN ON/OFF
+          </button>
+        </div>
+      </div>
+      <p id="ian-control-toast" class="hidden mb-3 text-xs rounded-lg px-3 py-2"></p>
       <div id="agent-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div>
         <div class="bg-white border border-gray-200 rounded-xl p-5 animate-pulse h-28"></div>
@@ -289,6 +298,8 @@ var activeTab = 'sites';
 var kanbanData = {};
 var currentTaskId = null;
 var masterStepUpToken = sessionStorage.getItem('master_step_up_token') || '';
+var agentsPollTimer = null;
+var ianControlState = { enabled: true, desired_state: 'on', updated_at: null, note: null };
 
 // ─── Auth helper ──────────────────────────────────────────────
 function authHeaders() {
@@ -326,6 +337,10 @@ function ensureMasterStepUp() {
 
 // ─── Tab switching ─────────────────────────────────────────────
 function switchTab(tab) {
+  if (agentsPollTimer) {
+    clearInterval(agentsPollTimer);
+    agentsPollTimer = null;
+  }
   ['sites', 'agents', 'ai', 'claude'].forEach(function(t) {
     var panel = document.getElementById('panel-' + t);
     var btn = document.getElementById('tab-' + t);
@@ -339,7 +354,16 @@ function switchTab(tab) {
   });
   activeTab = tab;
   if (tab === 'sites') loadSites();
-  if (tab === 'agents') { loadAgents(); loadKanban(); }
+  if (tab === 'agents') {
+    loadIAnControl();
+    loadAgents();
+    loadKanban();
+    agentsPollTimer = setInterval(function() {
+      if (activeTab !== 'agents') return;
+      loadIAnControl(true);
+      loadAgents();
+    }, 10000);
+  }
   if (tab === 'ai') loadAiUsage();
   if (tab === 'claude') {
     ensureMasterStepUp().then(function(ok) {
@@ -436,7 +460,7 @@ document.getElementById('add-site-form').addEventListener('submit', function(e) 
 
 // ─── Agents tab ───────────────────────────────────────────────
 function statusColor(s) {
-  var map = { online: 'bg-green-500', busy: 'bg-amber-400', offline: 'bg-red-400' };
+  var map = { operating: 'bg-green-500', idle: 'bg-yellow-400', off: 'bg-red-400' };
   return map[s] || 'bg-gray-400';
 }
 
@@ -450,19 +474,85 @@ function timeSince(ts) {
   return Math.floor(secs / 86400) + 'd siden';
 }
 
+function showIAnToast(msg, isError) {
+  var el = document.getElementById('ian-control-toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = (isError
+    ? 'mb-3 text-xs rounded-lg px-3 py-2 bg-red-50 border border-red-200 text-red-700'
+    : 'mb-3 text-xs rounded-lg px-3 py-2 bg-green-50 border border-green-200 text-green-700');
+  el.classList.remove('hidden');
+  setTimeout(function() {
+    if (el) el.classList.add('hidden');
+  }, 5000);
+}
+
+function setIAnBadge() {
+  var b = document.getElementById('ian-control-badge');
+  var btn = document.getElementById('ian-toggle-btn');
+  if (!b || !btn) return;
+  var on = !!ianControlState.enabled;
+  b.textContent = on ? 'IAN aktiv' : 'IAN slukket';
+  b.className = on
+    ? 'text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700'
+    : 'text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700';
+  btn.textContent = on ? 'Sluk IAN' : 'Tænd IAN';
+}
+
+function loadIAnControl(silent) {
+  return fetch(API + '/master/ian-control', { headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (typeof data.enabled === 'boolean') ianControlState = data;
+      setIAnBadge();
+    })
+    .catch(function(e) {
+      if (!silent) showIAnToast('Kunne ikke hente IAN control: ' + e.message, true);
+    });
+}
+
+function toggleIAnControl() {
+  var nextEnabled = !ianControlState.enabled;
+  if (!nextEnabled && !confirm('Sluk IAN nu? Dette stopper alle assignment flows.')) return;
+  fetch(API + '/master/ian-control', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ enabled: nextEnabled, note: nextEnabled ? 'Enabled from master dashboard' : 'Disabled from master dashboard' }),
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(j) {
+      if (j.error) throw new Error(j.error);
+      ianControlState.enabled = nextEnabled;
+      ianControlState.desired_state = nextEnabled ? 'on' : 'off';
+      setIAnBadge();
+      loadAgents();
+      showIAnToast(nextEnabled ? 'IAN er tændt' : 'IAN er slukket', false);
+    })
+    .catch(function(e) {
+      showIAnToast('Kunne ikke opdatere IAN control: ' + e.message, true);
+    });
+}
+
 function renderAgentCard(agent) {
   var names = { brainstormer: 'Brainstormer', planner: 'Planner', ian: 'IAN Orchestrator' };
+  var workState = agent.work_state || (agent.status === 'busy' ? 'operating' : (agent.status === 'offline' ? 'off' : 'idle'));
+  var staleSecs = agent.last_seen ? Math.floor((Date.now() - new Date(agent.last_seen).getTime()) / 1000) : 999999;
+  var staleHint = (ianControlState.enabled && staleSecs > 120)
+    ? '<p class="text-[11px] text-amber-600 mb-2">Stale heartbeat (&gt;120s) — data kan være forsinket.</p>'
+    : '';
   return '<div class="bg-white border border-gray-200 rounded-xl p-5">' +
     '<div class="flex items-center gap-3 mb-3">' +
-      '<span class="inline-block w-3 h-3 rounded-full ' + statusColor(agent.status) + '"></span>' +
+      '<span class="inline-block w-3 h-3 rounded-full ' + statusColor(workState) + '"></span>' +
       '<span class="font-semibold text-gray-900">' + (names[agent.agent_type] || agent.agent_type) + '</span>' +
       '<span class="ml-auto text-xs text-gray-400">' + timeSince(agent.last_seen) + '</span>' +
     '</div>' +
+    staleHint +
     (agent.current_task ? '<p class="text-xs text-gray-600 mb-3 truncate" title="' + agent.current_task + '">' + agent.current_task + '</p>' : '<p class="text-xs text-gray-400 mb-3">Ingen aktiv opgave</p>') +
-    '<div class="grid grid-cols-3 gap-2 text-center">' +
+    '<div class="grid grid-cols-4 gap-2 text-center">' +
       '<div><p class="text-sm font-bold">' + (agent.messages_sent_today || 0) + '</p><p class="text-xs text-gray-400">Slack msgs</p></div>' +
       '<div><p class="text-sm font-bold">' + fmt(agent.tokens_used_today || 0) + '</p><p class="text-xs text-gray-400">Tokens</p></div>' +
       '<div><p class="text-sm font-bold">' + fmtCost(agent.cost_usd_today || 0) + '</p><p class="text-xs text-gray-400">Cost</p></div>' +
+      '<div><p class="text-sm font-bold">' + fmt(agent.assignments_completed_today || 0) + '</p><p class="text-xs text-gray-400">Assignments</p></div>' +
     '</div>' +
   '</div>';
 }
@@ -1114,6 +1204,7 @@ function escHtml(str) {
 
 // Expose onclick-called functions to global scope (define:vars wraps in IIFE)
 window.switchTab = switchTab;
+window.toggleIAnControl = toggleIAnControl;
 window.openAddCard = openAddCard;
 window.submitCard = submitCard;
 window.moveCard = moveCard;

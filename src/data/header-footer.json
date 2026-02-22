@@ -1,7 +1,5 @@
 {
-  "id": 1,
-  "site_id": 1,
-  "header_layout": "modern-mega",
+  "header_layout": "regular",
   "header_logo_url": "/favicon.svg",
   "header_logo_text": "lavprishjemmeside.dk",
   "header_menu_1": [
@@ -28,51 +26,8 @@
       "label": "Få et tilbud"
     }
   ],
-  "header_mega_html": "<!-- Mega menu skabelon — tilpas til dit behov -->\n<nav class=\"mega-nav flex items-center justify-between py-4 px-4 max-w-6xl mx-auto\">\n  <a href=\"/\" class=\"text-xl font-bold text-[var(--color-primary)]\">Dit firma</a>\n  <ul class=\"hidden md:flex gap-6\">\n    <li class=\"group relative\">\n      <a href=\"/ydelser\" class=\"text-gray-700 hover:text-[var(--color-primary)]\">Ydelser</a>\n      <div class=\"absolute left-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all\">\n        <div class=\"bg-white rounded-lg shadow-lg border border-gray-200 p-6 w-80\">\n          <h4 class=\"font-semibold text-gray-900 mb-3\">Vores ydelser</h4>\n          <ul class=\"space-y-2\">\n            <li><a href=\"/ydelser/webbureau\" class=\"text-gray-600 hover:text-[var(--color-primary)]\">Webbureau</a></li>\n            <li><a href=\"/ydelser/seo\" class=\"text-gray-600 hover:text-[var(--color-primary)]\">SEO</a></li>\n            <li><a href=\"/ydelser/hosting\" class=\"text-gray-600 hover:text-[var(--color-primary)]\">Hosting</a></li>\n          </ul>\n        </div>\n      </div>\n    </li>\n    <li><a href=\"/om-os\" class=\"text-gray-700 hover:text-[var(--color-primary)]\">Om os</a></li>\n    <li><a href=\"/kontakt\" class=\"text-gray-700 hover:text-[var(--color-primary)]\">Kontakt</a></li>\n  </ul>\n  <a href=\"/kontakt\" class=\"hidden md:inline-block bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg\">Kontakt</a>\n</nav>",
-  "header_mega_menu": [
-    {
-      "id": "ydelser",
-      "title": "Ydelser",
-      "sections": [
-        {
-          "heading": "Tjenester",
-          "links": [
-            {
-              "href": "/ydelser",
-              "label": "Ydelser"
-            },
-            {
-              "href": "/priser",
-              "label": "Priser"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "sider",
-      "title": "Sider",
-      "sections": [
-        {
-          "heading": "Sider",
-          "links": [
-            {
-              "href": "/",
-              "label": "Forside"
-            },
-            {
-              "href": "/om-os",
-              "label": "Om os"
-            },
-            {
-              "href": "/kontakt",
-              "label": "Kontakt"
-            }
-          ]
-        }
-      ]
-    }
-  ],
+  "header_mega_html": null,
+  "header_mega_menu": null,
   "footer_columns": [
     {
       "title": "lavprishjemmeside.dk",
@@ -109,7 +64,5 @@
       ]
     }
   ],
-  "footer_copyright": null,
-  "updated_at": "2026-02-15T15:48:57.000Z",
-  "updated_by": 1
+  "footer_copyright": null
 }

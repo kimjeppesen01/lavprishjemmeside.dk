@@ -132,15 +132,16 @@ class SearchConfig:
 
 
 @dataclass(frozen=True)
-class EmailConfig:
+class KanbanConfig:
+    api_url: str
+    api_key: str
     enabled: bool
-    require_approval: bool
 
 
 @dataclass(frozen=True)
-class CalendarConfig:
-    enabled: bool
-    write_require_approval: bool
+class IANControlConfig:
+    sync_enabled: bool
+    poll_seconds: int
 
 
 @dataclass(frozen=True)
@@ -195,8 +196,8 @@ class Config:
     filesystem: FilesystemConfig
     shell: ShellConfig
     search: SearchConfig
-    email: EmailConfig
-    calendar: CalendarConfig
+    kanban: KanbanConfig
+    ian_control: IANControlConfig
     browser: BrowserConfig
     projects: ProjectsConfig
     audit: AuditConfig
@@ -307,16 +308,17 @@ def load() -> Config:
             brave_api_key=_optional("BRAVE_SEARCH_API_KEY", ""),
             max_results=_int("SEARCH_MAX_RESULTS", 5),
         ),
-        email=EmailConfig(
-            enabled=_bool("EMAIL_ENABLED", True),
-            require_approval=_bool("EMAIL_REQUIRE_APPROVAL", True),
+        kanban=KanbanConfig(
+            api_url=_optional("KANBAN_API_URL", "https://api.lavprishjemmeside.dk"),
+            api_key=_optional("KANBAN_API_KEY", ""),
+            enabled=_bool("KANBAN_SYNC_ENABLED", True),
         ),
-        calendar=CalendarConfig(
-            enabled=_bool("CALENDAR_ENABLED", True),
-            write_require_approval=_bool("CALENDAR_WRITE_REQUIRE_APPROVAL", True),
+        ian_control=IANControlConfig(
+            sync_enabled=_bool("IAN_CONTROL_SYNC_ENABLED", True),
+            poll_seconds=max(5, _int("IAN_CONTROL_POLL_SECONDS", 10)),
         ),
         browser=BrowserConfig(
-            enabled=_bool("BROWSER_ENABLED", True),
+            enabled=_bool("BROWSER_ENABLED", False),
             headless=_bool("BROWSER_HEADLESS", True),
         ),
         projects=ProjectsConfig(

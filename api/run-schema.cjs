@@ -19,6 +19,7 @@ const SCHEMA_ORDER = [
   'schema_theme_modes.sql',
   'schema_theme_settings.sql',
   'schema_master.sql',
+  'schema_ian_control_plane.sql',
   'schema_indexes.sql',
 ];
 const SEED_FILE = 'seed_components_v2.sql';

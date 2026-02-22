@@ -42,6 +42,7 @@ from agent.model_router import select_model
 from agent.persona_router import Persona, select_persona
 from agent.planner_context import PlannerContextLoader
 from agent.project_router import ProjectRouter
+from agent.runtime_control import RuntimeControl
 from agent.security import sanitise_input
 from audit.logger import AuditLogger
 from memory.db import migrate
@@ -179,6 +180,7 @@ def make_handler(
     haiku_client: WebClient,
     sonnet_client: WebClient,
     audit: AuditLogger | None = None,
+    runtime_control: RuntimeControl | None = None,
 ) -> Handler:
     migrate(cfg.memory.db_path)
 
@@ -296,6 +298,17 @@ def make_handler(
                 linked_plan_files=linked_plan_files,
             )
         logger.info("backlog.ticket_created id=%s intent=%s", ticket.ticket_id, intent.value)
+        if cfg.kanban.enabled and cfg.kanban.api_key:
+            from agent.kanban_sync import sync_to_kanban
+            sync_to_kanban(
+                cfg.kanban.api_url,
+                cfg.kanban.api_key,
+                title=title,
+                description=f"**Summary:** {summary or '(none)'}\n\n**Local:** {ticket.ticket_id}",
+                intent=intent.value,
+                handoff_target=handoff_target,
+                priority="medium",
+            )
         return ticket.ticket_id, linked_plan_files
 
     def _policy_reply(
@@ -340,6 +353,17 @@ def make_handler(
         )
 
     planner_loader = PlannerContextLoader(cfg.project_root)
+
+    def _active_agent_type(persona: str | None = None, model: str | None = None) -> str:
+        if persona == Persona.BRAINSTORMER:
+            return "brainstormer"
+        if persona == Persona.PLANNER:
+            return "planner"
+        if model == cfg.anthropic.model_heavy:
+            return "planner"
+        if model == cfg.anthropic.model_default:
+            return "brainstormer"
+        return "ian"
 
     def _handle_brainstormer(
         message: dict,
@@ -387,6 +411,10 @@ def make_handler(
 
         history.add_message(session_id, "user", text)
         messages = history.get_messages(session_id)
+        if runtime_control is not None:
+            runtime_control.mark_operating(agent_type="planner", current_task="Planner workflow")
+        if runtime_control is not None:
+            runtime_control.mark_operating(agent_type="brainstormer", current_task="Brainstormer workflow")
 
         try:
             reply, usage = _run_with_tools(
@@ -401,10 +429,14 @@ def make_handler(
             )
         except Exception:
             logger.exception("Brainstormer Claude API error")
+            if runtime_control is not None:
+                runtime_control.mark_idle(agent_type="brainstormer")
             _post(haiku_client, channel, ":red_circle: Brainstormer error. Try again.", thread_ts)
             return
 
         if usage is None:
+            if runtime_control is not None:
+                runtime_control.mark_idle(agent_type="brainstormer")
             _post(haiku_client, channel, reply, thread_ts)
             return
 
@@ -454,7 +486,7 @@ def make_handler(
         # Record usage
         cache_written = getattr(usage, "cache_creation_input_tokens", 0) or 0
         cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
-        budget.record_usage(
+        usage_cost = budget.record_usage(
             cfg.anthropic.model_default,
             usage.input_tokens, usage.output_tokens,
             cache_written, cache_read,
@@ -479,6 +511,16 @@ def make_handler(
                 f"{md_note}\n\n"
                 f"Say `!plan` to have the Planner design the implementation.",
                 thread_ts,
+            )
+        if runtime_control is not None:
+            runtime_control.assignment_complete(
+                agent_type="brainstormer",
+                assignment_type="brainstorm_reply",
+                ticket_id=meta.get("ticket_id"),
+                tokens_delta=int((usage.input_tokens or 0) + (usage.output_tokens or 0)),
+                cost_delta_usd=float(usage_cost or 0.0),
+                messages_delta=1,
+                metadata={"state": meta.get("brainstorm_state", "unknown")},
             )
 
     def _handle_planner(
@@ -548,10 +590,14 @@ def make_handler(
             )
         except Exception:
             logger.exception("Planner Claude API error")
+            if runtime_control is not None:
+                runtime_control.mark_idle(agent_type="planner")
             _post(haiku_client, channel, ":red_circle: Planner error. Try again.", thread_ts)
             return
 
         if usage is None:
+            if runtime_control is not None:
+                runtime_control.mark_idle(agent_type="planner")
             _post(haiku_client, channel, reply, thread_ts)
             return
 
@@ -572,7 +618,7 @@ def make_handler(
         # Record usage
         cache_written = getattr(usage, "cache_creation_input_tokens", 0) or 0
         cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
-        budget.record_usage(
+        usage_cost = budget.record_usage(
             cfg.anthropic.model_heavy,
             usage.input_tokens, usage.output_tokens,
             cache_written, cache_read,
@@ -586,6 +632,16 @@ def make_handler(
 
         clean_reply = reply.replace("[PLAN:READY]", "").rstrip()
         _post(sonnet_client, channel, clean_reply, thread_ts)
+        if runtime_control is not None:
+            runtime_control.assignment_complete(
+                agent_type="planner",
+                assignment_type="planner_reply",
+                ticket_id=meta.get("ticket_id"),
+                tokens_delta=int((usage.input_tokens or 0) + (usage.output_tokens or 0)),
+                cost_delta_usd=float(usage_cost or 0.0),
+                messages_delta=1,
+                metadata={"planner_state": meta.get("planner_state", "unknown")},
+            )
 
     def handle(message: dict) -> None:
         raw_text: str = message.get("text", "").strip()
@@ -651,6 +707,15 @@ def make_handler(
                 _post(haiku_client, channel, ":white_check_mark: Session reset. Starting fresh.", thread_ts)
                 return
 
+        if runtime_control is not None and not runtime_control.is_enabled():
+            _post(
+                haiku_client,
+                channel,
+                ":red_circle: IAN is currently turned off from Master dashboard. No assignments are being processed.",
+                thread_ts,
+            )
+            return
+
         # ----------------------------------------------------------------
         # Conversational path
         # ----------------------------------------------------------------
@@ -680,7 +745,7 @@ def make_handler(
             _handle_planner(message, session_id, text, channel, thread_ts)
             return
 
-        # ---- Fixed-environment intent gate (general path, unchanged) ----
+        # ---- Intent classification (always runs for logging) ----
         decision = classify_intent(text)
         logger.info(
             "intent=%s confidence=%.2f reason=%s",
@@ -689,6 +754,7 @@ def make_handler(
             decision.reason,
         )
 
+        # ---- Fixed-environment intent gate (all conversational channels) ----
         if decision.intent in {
             IntentType.NEEDS_CLARIFICATION,
             IntentType.OUT_OF_SCOPE,
@@ -784,6 +850,12 @@ def make_handler(
         elif prompt.lower().startswith("!brainstorm"):
             prompt = prompt[11:].strip() or "Hello"
 
+        if runtime_control is not None:
+            runtime_control.mark_operating(
+                agent_type=_active_agent_type(model=model),
+                current_task=f"Intent={decision.intent.value}",
+            )
+
         if is_client_ch:
             # Always inject lavprishjemmeside product context in client channels
             lph_path = cfg.project_root / "projects" / "lavprishjemmeside.md"
@@ -791,7 +863,6 @@ def make_handler(
             extra_ctx = _CLIENT_SUPPORT_CTX + ("\n\n[Product Context]\n" + proj_content if proj_content else "")
         else:
             extra_ctx = project_router.get_context(prompt)
-
         policy_ctx = (
             "\n\n[IAN Intent Policy]\n"
             f"resolved_intent={decision.intent.value}\n"
@@ -819,17 +890,21 @@ def make_handler(
             logger.exception("Claude API error")
             if audit is not None:
                 audit.error("Claude API error in handler")
+            if runtime_control is not None:
+                runtime_control.mark_idle(agent_type=_active_agent_type(model=model))
             _post(haiku_client, channel, ":red_circle: Error calling Claude. Check logs.", thread_ts)
             return
 
         # Max rounds hit — post error and bail without recording usage
         if usage is None:
+            if runtime_control is not None:
+                runtime_control.mark_idle(agent_type=_active_agent_type(model=model))
             _post(haiku_client, channel, reply, thread_ts)
             return
 
         cache_written = getattr(usage, "cache_creation_input_tokens", 0) or 0
         cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
-        budget.record_usage(model, usage.input_tokens, usage.output_tokens, cache_written, cache_read)
+        usage_cost = budget.record_usage(model, usage.input_tokens, usage.output_tokens, cache_written, cache_read)
 
         history.add_message(
             session_id, role="assistant", content=reply, model=model,
@@ -848,5 +923,15 @@ def make_handler(
 
         client = sonnet_client if model == cfg.anthropic.model_heavy else haiku_client
         _post(client, channel, reply, thread_ts)
+        if runtime_control is not None:
+            runtime_control.assignment_complete(
+                agent_type=_active_agent_type(model=model),
+                assignment_type=f"intent_{decision.intent.value}",
+                ticket_id=None,
+                tokens_delta=int((usage.input_tokens or 0) + (usage.output_tokens or 0)),
+                cost_delta_usd=float(usage_cost or 0.0),
+                messages_delta=1,
+                metadata={"intent": decision.intent.value},
+            )
 
     return handle
