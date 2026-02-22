@@ -342,9 +342,6 @@ function buildApiCandidates(primary) {
     add(fallbackApi);
   }
 
-  // Keep site-origin as absolute last resort only for explicitly non-master calls.
-  add(currentOrigin);
-
   return candidates;
 }
 
@@ -386,7 +383,7 @@ function masterFetchJson(path, options) {
     // Never use site-origin fallback for /master/* requests.
     return isApiLikeBase(base) || baseHost !== normalizedHost(window.location.hostname);
   });
-  if (!attempts.length) attempts = API_CANDIDATES.slice();
+  if (!attempts.length) attempts = [normalizeApiBase(apiUrl)];
   var index = 0;
 
   function attempt() {
