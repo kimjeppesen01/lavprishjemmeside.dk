@@ -4,6 +4,8 @@
 >
 > **Primary deployment model**: ZIP + 1-click setup — extract on domain folder, run `npm run setup`, follow prompts. Like 1-click WordPress installation.
 
+**Custom components:** The repo/ZIP includes `src/components/custom/` from the start (empty except README). Deploy and seed do not delete or overwrite that folder. New client domains have it by default; client-specific components go there and are never overwritten by upstream or seed.
+
 ---
 
 ## 1. Product Vision

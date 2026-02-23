@@ -25,6 +25,46 @@ A Danish business website offering affordable web development services. Built as
 
 ---
 
+## CMS map (one-page reference for AI)
+
+Numbered list of admin areas and features — use for full context in any session.
+
+| # | Area | Path | Purpose |
+|---|------|------|---------|
+| 1 | Auth | `/admin/` | Login, JWT storage |
+| 2 | Dashboard | `/admin/dashboard/` | Metrics, events, sessions tables |
+| 3 | Pages | `/admin/pages/` | Page builder, component instances, SEO meta, publish |
+| 4 | Components | `/admin/components/` | Component library browser, previews |
+| 4b | Egne komponenter | `/admin/components/custom/` | Custom components (empty at setup; added via Claude Code or sync) |
+| 5 | Styling | `/admin/styling/` | Design tokens, theme presets, shapes/shadows |
+| 6 | Media | `/admin/media/` | Media library, upload |
+| 7 | AI-assemble | `/admin/ai-assemble/` | AI page assembly from prompt |
+| 8 | Master Hub | `/admin/master/` | Sites, Kanban, Claude Code, AI usage (master role only) |
+| 9 | Byggeklodser | `/admin/byggeklodser/` | Visual page builder (mockup → components via AI) |
+| 10 | Traffic | `/admin/traffic/` | Traffic dashboard |
+| 11 | Header/Footer | `/admin/header-footer/` | Global header/footer content |
+
+```mermaid
+flowchart LR
+  subgraph auth [Auth]
+    A1[Login]
+  end
+  subgraph admin [Admin]
+    A2[Dashboard]
+    A3[Pages]
+    A4[Components]
+    A5[Styling]
+    A6[Media]
+    A7[AI-assemble]
+    A8[Master Hub]
+    A9[Byggeklodser]
+    A10[Traffic]
+  end
+  auth --> admin
+```
+
+---
+
 ## Hosting & Server Details
 | Key | Value |
 |-----|-------|
@@ -201,12 +241,23 @@ lavprishjemmeside.dk/
 │   │   └── schema_indexes.sql       # Production indexes
 │   └── tmp/
 │       └── restart.txt              # Touched to signal app restart
-├── personal-agent/                  # IAN (Slack AI)
-│   ├── agent/
-│   ├── slack/
+├── tasks/                           # Domain-based Kanban task files
+│   ├── cms/                         # CMS-level tasks
+│   │   ├── ideas/                   # Brainstormer output
+│   │   ├── plans/                   # Planner output
+│   │   ├── in_review/
+│   │   └── completed/
+│   ├── lavprishjemmeside.dk/        # Client tasks (auto-routed by Slack channel)
+│   └── ljdesignstudio.dk/           # Client tasks
+├── personal-agent/                  # IAN — Slack AI agent
+│   ├── agent/                       # Core: brainstormer.py, config.py, kanban_sync.py, planner_context.py
+│   ├── slack/                       # handlers.py (message routing), app.py (polling + dual accounts)
+│   ├── docs/                        # RUNBOOK.md, workflow docs
+│   ├── scripts/                     # watchdog.sh, ianctl.sh, deploy.sh
 │   ├── projects/
 │   │   └── lavprishjemmeside.md     # Product context for client channels
-│   └── .env                         # SLACK_*, ANTHROPIC_*, SLACK_CLIENT_CHANNELS (gitignored)
+│   ├── SOUL.md                      # IAN personality and operating principles
+│   └── .env                         # SLACK_*, ANTHROPIC_*, KANBAN_*, SLACK_CHANNEL_DOMAIN_MAP (gitignored)
 └── src/
     ├── styles/
     │   └── global.css               # Tailwind v4: `@import "tailwindcss";`
@@ -326,6 +377,8 @@ The **Claude Code** tab in Master Hub runs the Claude CLI on the server from the
 - **Schema**: Run `api/src/schema_master_role.sql` (add `master` to `users.role`) and `api/src/schema_master_audit.sql` (create `master_audit_log`). Assign `role = 'master'` to a user to grant access.
 
 **Full reference:** For architecture, API endpoints, OAuth setup, env vars, troubleshooting, and file locations, see **[docs/CLAUDE_CODE_INTEGRATION.md](docs/CLAUDE_CODE_INTEGRATION.md)**.
+
+**Planner / Brainstormer rule:** Do not suggest or implement changes that edit existing **CMS library** component source files (`src/components/*.astro`). Use **new** components or **user-generated** components in `src/components/custom/` instead. This prevents overwriting user-adjusted components when re-running plans or syncing upstream.
 
 ### Dashboard Overview Shows
 - **4 metric cards**: Hændelser i alt, Hændelser i dag, Sessioner i alt, Gns. sider pr. session
@@ -580,18 +633,18 @@ script: |
 | `docs/MUST_READ.md` | **Session start protocol** — Required reading order for new AI sessions. |
 | `docs/AI_ENGINEERING_STANDARDS.md` | **Comprehensive best practices** — Industry-standard workflow for AI-assisted software delivery. |
 | `docs/COMPONENT_EDITOR.md` | **Full reference for the schema-driven component editor** — schema format, field type mapping, form builder internals, save flow, media picker, adding new components |
-| `docs/PHASE_6_Component-Library-&-Styling-Dashboard_v2.md` | **Phase 6 original spec** — Design tokens, DB schema, AI assembly, admin UI. Status: COMPLETED (implementation diverged; see "Implementation vs Spec" in doc). |
+| `docs/COMPONENT_LIBRARY_AND_DESIGN_SYSTEM_SPEC.md` | **Component library & design system spec** — Design tokens, DB schema, AI assembly, admin UI. Status: COMPLETED (implementation diverged; see "Implementation vs Spec" in doc). |
 | `docs/GLOBAL_FEATURES.md` | Styling features (smooth scroll, korn-overlay, sideloader, sticky header) from Admin → Design & styling |
-| `docs/Future_implementations.md` | **Nice-to-have backlog** — Performance (CWV, CDN, caching), security headers, testing, PWA, i18n, analytics. Not critical for MVP. |
-| `docs/PHASE_7_AI_GENERATOR_SPEC_v2.md` | **Phase 7 Visual Page Builder** — Mockup → components/HTML via AI Vision. `/admin/byggeklodser`. OpenAI gpt-4o or Anthropic Claude. Full technical spec. |
+| `docs/FUTURE_IMPLEMENTATIONS.md` | **Nice-to-have backlog** — Performance (CWV, CDN, caching), security headers, testing, PWA, i18n, analytics. Not critical for MVP. |
+| `docs/VISUAL_PAGE_BUILDER_SPEC.md` | **Visual Page Builder** — Mockup → components/HTML via AI Vision. `/admin/byggeklodser`. OpenAI gpt-4o or Anthropic Claude. Full technical spec. |
 | `docs/SHOPPING_MODULE_PLAN.md` | **E-commerce module** — Product catalog, Quickpay, cart, checkout. 11 new tables, Danish localization, static product pages + client-side cart. Implementation plan with tickets. |
 | `docs/MULTI_DOMAIN_CMS_PLAN.md` | **Multi-domain deployment** — ZIP + 1-click setup, standalone template model, product vision, upstream updates. |
 | `docs/DEPLOY_NEW_DOMAIN.md` | **Deploy to new domain** — Step-by-step checklist (cPanel, MySQL, Node.js App, GitHub secrets/vars, schema order). |
 | `docs/UPSTREAM_UPDATES.md` | **Upstream updates** — How clients pull upstream, resolve conflicts, redeploy; keep only `api/.env` local. |
 | `docs/ROLLOUT_MANUAL.md` | **Rollout manual** — Complete step-by-step human instructions and exact prompts for 1-click setup, new domain (GitHub + cPanel), and main site deploy. |
 | `docs/DEPLOY_HEALTHCHECK.md` | **Deploy health runbook** — Post-deploy verification, green/red criteria, SSH recovery steps, and API restart troubleshooting. |
-| `docs/IAN_PLAN.md` | **IAN client support AI** — Slack-based AI for client channels. Implementation, integration ideas (admin, AI-assembler, Shopping, Pro, multi-domain). |
-| `tasks/README.md` | **Task execution workspace** — `tasks/` is the canonical pending-work area used by Claude dashboard planning. |
+| `docs/IAN_PLAN.md` | **IAN** — Short pointer to [personal-agent/docs/IAN.md](personal-agent/docs/IAN.md) (full plan, map, session start). |
+| `tasks/README.md` | **Task execution workspace** — Domain-based Kanban (`tasks/{domain}/ideas→plans→in_review→completed`). IAN auto-routes by Slack channel. |
 
 ---
 
@@ -602,7 +655,7 @@ Styling-funktioner (smooth scroll, korn-overlay, sideloader, klæbende header) s
 ---
 
 ## Pending
-- Canonical pending-work files now live in `tasks/pending/` (not `docs/`).
+- Canonical pending-work files live in `tasks/{domain}/ideas/` (not `docs/`).
 - **Component editor UX**: Re-ordering of array items (drag-and-drop or up/down arrows)
 - **Component variations**: Add A/B content variant support per page component instance
 - **Dashboard enhancements**: Date filtering, charts, auto-refresh, CSV export (see Admin Dashboard section above)
@@ -613,9 +666,11 @@ Styling-funktioner (smooth scroll, korn-overlay, sideloader, klæbende header) s
 ## Process Enforcement (Docs vs Tasks)
 
 - `docs/` is mandatory reference context only (architecture, operations, specs, runbooks).
-- `tasks/pending/` is the only canonical location for executable pending work used by dashboard planning flows.
+- `tasks/{domain}/ideas/` is the canonical location for new pending work. IAN creates files here automatically via Brainstormer.
+- `tasks/{domain}/plans/` holds implementation plans. IAN moves tasks here automatically via Planner.
 - Do not create new TODO or execution-plan files under `docs/`.
 - Every dashboard Claude run must be anchored to a selected `.md` plan file from `tasks/**/*.md`.
+- Domain folders: `cms/` (shared engine), `lavprishjemmeside.dk/`, `ljdesignstudio.dk/` (client-specific).
 
 ## Planned Modules
 
@@ -624,25 +679,117 @@ Styling-funktioner (smooth scroll, korn-overlay, sideloader, klæbende header) s
 
 Full e-commerce: product catalog, Quickpay (Dankort, Visa/MC, MobilePay), cart, checkout. Static product pages (SSG) + client-side cart (localStorage). 11 new DB tables (products, variants, orders, customers, shipping, discounts, etc.). Admin at `/admin/shop/` (products, orders, settings). Danish localization (øre pricing, moms, shipping). Integrates with existing media table and AI toolkit (`product-grid`, `shop-hero` components).
 
-### IAN — Client Support AI
-**Spec**: [docs/IAN_PLAN.md](docs/IAN_PLAN.md) | **Product context**: [personal-agent/projects/lavprishjemmeside.md](personal-agent/projects/lavprishjemmeside.md)
+### IAN — Slack AI Agent (CMS Operations & Ticket Pipeline)
+**Spec**: [docs/IAN_PLAN.md](docs/IAN_PLAN.md) → [personal-agent/docs/IAN.md](personal-agent/docs/IAN.md) | **Product context**: [personal-agent/projects/lavprishjemmeside.md](personal-agent/projects/lavprishjemmeside.md) | **Runbook**: [personal-agent/docs/RUNBOOK.md](personal-agent/docs/RUNBOOK.md)
 
-IAN lives in `personal-agent/` within this repo. Slack-based AI that monitors client channels and answers product questions. Production runtime is server watchdog-based (`personal-agent/scripts/watchdog.sh`) with control from Master Hub (`/admin/master`). Supports multi-client via `SLACK_CLIENT_CHANNELS`.
+IAN lives in `personal-agent/` within this repo. Slack-based AI agent that operates the CMS ticket pipeline — turning raw user ideas into structured tasks and implementation plans. Two Slack user accounts (Haiku + Sonnet) post as real users, not bots. Controlled from Master Hub (`/admin/master`).
 
-**v1.1 — Two workflow personas (2026-02-21):**
-- **Brainstormer** (Haiku model): Multi-turn idea refinement state machine (`IDEATION → REFINEMENT → SYNTHESIS → APPROVED → TICKET_CREATED`). Never accepts a raw idea immediately — asks clarifying questions, suggests improvements, synthesizes a structured brief. Creates Kanban card in "Ideas" on user approval.
-- **Planner** (Sonnet model): Loads full project context (BRAND_VISION.md + PROJECT_CONTEXT.md + all docs) before every call. Produces 10-section implementation plans with API token cost estimate (+ ×20 real-world rate). Creates Kanban card in "Plans" when plan is complete.
-- **Kanban columns**: Ideas, Plans, In Review, Completed (replaces backlog/in_progress/review/done).
-- **Control-plane**:
-  - `GET/POST /master/ian-control` for ON/OFF runtime control
-  - `POST /master/ian-heartbeat` for work-state updates (`operating|idle|off`)
-  - `POST /master/ian-assignment-complete` for immediate cost/token/message deltas per completed assignment
-  - `GET /master/ian-status` for dashboard cards and status dots
-- **Status color model in Master Hub**: green=`operating`, yellow=`idle`, red=`off`.
-- See [personal-agent/SOUL.md](personal-agent/SOUL.md) and [personal-agent/docs/RUNBOOK.md](personal-agent/docs/RUNBOOK.md) for full operating spec.
+#### User Interaction via Slack
+
+Users interact with IAN through Slack commands in their designated channel:
+
+| Command | Persona | What Happens |
+|---------|---------|-------------|
+| `!brainstorm <idea>` | Brainstormer (Haiku) | Starts multi-turn idea refinement dialogue |
+| `!plan <task>` | Planner (Sonnet) | Creates implementation plan for a task |
+| Regular message | Auto-routed | Intent classification determines handler |
+
+**Channel → Domain routing**: Each Slack channel maps to a client domain via `SLACK_CHANNEL_DOMAIN_MAP`. The control channel always maps to `cms`. Tasks are automatically filed into the correct domain's task folder.
+
+#### Brainstormer Persona (Haiku model)
+
+Multi-turn idea refinement state machine. Never accepts a raw idea as-is — always asks clarifying questions first.
+
+**State machine**: `IDEATION → REFINEMENT → SYNTHESIS → APPROVED → TICKET_CREATED`
+
+| State | What Happens |
+|-------|-------------|
+| **IDEATION** | User shares raw idea. Brainstormer asks 2-3 clarifying questions (business/user/value — never technology). |
+| **REFINEMENT** | User answers questions. Brainstormer summarises, suggests 1-2 improvements, asks follow-up on priority/timing. |
+| **SYNTHESIS** | Brainstormer presents structured **Task Definition** (Title, Problem, Solution, Who Benefits, Success Criteria, Effort, Risks). User reviews. |
+| **APPROVED** | User says "yes" / "approve" / "looks good". Brainstormer creates Kanban card + task MD file. |
+| **TICKET_CREATED** | Auto-triggers Planner to create implementation plan. |
+
+**On approval, Brainstormer**:
+1. Creates a Kanban card in the "Ideas" column via `POST /master/kanban`
+2. Writes a task MD file to `tasks/{domain}/ideas/TASK_{SLUG}.md` with full synthesis text
+3. Posts confirmation to Slack with file path
+4. Auto-triggers the Planner persona
+
+#### Planner Persona (Sonnet model)
+
+Full-context implementation plan designer. Loads all project docs (tasks/{domain}/BRAND_VISION.md, PROJECT_CONTEXT.md, all `docs/*`, all `personal-agent/docs/*`) before every call.
+
+**What it produces**: 10-section implementation plan with:
+- Architecture decisions and file changes
+- Step-by-step implementation order
+- API token cost estimate (+ ×20 real-world multiplier)
+- Acceptance criteria
+
+**On plan completion** (`[PLAN:READY]` sentinel):
+1. Creates a Kanban card in the "Plans" column via `POST /master/kanban`
+2. Auto-moves the source task MD from `{domain}/ideas/` → `{domain}/plans/`
+3. Posts the full plan to Slack
+
+#### Kanban Integration
+
+IAN's ticket pipeline syncs to the website's MySQL Kanban via authenticated API calls.
+
+| Kanban Column | Stage | Who Creates |
+|---------------|-------|-------------|
+| **Ideas** | Raw approved ideas | Brainstormer |
+| **Plans** | Implementation plans | Planner |
+| **In Review** | Under review/testing | Manual |
+| **Completed** | Done | Manual |
+
+**API**: `POST /master/kanban` with `x-api-key` header. Configured via `KANBAN_API_URL` and `KANBAN_API_KEY` in IAN's `.env`.
+
+#### Domain-Based Task File Structure
+
+Task MD files are organized by client domain, mirroring the Kanban columns:
+
+```
+tasks/
+├── cms/                           # CMS engine, IAN, infrastructure
+│   ├── ideas/                     # Brainstormer output
+│   ├── plans/                     # Planner output (auto-moved from ideas/)
+│   ├── in_review/
+│   └── completed/
+├── lavprishjemmeside.dk/          # Client tasks
+│   ├── ideas/ → plans/ → in_review/ → completed/
+├── ljdesignstudio.dk/             # Client tasks
+│   ├── ideas/ → plans/ → in_review/ → completed/
+```
+
+**Routing**: `SLACK_CHANNEL_DOMAIN_MAP=C_LAVPRIS=lavprishjemmeside.dk,C_LJDESIGN=ljdesignstudio.dk` in `.env`. Control channel → `cms/`. Unknown channels → `cms/` (fallback).
+
+#### Control-Plane (Master Hub)
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET/POST /master/ian-control` | ON/OFF runtime control |
+| `POST /master/ian-heartbeat` | Work-state updates (`operating\|idle\|off`) |
+| `POST /master/ian-assignment-complete` | Cost/token/message deltas per assignment |
+| `GET /master/ian-status` | Dashboard cards and status dots |
+| `POST /master/kanban` | Create Kanban cards (used by IAN) |
+
+**Status color model in Master Hub**: green=`operating`, yellow=`idle`, red=`off`.
+
+#### Key Files
+
+| File | Purpose |
+|------|---------|
+| `personal-agent/agent/brainstormer.py` | Brainstormer state machine, task MD builder, ticket field extraction |
+| `personal-agent/agent/planner_context.py` | Planner context loader (reads all project docs) |
+| `personal-agent/agent/kanban_sync.py` | Kanban API sync (`POST /master/kanban`) |
+| `personal-agent/agent/config.py` | All config dataclasses including `channel_domain_map` |
+| `personal-agent/slack/handlers.py` | Main message handler — brainstormer/planner flows, domain routing |
+| `personal-agent/slack/app.py` | Slack polling, dual-account setup, self-echo prevention |
+| `personal-agent/SOUL.md` | IAN's personality and operating principles |
+| `personal-agent/docs/RUNBOOK.md` | Operations runbook |
 
 ### Future Implementations (Nice-to-Have)
-**Spec**: [docs/Future_implementations.md](docs/Future_implementations.md)
+**Spec**: [docs/FUTURE_IMPLEMENTATIONS.md](docs/FUTURE_IMPLEMENTATIONS.md)
 
 Deferred items: WCAG audit (AI will handle), Core Web Vitals tracking, error monitoring (Sentry), performance budget, testing suite, PWA, i18n. Security headers recommended before white-label launch. Pragmatic: build MVP fast, add as needed.
 
@@ -652,7 +799,7 @@ Deferred items: WCAG audit (AI will handle), Core Web Vitals tracking, error mon
 
 **Status: LIVE** — core functionality complete, actively being extended.
 
-**Spec (original plan)**: [docs/PHASE_6_Component-Library-&-Styling-Dashboard_v2.md](docs/PHASE_6_Component-Library-&-Styling-Dashboard_v2.md) — marked COMPLETED; implementation diverged (27 components vs 18 planned).  
+**Spec (original plan)**: [docs/COMPONENT_LIBRARY_AND_DESIGN_SYSTEM_SPEC.md](docs/COMPONENT_LIBRARY_AND_DESIGN_SYSTEM_SPEC.md) — marked COMPLETED; implementation diverged (27 components vs 18 planned).  
 **Full technical reference:** [docs/COMPONENT_EDITOR.md](docs/COMPONENT_EDITOR.md)
 
 ### Architecture
@@ -692,6 +839,11 @@ Database-driven content + static generation:
 | `api/src/seed_components_v2.sql` | **Authoritative seed** for all 27 components — run in phpMyAdmin after `schema_phase6.sql` |
 | `api/src/seed_components_incremental.sql` | **Here-and-now incremental** — run when DB already seeded; applies latest component updates (overlap module, zigzag removal) |
 | `api/src/schema_phase6.sql` | Defines all Phase 6 tables |
+| `src/components/custom/` | **User-generated components** — not overwritten by seed or deploy; slugs `custom/<kebab-name>`. See [docs/CLAUDE_CODE_INTEGRATION.md](docs/CLAUDE_CODE_INTEGRATION.md). |
+
+**Custom components in the dashboard:** They appear under **Egne komponenter** (`/admin/components/custom/`). In the DB they are stored in `components` with `source = 'custom'`. Seed and incremental seed scripts **never overwrite** custom rows (ON DUPLICATE KEY UPDATE only updates when `source = 'library'`). AI-assemble receives custom components in context and can suggest them when generating pages.
+
+**Seed/deploy and custom components:** Seed scripts only update the DB; they do not touch `src/components/custom/`. Deployment copies `dist/` and does not delete source; keep `custom/` in the repo so user components are preserved across deploys.
 
 ### Critical: schema_fields aliasing
 
@@ -719,7 +871,7 @@ Database-driven content + static generation:
 
 ### Phase 7: AI Building Block Generator (Premium Feature)
 
-> **Full Technical Specification**: See [docs/PHASE_7_AI_GENERATOR_SPEC_v2.md](docs/PHASE_7_AI_GENERATOR_SPEC_v2.md)
+> **Full Technical Specification**: See [docs/VISUAL_PAGE_BUILDER_SPEC.md](docs/VISUAL_PAGE_BUILDER_SPEC.md)
 
 **Status**: Plan — ready for implementation (2–3 weeks). Depends on Phase 6.
 

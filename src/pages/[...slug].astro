@@ -32,6 +32,17 @@ import OverlapCardsSection from '../components/OverlapCardsSection.astro';
 import AlternatingFeatureList from '../components/AlternatingFeatureList.astro';
 import ImmersiveContentVisual from '../components/ImmersiveContentVisual.astro';
 
+// User-generated components (src/components/custom/) — not overwritten by CMS/seed
+const customGlob = import.meta.glob('../components/custom/*.astro', { eager: true });
+function pascalToKebab(s: string): string {
+  return s.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
+}
+const customMap: Record<string, any> = {};
+for (const [path, mod] of Object.entries(customGlob)) {
+  const name = path.split('/').pop()?.replace('.astro', '') ?? '';
+  if (name && mod && typeof mod === 'object' && 'default' in mod) customMap['custom/' + pascalToKebab(name)] = (mod as { default: any }).default;
+}
+
 // Map component slugs to Astro components
 const componentMap = {
   'hero-section': HeroSection,
@@ -66,6 +77,7 @@ const componentMap = {
   'gallery-grid': GalleryGrid,
   'product-carousel': ProductCarousel,
   'sticky-column-section': StickyColumnSection,
+  ...customMap,
 };
 
 // Prop validation and normalization — thin safety net (AI prompt now includes exact schemas)

@@ -154,7 +154,29 @@ Repo path convention is fixed: `/home/theartis/repositories/<domain>` where `dom
 
 ---
 
-## 10. Troubleshooting
+## 10. CMS components: never suggest updating; user-generated components
+
+**Rule:** Do not suggest or implement changes that edit existing **CMS library** component source files (`src/components/*.astro`). Use **new** components or the **user-generated component system** instead. This avoids overwriting user-adjusted components when re-running plans or syncing upstream.
+
+- **Planner / Brainstormer:** Tasks and plans must not say “update PricingTable.astro” or “modify the pricing component source.” Describe desired behaviour or content (e.g. “pricing tiers with Starter 29 kr/md and upgrade nudge”) and direct implementation to (a) **new** components or (b) **user-generated** components in `src/components/custom/`, not edits to canonical CMS components.
+- **Claude Code:** No run flow should encourage editing files under `src/components/*.astro` for existing library components. Verification flows are read-only (compare/verify), not “apply changes to the component file.”
+- **User-generated components:** Custom or user-adjusted components live in `src/components/custom/` and are never overwritten by CMS/seed updates. See [Custom components](#custom-components) below.
+
+**After Claude Code changes a component:** If a plan created or updated a **custom** component in `src/components/custom/`, add it to a page via Admin → Sider (Pages) → choose page → “Tilføj komponent” and select the custom component (if listed). For **library** components, the code is in `src/components/`; run **build and deploy** so the new code is used. Page **content** (e.g. tier data) comes from the CMS: edit the component instance in the page builder or re-add the component to get the new default content from seed.
+
+**Deploy and content:** The live site is built at deploy time. Until you run `npm run build` and deploy, the served pages use the previous compiled output. After deploy, if tier data or copy still looks old, update the component instance content in Admin → Sider or re-add the component so it uses the new default from seed.
+
+### Custom components
+
+- **Location:** `src/components/custom/` — only this tree is writable by Claude Code / plans for component implementations. CMS library components in `src/components/*.astro` (outside `custom/`) are read-only for automation.
+- **Dashboard:** The admin has a dedicated **Egne komponenter** tab at `/admin/components/custom/` (empty at setup; components appear when added via Claude Code or sync).
+- **AI-assemble:** The AI-assemble feature receives custom components in its context (from the DB, `source = 'custom'`) and automatically considers them when generating page content; you can use both library and custom component slugs in generated pages.
+- **Slug convention:** Custom components use slugs like `custom/pricing-table` (from filename `PricingTable.astro`). They are resolved at build time and can be added to pages when registered in the components table.
+- **Seed/deploy:** Seed and deployment scripts must not overwrite or delete files in `custom/`. In the DB, seed only updates rows with `source = 'library'`; custom rows are never overwritten.
+
+---
+
+## 11. Troubleshooting
 
 - **403 Master access required:** User is not `role = 'master'`. Check `users.role` and JWT (re-login after DB change).
 - **403 IP_NOT_ALLOWED:** Server has `MASTER_ALLOWED_IPS` set and the client IP is not in the list. Use `X-Forwarded-For` on the server if behind a proxy.
@@ -167,7 +189,7 @@ Repo path convention is fixed: `/home/theartis/repositories/<domain>` where `dom
 
 ---
 
-## 11. File reference
+## 12. File reference
 
 | File | Role |
 |------|------|
@@ -184,7 +206,7 @@ Repo path convention is fixed: `/home/theartis/repositories/<domain>` where `dom
 
 ---
 
-## 12. Kanban and documentation task
+## 13. Kanban and documentation task
 
 A Kanban item **”Document Claude Code integration”** can be added to the **Plans** column so the board reflects that this integration is documented. To add it on a deployed system, run:
 
@@ -204,7 +226,7 @@ Or run the seed file [api/src/seed_kanban_claude_doc.sql](api/src/seed_kanban_cl
 
 ---
 
-## 13. Pending and optional (from plan)
+## 14. Pending and optional (from plan)
 
 - **Step-up auth:** Implemented as configurable step-up flow (`MASTER_STEP_UP_REQUIRED=1`) with password re-check and short-lived step-up token.
 - **Session / token:** Implemented for master actions via dedicated short-lived `master_step_up` JWT used in `x-master-step-up-token`.
@@ -212,7 +234,7 @@ Or run the seed file [api/src/seed_kanban_claude_doc.sql](api/src/seed_kanban_cl
 
 ---
 
-## 14. Version 1.1 TODOs (Master Hub UX guardrails)
+## 15. Version 1.1 TODOs (Master Hub UX guardrails)
 
 Goal: make task execution safer and more intuitive by forcing every Claude run to be anchored to a project `.md` file.
 

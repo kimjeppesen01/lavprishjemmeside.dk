@@ -17,13 +17,14 @@
 -- ============================================================
 
 INSERT INTO components
-  (slug, name_da, category, description_da, tier, schema_fields, default_content, doc_path, is_active, sort_order)
+  (slug, source, name_da, category, description_da, tier, schema_fields, default_content, doc_path, is_active, sort_order)
 VALUES
 
 -- ─────────────────────────────────────────────
 -- OPENER (1)
 -- ─────────────────────────────────────────────
 ('hero-section',
+ 'library',
  'Hero Sektion',
  'opener',
  'Stor overskrift med beskrivelse, CTA-knapper og valgfrit baggrundsbillede',
@@ -37,6 +38,7 @@ VALUES
 -- TRUST (4)
 -- ─────────────────────────────────────────────
 ('stats-banner',
+ 'library',
  'Statistik Banner',
  'trust',
  'Iøjnefaldende nøgletal og statistikker',
@@ -47,6 +49,7 @@ VALUES
  1, 20),
 
 ('testimonials-carousel',
+ 'library',
  'Anmeldelser Karussel',
  'trust',
  'Kundeanmeldelser med fotos og vurderinger',
@@ -57,6 +60,7 @@ VALUES
  1, 21),
 
 ('team-grid',
+ 'library',
  'Team Grid',
  'trust',
  'Teammedlemmers kort med fotos og roller',
@@ -67,6 +71,7 @@ VALUES
  1, 22),
 
 ('trust-badges-section',
+ 'library',
  'Tillidsmærker',
  'trust',
  'SSL, betalingsikoner og garantier',
@@ -77,6 +82,7 @@ VALUES
  1, 23),
 
 ('case-studies-section',
+ 'library',
  'Referencer / Cases',
  'content',
  'Projektshowcase med billede, titel, kunde og resultat',
@@ -87,6 +93,7 @@ VALUES
  1, 38),
 
 ('integrations-section',
+ 'library',
  'Integrations',
  'content',
  'Grid af apps og værktøjer der fungerer med produktet',
@@ -97,6 +104,7 @@ VALUES
  1, 39),
 
 ('founders-note-section',
+ 'library',
  'Grundlæggerens note',
  'trust',
  'Personlig besked fra grundlæggeren: citat, foto, valgfri CTA',
@@ -107,6 +115,7 @@ VALUES
  1, 24),
 
 ('tabs-section',
+ 'library',
  'Faner',
  'content',
  'Fanegrænseflade til organisering af tæt indhold (funktioner, priser)',
@@ -117,6 +126,7 @@ VALUES
  1, 49),
 
 ('modal-section',
+ 'library',
  'Modal / Dialog',
  'structure',
  'Overlay-modal til formulare, CTA eller medieindhold',
@@ -127,15 +137,15 @@ VALUES
  1, 91)
 
 ON DUPLICATE KEY UPDATE
-  name_da        = VALUES(name_da),
-  category       = VALUES(category),
-  description_da = VALUES(description_da),
-  tier           = VALUES(tier),
-  schema_fields  = VALUES(schema_fields),
-  default_content= VALUES(default_content),
-  doc_path       = VALUES(doc_path),
-  is_active      = VALUES(is_active),
-  sort_order     = VALUES(sort_order);
+  name_da        = IF(source = 'library', VALUES(name_da), name_da),
+  category       = IF(source = 'library', VALUES(category), category),
+  description_da = IF(source = 'library', VALUES(description_da), description_da),
+  tier           = IF(source = 'library', VALUES(tier), tier),
+  schema_fields  = IF(source = 'library', VALUES(schema_fields), schema_fields),
+  default_content= IF(source = 'library', VALUES(default_content), default_content),
+  doc_path       = IF(source = 'library', VALUES(doc_path), doc_path),
+  is_active      = IF(source = 'library', VALUES(is_active), is_active),
+  sort_order     = IF(source = 'library', VALUES(sort_order), sort_order);
 
 -- ── Verify ──────────────────────────────────────────────────
 SELECT
@@ -148,12 +158,13 @@ ORDER BY sort_order;
 
 
 INSERT INTO components
-  (slug, name_da, category, description_da, tier, schema_fields, default_content, doc_path, is_active, sort_order)
+  (slug, source, name_da, category, description_da, tier, schema_fields, default_content, doc_path, is_active, sort_order)
 VALUES
 
 
 
 ('bento-grid-section',
+ 'library',
  'Bento Grid',
  'content',
  'Asymmetrisk grid med kort i varierende størrelser',
@@ -164,6 +175,7 @@ VALUES
  1, 50),
 
 ('overlap-image-section',
+ 'library',
  'Overlap Billede Sektion',
  'content',
  'Visuel sektion med overlap. Understøtter introText (centreret) eller kolonne-layout.',
@@ -174,6 +186,7 @@ VALUES
  1, 51),
 
 ('overlap-cards-section',
+ 'library',
  'Overlap Kort Sektion',
  'content',
  '2-3 kort i række med horisontal overlap',
@@ -184,6 +197,7 @@ VALUES
  1, 52),
 
 ('alternating-feature-list',
+ 'library',
  'Alternating Feature Liste',
  'content',
  '2-4 overlap-sektioner der flyder sammen som én blok. Teal/hvid skift, billeder overlapper.',
@@ -194,6 +208,7 @@ VALUES
  1, 53),
 
 ('logo-cloud',
+ 'library',
  'Logo Sky',
  'trust',
  'Grid af kunde- eller partnerlogoer',
@@ -204,15 +219,15 @@ VALUES
  1, 23)
 
 ON DUPLICATE KEY UPDATE
-  name_da        = VALUES(name_da),
-  category       = VALUES(category),
-  description_da = VALUES(description_da),
-  tier           = VALUES(tier),
-  schema_fields  = VALUES(schema_fields),
-  default_content= VALUES(default_content),
-  doc_path       = VALUES(doc_path),
-  is_active      = VALUES(is_active),
-  sort_order     = VALUES(sort_order);
+  name_da        = IF(source = 'library', VALUES(name_da), name_da),
+  category       = IF(source = 'library', VALUES(category), category),
+  description_da = IF(source = 'library', VALUES(description_da), description_da),
+  tier           = IF(source = 'library', VALUES(tier), tier),
+  schema_fields  = IF(source = 'library', VALUES(schema_fields), schema_fields),
+  default_content= IF(source = 'library', VALUES(default_content), default_content),
+  doc_path       = IF(source = 'library', VALUES(doc_path), doc_path),
+  is_active      = IF(source = 'library', VALUES(is_active), is_active),
+  sort_order     = IF(source = 'library', VALUES(sort_order), sort_order);
 
 -- ── Verify ──────────────────────────────────────────────────
 SELECT
@@ -225,12 +240,13 @@ ORDER BY sort_order;
 
 
 INSERT INTO components
-  (slug, name_da, category, description_da, tier, schema_fields, default_content, doc_path, is_active, sort_order)
+  (slug, source, name_da, category, description_da, tier, schema_fields, default_content, doc_path, is_active, sort_order)
 VALUES
 -- ─────────────────────────────────────────────
 -- CONVERSION (5)
 -- ─────────────────────────────────────────────
 ('cta-section',
+ 'library',
  'CTA Sektion',
  'conversion',
  'Call-to-action banner med centreret eller split layout',
@@ -241,6 +257,7 @@ VALUES
  1, 30),
 
 ('pricing-table',
+ 'library',
  'Priser Tabel',
  'conversion',
  'Prisniveauer med funktioner og CTA-knapper',
@@ -251,6 +268,7 @@ VALUES
  1, 31),
 
 ('comparison-table',
+ 'library',
  'Sammenlignings Tabel',
  'conversion',
  'Side-om-side produkt- eller tjeneste sammenligning',
@@ -261,6 +279,7 @@ VALUES
  1, 32),
 
 ('contact-form',
+ 'library',
  'Kontaktformular',
  'conversion',
  'Kontaktformular med validering og indsendelse',
@@ -271,6 +290,7 @@ VALUES
  1, 33),
 
 ('newsletter-signup',
+ 'library',
  'Nyhedsbrev Tilmelding',
  'conversion',
  'E-mail tilmeldingsformular med privatlivserklæring',
@@ -284,6 +304,7 @@ VALUES
 -- CONTENT (10)
 -- ─────────────────────────────────────────────
 ('problem-section',
+ 'library',
  'Problem Sektion',
  'content',
  'Relaterbare udfordringer som din løsning adresserer',
@@ -294,6 +315,7 @@ VALUES
  1, 39),
 
 ('features-grid',
+ 'library',
  'Funktions Grid',
  'content',
  'Grid af funktioner med ikoner, overskrifter og beskrivelser',
@@ -304,6 +326,7 @@ VALUES
  1, 40),
 
 ('icon-cards',
+ 'library',
  'Ikon Kort',
  'content',
  'Kort-baseret layout med ikoner og kort tekst',
@@ -314,6 +337,7 @@ VALUES
  1, 41),
 
 ('how-it-works-section',
+ 'library',
  'Sådan fungerer det',
  'content',
  'Trin-for-trin procesforklaring',
@@ -324,15 +348,15 @@ VALUES
  1, 42)
 
 ON DUPLICATE KEY UPDATE
-  name_da        = VALUES(name_da),
-  category       = VALUES(category),
-  description_da = VALUES(description_da),
-  tier           = VALUES(tier),
-  schema_fields  = VALUES(schema_fields),
-  default_content= VALUES(default_content),
-  doc_path       = VALUES(doc_path),
-  is_active      = VALUES(is_active),
-  sort_order     = VALUES(sort_order);
+  name_da        = IF(source = 'library', VALUES(name_da), name_da),
+  category       = IF(source = 'library', VALUES(category), category),
+  description_da = IF(source = 'library', VALUES(description_da), description_da),
+  tier           = IF(source = 'library', VALUES(tier), tier),
+  schema_fields  = IF(source = 'library', VALUES(schema_fields), schema_fields),
+  default_content= IF(source = 'library', VALUES(default_content), default_content),
+  doc_path       = IF(source = 'library', VALUES(doc_path), doc_path),
+  is_active      = IF(source = 'library', VALUES(is_active), is_active),
+  sort_order     = IF(source = 'library', VALUES(sort_order), sort_order);
 
 -- ── Verify ──────────────────────────────────────────────────
 SELECT
@@ -345,10 +369,11 @@ ORDER BY sort_order;
 
 
 INSERT INTO components
-  (slug, name_da, category, description_da, tier, schema_fields, default_content, doc_path, is_active, sort_order)
+  (slug, source, name_da, category, description_da, tier, schema_fields, default_content, doc_path, is_active, sort_order)
 VALUES
 
 ('content-image-split',
+ 'library',
  'Indhold-Billede Split',
  'content',
  'Tekstindhold ved siden af et billede med venstre/højre varianter',
@@ -359,6 +384,7 @@ VALUES
  1, 42),
 
 ('video-embed',
+ 'library',
  'Video Indlejring',
  'content',
  'Responsiv videospiller med titel og beskrivelse',
@@ -369,6 +395,7 @@ VALUES
  1, 43),
 
 ('timeline',
+ 'library',
  'Tidslinje',
  'content',
  'Vertikal tidslinje for processer eller virksomhedshistorie',
@@ -379,6 +406,7 @@ VALUES
  1, 44),
 
 ('faq-accordion',
+ 'library',
  'FAQ Akkordeon',
  'content',
  'Sammenfoldelige FAQ-elementer',
@@ -389,6 +417,7 @@ VALUES
  1, 45),
 
 ('gallery-grid',
+ 'library',
  'Galleri Grid',
  'content',
  'Billedgalleri med lightbox-understøttelse',
@@ -399,6 +428,7 @@ VALUES
  1, 46),
 
 ('product-carousel',
+ 'library',
  'Produkt Karussel',
  'content',
  'Scroll-pinned horisontal karussel — sektion holder sig fast mens slides bevæger sig',
@@ -409,6 +439,7 @@ VALUES
  1, 47),
 
 ('sticky-column-section',
+ 'library',
  'Sticky Kolonne Sektion',
  'content',
  'Sticky sidebar med overskrift og scrollbart kort-grid',
@@ -422,6 +453,7 @@ VALUES
 -- STRUCTURE (1)
 -- ─────────────────────────────────────────────
 ('breadcrumbs',
+ 'library',
  'Brødkrummer',
  'structure',
  'Navigations brødkrumme spor',
@@ -432,15 +464,15 @@ VALUES
  1, 90)
 
 ON DUPLICATE KEY UPDATE
-  name_da        = VALUES(name_da),
-  category       = VALUES(category),
-  description_da = VALUES(description_da),
-  tier           = VALUES(tier),
-  schema_fields  = VALUES(schema_fields),
-  default_content= VALUES(default_content),
-  doc_path       = VALUES(doc_path),
-  is_active      = VALUES(is_active),
-  sort_order     = VALUES(sort_order);
+  name_da        = IF(source = 'library', VALUES(name_da), name_da),
+  category       = IF(source = 'library', VALUES(category), category),
+  description_da = IF(source = 'library', VALUES(description_da), description_da),
+  tier           = IF(source = 'library', VALUES(tier), tier),
+  schema_fields  = IF(source = 'library', VALUES(schema_fields), schema_fields),
+  default_content= IF(source = 'library', VALUES(default_content), default_content),
+  doc_path       = IF(source = 'library', VALUES(doc_path), doc_path),
+  is_active      = IF(source = 'library', VALUES(is_active), is_active),
+  sort_order     = IF(source = 'library', VALUES(sort_order), sort_order);
 
 -- ── Verify ──────────────────────────────────────────────────
 SELECT

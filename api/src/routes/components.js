@@ -6,35 +6,80 @@ const path = require('path');
 const { requireAuth } = require('../middleware/auth');
 
 // GET /components — List all components (authenticated)
+// Query: category=…, source=library|custom|all (default all)
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, source: sourceFilter } = req.query;
 
-    let query = `SELECT
-      id, slug,
-      name_da AS name,
-      description_da AS description,
-      category,
-      schema_fields AS default_props,
-      doc_path AS documentation,
-      created_at, updated_at
-    FROM components WHERE is_active = 1`;
+    const baseCols = `id, slug, name_da AS name, description_da AS description, category, schema_fields AS default_props, doc_path AS documentation`;
+    let query = `SELECT ${baseCols}, source, created_at, updated_at FROM components WHERE is_active = 1`;
     const params = [];
 
+    if (sourceFilter && sourceFilter !== 'all') {
+      query += ' AND source = ?';
+      params.push(sourceFilter);
+    }
     if (category) {
       query += ' AND category = ?';
       params.push(category);
     }
-
     query += ' ORDER BY sort_order ASC, name_da ASC';
 
-    const [rows] = await pool.execute(query, params);
+    let rows;
+    try {
+      [rows] = await pool.execute(query, params);
+    } catch (err) {
+      if (err.code === 'ER_BAD_FIELD_ERROR' && err.sqlMessage && err.sqlMessage.includes('source')) {
+        query = `SELECT ${baseCols}, created_at, updated_at FROM components WHERE is_active = 1`;
+        const paramsFallback = [];
+        if (sourceFilter && sourceFilter !== 'all') {
+          query += sourceFilter === 'custom' ? " AND slug LIKE 'custom/%'" : " AND (slug NOT LIKE 'custom/%' OR slug IS NULL)";
+        }
+        if (category) {
+          query += ' AND category = ?';
+          paramsFallback.push(category);
+        }
+        query += ' ORDER BY sort_order ASC, name_da ASC';
+        const [r] = await pool.execute(query, paramsFallback);
+        rows = (r || []).map((row) => ({ ...row, source: row.slug && String(row.slug).startsWith('custom/') ? 'custom' : 'library' }));
+      } else {
+        throw err;
+      }
+    }
 
     res.json(rows);
   } catch (error) {
     console.error('Error fetching components:', error.message);
     console.error('Full error:', error);
     res.status(500).json({ error: 'Kunne ikke hente komponenter', debug: error.message });
+  }
+});
+
+// POST /components/register-custom — Register a custom component (slug must be custom/<kebab-name>)
+router.post('/register-custom', requireAuth, async (req, res) => {
+  try {
+    const { slug, name_da, description_da, category, schema_fields, default_content } = req.body;
+    if (!slug || !String(slug).startsWith('custom/')) {
+      return res.status(400).json({ error: 'slug er påkrævet og skal starte med custom/' });
+    }
+    const name = name_da || slug.replace('custom/', '').replace(/-/g, ' ');
+    const desc = description_da || 'Egen komponent';
+    const cat = category || 'content';
+    const schema = schema_fields ? JSON.stringify(schema_fields) : JSON.stringify({});
+    const def = default_content ? JSON.stringify(default_content) : JSON.stringify({});
+    await pool.execute(
+      `INSERT INTO components (slug, source, name_da, description_da, category, tier, schema_fields, default_content, doc_path, is_active, sort_order)
+       VALUES (?, 'custom', ?, ?, ?, 1, ?, ?, ?, 1, 999)`,
+      [slug, name, desc, cat, schema, def, `${slug.replace('/', '-')}.md`]
+    );
+    const [rows] = await pool.execute('SELECT id, slug, name_da, source FROM components WHERE slug = ?', [slug]);
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'Komponenten findes allerede' });
+    }
+    console.error('Error registering custom component:', error.message);
+    res.status(500).json({ error: 'Kunne ikke registrere komponent', debug: error.message });
   }
 });
 

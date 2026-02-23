@@ -29,8 +29,40 @@ async function buildAiContext() {
     libraryIndex = '# Component Library Index\n\n(To be created)';
   }
 
-  // 3. Load all component docs
+  // 3. Load all component docs (library only — from disk)
   const componentDocs = loadAllComponentDocs();
+
+  // 3b. Load custom components from DB (source = 'custom')
+  let customComponents = [];
+  try {
+    const [customRows] = await pool.execute(
+      `SELECT slug, name_da, schema_fields, default_content FROM components WHERE source = 'custom' AND is_active = 1 ORDER BY sort_order ASC, name_da ASC`
+    );
+    customComponents = (customRows || []).map((row) => ({
+      slug: row.slug,
+      name_da: row.name_da,
+      schema_fields: typeof row.schema_fields === 'string' ? JSON.parse(row.schema_fields || '{}') : (row.schema_fields || {}),
+      default_content: typeof row.default_content === 'string' ? JSON.parse(row.default_content || '{}') : (row.default_content || {}),
+    }));
+  } catch (err) {
+    if (err.code === 'ER_BAD_FIELD_ERROR') {
+      try {
+        const [customRows] = await pool.execute(
+          `SELECT slug, name_da, schema_fields, default_content FROM components WHERE slug LIKE 'custom/%' AND is_active = 1 ORDER BY sort_order ASC, name_da ASC`
+        );
+        customComponents = (customRows || []).map((row) => ({
+          slug: row.slug,
+          name_da: row.name_da,
+          schema_fields: typeof row.schema_fields === 'string' ? JSON.parse(row.schema_fields || '{}') : (row.schema_fields || {}),
+          default_content: typeof row.default_content === 'string' ? JSON.parse(row.default_content || '{}') : (row.default_content || {}),
+        }));
+      } catch (e2) {
+        console.warn('Could not load custom components:', e2.message);
+      }
+    } else {
+      console.warn('Could not load custom components:', err.message);
+    }
+  }
 
   // 4. Load AI prompt settings (optional – table may not exist yet)
   let promptSettings = {
@@ -103,7 +135,8 @@ async function buildAiContext() {
     },
     componentLibrary: {
       index: libraryIndex,
-      components: componentDocs
+      components: componentDocs,
+      customComponents
     },
     cssVariableSyntax: {
       colors: 'bg-[var(--color-primary)]',

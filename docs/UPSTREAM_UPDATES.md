@@ -33,6 +33,7 @@ git remote -v
 | Item | Why |
 |------|-----|
 | `api/.env` | Your DB credentials, CORS_ORIGIN, PASSWORD_RESET_BASE_URL, GITHUB_REPO, ANTHROPIC_API_KEY, etc. Never commit; never overwrite with upstream. |
+| `src/components/custom/` | Client-specific components. Do not overwrite with upstream; merge strategy should preserve this folder and its contents. |
 | Project-specific config | Any file you changed for this domain. Prefer not to change core code so merges stay simple. |
 
 **Recommendation:** Do not customize files under `src/`, `api/src/`, or `.github/` unless you are prepared to resolve merge conflicts. Use env vars and DB content for per-site differences.

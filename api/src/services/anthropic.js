@@ -169,6 +169,19 @@ ${avanceretSection}
 ## Tilgængelige Komponenter
 
 ${componentLibrary.index}
+${(componentLibrary.customComponents && componentLibrary.customComponents.length > 0)
+  ? `
+
+## Egne komponenter (custom)
+
+Du kan også bruge disse egne komponenter. Brug \`component_slug\` præcis som angivet.
+
+${componentLibrary.customComponents.map((c) => {
+  const schemaStr = typeof c.schema_fields === 'object' ? JSON.stringify(c.schema_fields, null, 2) : (c.schema_fields || '{}');
+  const defaultStr = typeof c.default_content === 'object' ? JSON.stringify(c.default_content, null, 2) : (c.default_content || '{}');
+  return `### ${c.slug}\n- **Navn:** ${c.name_da}\n- **Schema:**\n\`\`\`json\n${schemaStr}\n\`\`\`\n- **Default content (brug som skabelon for props_data):**\n\`\`\`json\n${defaultStr}\n\`\`\``;
+}).join('\n\n')}`
+  : ''}
 
 ## KRITISK: Eksakte Komponent-Schemas
 
@@ -512,6 +525,19 @@ Du SKAL omskrive og tilpasse indholdet — ikke blot kopiere det 1:1. Hver kompo
 ## Komponentbibliotek — Brug flest muligt
 
 ${componentLibrary.index}
+${(componentLibrary.customComponents && componentLibrary.customComponents.length > 0)
+  ? `
+
+## Egne komponenter (custom)
+
+Du kan også bruge disse. Brug \`component_slug\` præcis som angivet.
+
+${componentLibrary.customComponents.map((c) => {
+  const schemaStr = typeof c.schema_fields === 'object' ? JSON.stringify(c.schema_fields, null, 2) : (c.schema_fields || '{}');
+  const defaultStr = typeof c.default_content === 'object' ? JSON.stringify(c.default_content, null, 2) : (c.default_content || '{}');
+  return `### ${c.slug}\n- **Navn:** ${c.name_da}\n- **Schema:**\n\`\`\`json\n${schemaStr}\n\`\`\`\n- **Default (props_data skabelon):**\n\`\`\`json\n${defaultStr}\n\`\`\``;
+}).join('\n\n')}`
+  : ''}
 
 **Anbefalet rækkefølge for varieret, professionel side:**
 1. hero-section (opener)

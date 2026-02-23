@@ -57,6 +57,8 @@ On this server the cPanel user is **theartis**. The site folder is always **`/ho
 - **Site document root:** always `/home/theartis/[domain]/` (e.g. `~/client.dk/`). For ZIP flow use the subfolder where `dist/` is written: `~/[domain]/deploy-output`.
 - **Repo on server (GitHub flow):** `/home/theartis/repositories/[domain]` (e.g. `~/repositories/client.dk`). GitHub vars: `DEPLOY_SITE_ROOT=[domain]`, `DEPLOY_REPO_PATH=repositories/[domain]`.
 
+**Custom components folder:** The project includes `src/components/custom/` (empty except README at setup). Do not remove it; it is used for client-specific components and is never overwritten by seed or deploy. The extracted ZIP or clone contains this folder — keep it.
+
 ---
 
 # Part A — Rollout using 1-click setup (ZIP)
@@ -64,7 +66,7 @@ On this server the cPanel user is **theartis**. The site folder is always **`/ho
 **All of Part A is on the server.** You do **not** create the domain folder locally. The folder **`~/[domain]`** (e.g. `~/client.dk`) is **on the hosting server** (cPanel). Upload the ZIP there, unzip there, and run `npm run setup` in a **server terminal** (SSH or cPanel → Terminal).
 
 Single path:
-1. **Human:** In cPanel add the domain; create the **API subdomain api.[domain]** (see A.2) before the Node.js app. Set document root for the main site to **`~/[domain]/deploy-output`**. Upload `lavpris-cms-v1.1.zip` into **`~/[domain]`** (cPanel **File Manager** → navigate to the domain folder → Upload). Unzip there (File Manager “Extract”) or leave unzip to AI.
+1. **Human:** In cPanel add the domain; create the **API subdomain api.[domain]** (see A.2) before the Node.js app. Set document root for the main site to **`~/[domain]/deploy-output`**. Upload `lavpris-cms-v1.1.zip` into **`~/[domain]`** (cPanel **File Manager** → navigate to the domain folder → Upload). Unzip there (File Manager “Extract”) or leave unzip to AI. The project includes **`src/components/custom/`** (empty except README). Do not remove it; it is used for client-specific components and is never overwritten by seed or deploy.
 2. **AI / Terminal (server only):** Open a **server terminal** (SSH or cPanel → **Terminal**). You start in home (`~`). Run: **`cd ~/client.dk`** (or your domain folder), then **`cd lavpris-cms`** (or the folder that contains `package.json`). Verify with **`ls package.json`**. Only then run **`npm run setup`** with output path **`./deploy-output`**. Then do **A.2** (create API subdomain), then A.3–A.5.
 
 ---
