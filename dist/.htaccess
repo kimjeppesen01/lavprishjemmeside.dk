@@ -1,4 +1,4 @@
-# Security headers (FUTURE_IMPLEMENTATIONS.md)
+# Security headers (Future_implementations.md)
 # Requires mod_headers (enabled on cPanel/LiteSpeed by default)
 
 <IfModule mod_headers.c>
