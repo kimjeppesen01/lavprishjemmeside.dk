@@ -4,16 +4,20 @@
  */
 interface Props {
   headline: string;
+  description?: string;
   items: Array<{
     title: string;
     description?: string;
+    icon?: string;
     size?: 'small' | 'medium' | 'large';
+    accentColor?: 'default' | 'primary' | 'accent';
   }>;
   instanceId?: string | number;
 }
 
 const {
   headline,
+  description,
   items = [],
   instanceId = 'default',
 } = Astro.props;
@@ -30,26 +34,66 @@ function sizeClass(size: string | undefined): string {
       return 'col-span-1 row-span-1';
   }
 }
+
+function accentBg(accentColor: string | undefined): string {
+  switch (accentColor) {
+    case 'primary':
+      return 'bento-cell--primary';
+    case 'accent':
+      return 'bento-cell--accent';
+    default:
+      return '';
+  }
+}
 ---
 
 <section
-  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  class="modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
   aria-labelledby={headingId}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div class="text-center" data-reveal>
+      <span class="eyebrow">Features</span>
+    </div>
     <h2
       id={headingId}
-      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
-      style="font-family: var(--font-heading)"
+      class="heading-fluid mt-3 text-center font-bold text-[var(--color-text-primary)]"
+      style="font-family: var(--font-heading); --reveal-delay: 60ms"
+      data-reveal
     >
       {headline}
     </h2>
+    {description && (
+      <p
+        class="mx-auto mt-4 max-w-2xl text-center text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+        style="font-family: var(--font-body); --reveal-delay: 120ms"
+        data-reveal
+      >
+        {description}
+      </p>
+    )}
+
     {items.length > 0 && (
       <div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:grid-rows-2 lg:auto-rows-fr">
-        {items.map((item) => (
+        {items.map((item, i) => (
           <article
-            class={`flex flex-col rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-6 shadow-[var(--shadow-sm)] transition-shadow hover:shadow-[var(--shadow-md)] ${sizeClass(item.size)}`}
+            class:list={[
+              'bento-cell relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-6 shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] hover:border-[var(--color-primary)]/30',
+              sizeClass(item.size),
+              accentBg(item.accentColor),
+            ]}
+            data-reveal
+            style={`--reveal-delay: ${i * 60}ms`}
           >
+            {/* Subtle dot pattern overlay for large cells */}
+            {item.size === 'large' && (
+              <div class="bento-pattern-overlay" aria-hidden="true"></div>
+            )}
+
+            {item.icon && (
+              <div class="icon-wrap mb-4" aria-hidden="true">{item.icon}</div>
+            )}
+
             <h3
               class="text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)]"
               style="font-family: var(--font-heading)"
@@ -70,3 +114,55 @@ function sizeClass(size: string | undefined): string {
     )}
   </div>
 </section>
+
+<style>
+/* Primary accent cell */
+.bento-cell--primary {
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-bg-page));
+  border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+.bento-cell--primary:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+/* Accent cell */
+.bento-cell--accent {
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-bg-page));
+  border-color: color-mix(in srgb, var(--color-accent) 20%, transparent);
+}
+
+/* Large cell: subtle radial dot pattern */
+.bento-pattern-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.4;
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-primary) 15%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 20px 20px;
+  border-radius: inherit;
+}
+
+/* Gradient top accent line on hover */
+.bento-cell::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: var(--gradient-brand, var(--color-primary));
+  opacity: 0;
+  transition: opacity 200ms var(--motion-ease-standard, ease);
+}
+.bento-cell:hover::before {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bento-cell { transition: none; }
+  .bento-cell::before { transition: none; }
+}
+</style>

@@ -10,16 +10,17 @@ interface Props {
     icon?: string;
   }>;
   layout?: 'horizontal' | 'compact';
+  variant?: 'strip' | 'cards';
   instanceId?: string | number;
 }
 
 const {
   badges = [],
   layout = 'horizontal',
+  variant = 'strip',
   instanceId = 'default',
 } = Astro.props;
 
-// Default badges when none provided
 const defaultBadges = [
   { type: 'ssl' as const, label: 'Sikker betaling', icon: '🔒' },
   { type: 'guarantee' as const, label: '30 dages fuld refusion', icon: '✓' },
@@ -27,6 +28,7 @@ const defaultBadges = [
 ];
 const displayBadges = badges.length > 0 ? badges : defaultBadges;
 const isCompact = layout === 'compact';
+const isCards = variant === 'cards';
 ---
 
 <section
@@ -34,25 +36,57 @@ const isCompact = layout === 'compact';
   aria-label="Tillidsmærker"
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
-    <div
-      class:list={[
-        'flex flex-wrap items-center justify-center gap-x-8 gap-y-4',
-        isCompact && 'gap-x-6 gap-y-3',
-      ]}
-      role="list"
-    >
-      {displayBadges.map((badge) => (
-        <div
-          class="flex items-center gap-2 text-[var(--font-size-sm)] text-[var(--color-text-secondary)]"
-          role="listitem"
-          style="font-family: var(--font-body)"
-        >
-          {badge.icon && (
-            <span class="text-lg leading-none" aria-hidden="true">{badge.icon}</span>
-          )}
-          <span>{badge.label}</span>
-        </div>
-      ))}
-    </div>
+    {isCards ? (
+      /* Cards variant: styled cards per badge */
+      <div
+        class="grid grid-cols-1 gap-4 sm:grid-cols-3"
+        role="list"
+        data-reveal
+      >
+        {displayBadges.map((badge, i) => (
+          <div
+            class="trust-card card-modern flex items-center gap-3 p-4"
+            role="listitem"
+            data-reveal
+            style={`--reveal-delay: ${i * 60}ms`}
+          >
+            {badge.icon && (
+              <div class="icon-wrap shrink-0 text-base" aria-hidden="true">
+                {badge.icon}
+              </div>
+            )}
+            <span
+              class="text-[var(--font-size-sm)] font-medium text-[var(--color-text-primary)]"
+              style="font-family: var(--font-body)"
+            >
+              {badge.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    ) : (
+      /* Strip variant: horizontal flex */
+      <div
+        class:list={[
+          'flex flex-wrap items-center justify-center gap-x-8 gap-y-4',
+          isCompact && 'gap-x-6 gap-y-3',
+        ]}
+        role="list"
+        data-reveal
+      >
+        {displayBadges.map((badge) => (
+          <div
+            class="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-page)] px-4 py-2.5 text-[var(--font-size-sm)] text-[var(--color-text-secondary)]"
+            role="listitem"
+            style="font-family: var(--font-body)"
+          >
+            {badge.icon && (
+              <span class="text-base leading-none text-[var(--color-primary)]" aria-hidden="true">{badge.icon}</span>
+            )}
+            <span class="font-medium">{badge.label}</span>
+          </div>
+        ))}
+      </div>
+    )}
   </div>
 </section>

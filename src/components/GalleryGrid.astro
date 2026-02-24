@@ -2,14 +2,24 @@
 import { buildSrcset } from '../utils/image';
 
 interface Props {
+  headline?: string;
   images: Array<{ url: string; alt: string; caption?: string }>;
   columns?: 2 | 3 | 4;
+  layout?: 'grid' | 'masonry';
   lightbox?: boolean;
   instanceId?: string | number;
 }
 
-const { images = [], columns = 3, lightbox = true, instanceId = 'default' } = Astro.props;
+const {
+  headline,
+  images = [],
+  columns = 3,
+  layout = 'grid',
+  lightbox = true,
+  instanceId = 'default',
+} = Astro.props;
 
+const isMasonry = layout === 'masonry';
 const colClass =
   columns === 2
     ? 'md:grid-cols-2'
@@ -17,58 +27,132 @@ const colClass =
       ? 'md:grid-cols-2 lg:grid-cols-4'
       : 'md:grid-cols-2 lg:grid-cols-3';
 
-const galleryId = 'gallery-' + Math.random().toString(36).slice(2);
+const galleryId = 'gallery-' + instanceId;
 ---
 
 <section
-  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  class="modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
   aria-label="Billedgalleri"
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
-    <div class={`grid grid-cols-1 gap-4 ${colClass}`}>
-      {images.map((img, i) => (
-        <figure class="group">
-          {lightbox ? (
-            <button
-              type="button"
-              class="block w-full overflow-hidden rounded-[var(--radius-lg)] text-left"
-              data-lightbox={galleryId}
-              data-src={img.url}
-              data-alt={img.alt}
-              data-index={i}
-              aria-label={`Åbn billede ${i + 1}: ${img.alt}`}
-            >
-              <img
-                src={img.url}
-                srcset={buildSrcset(img.url, [320, 480, 640])}
-                sizes={columns === 2 ? '(max-width: 768px) 100vw, 50vw' : columns === 4 ? '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw' : '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw'}
-                alt={img.alt}
-                class="h-48 w-full object-cover transition-transform group-hover:scale-105"
-                loading="lazy"
-              />
-            </button>
-          ) : (
-            <img
-              src={img.url}
-              srcset={buildSrcset(img.url, [320, 480, 640])}
-              sizes={columns === 2 ? '(max-width: 768px) 100vw, 50vw' : columns === 4 ? '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw' : '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw'}
-              alt={img.alt}
-              class="h-48 w-full rounded-[var(--radius-lg)] object-cover"
-              loading="lazy"
-            />
-          )}
-          {img.caption && (
-            <figcaption
-              class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
-              style="font-family: var(--font-body)"
-            >
-              {img.caption}
-            </figcaption>
-          )}
-        </figure>
-      ))}
-    </div>
+    {headline && (
+      <h2
+        class="heading-fluid mb-8 font-bold text-[var(--color-text-primary)]"
+        style="font-family: var(--font-heading)"
+        data-reveal
+      >
+        {headline}
+      </h2>
+    )}
+
+    {isMasonry ? (
+      /* Masonry: CSS columns */
+      <div class={`gallery-masonry gallery-masonry-${columns}`}>
+        {images.map((img, i) => (
+          <figure class="gallery-item group mb-4 break-inside-avoid" data-reveal style={`--reveal-delay: ${i * 40}ms`}>
+            {lightbox ? (
+              <button
+                type="button"
+                class="block w-full overflow-hidden rounded-[var(--radius-lg)] text-left"
+                data-lightbox={galleryId}
+                data-src={img.url}
+                data-alt={img.alt}
+                data-index={i}
+                aria-label={`Åbn billede ${i + 1}: ${img.alt}`}
+              >
+                <div class="relative overflow-hidden rounded-[var(--radius-lg)]">
+                  <img
+                    src={img.url}
+                    srcset={buildSrcset(img.url, [320, 480, 640])}
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    alt={img.alt}
+                    class="w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  {img.caption && (
+                    <div class="gallery-caption-overlay absolute inset-0 flex items-end p-4">
+                      <p class="text-sm font-medium text-white">{img.caption}</p>
+                    </div>
+                  )}
+                </div>
+              </button>
+            ) : (
+              <div class="relative overflow-hidden rounded-[var(--radius-lg)]">
+                <img
+                  src={img.url}
+                  srcset={buildSrcset(img.url, [320, 480, 640])}
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  alt={img.alt}
+                  class="w-full object-cover"
+                  loading="lazy"
+                />
+                {img.caption && (
+                  <div class="gallery-caption-overlay absolute inset-0 flex items-end p-4">
+                    <p class="text-sm font-medium text-white">{img.caption}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </figure>
+        ))}
+      </div>
+    ) : (
+      /* Standard grid */
+      <div class={`grid grid-cols-1 gap-4 ${colClass}`}>
+        {images.map((img, i) => (
+          <figure class="gallery-item group" data-reveal style={`--reveal-delay: ${i * 50}ms`}>
+            {lightbox ? (
+              <button
+                type="button"
+                class="block w-full overflow-hidden rounded-[var(--radius-lg)] text-left"
+                data-lightbox={galleryId}
+                data-src={img.url}
+                data-alt={img.alt}
+                data-index={i}
+                aria-label={`Åbn billede ${i + 1}: ${img.alt}`}
+              >
+                <div class="relative overflow-hidden rounded-[var(--radius-lg)]">
+                  <img
+                    src={img.url}
+                    srcset={buildSrcset(img.url, [320, 480, 640])}
+                    sizes={`(max-width: 768px) 100vw, ${columns === 2 ? '50vw' : columns === 4 ? '25vw' : '33vw'}`}
+                    alt={img.alt}
+                    class="h-56 w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  {img.caption && (
+                    <div class="gallery-caption-overlay absolute inset-0 flex items-end p-4">
+                      <p class="text-sm font-medium text-white">{img.caption}</p>
+                    </div>
+                  )}
+                </div>
+              </button>
+            ) : (
+              <div class="relative overflow-hidden rounded-[var(--radius-lg)]">
+                <img
+                  src={img.url}
+                  srcset={buildSrcset(img.url, [320, 480, 640])}
+                  sizes={`(max-width: 768px) 100vw, ${columns === 2 ? '50vw' : columns === 4 ? '25vw' : '33vw'}`}
+                  alt={img.alt}
+                  class="h-56 w-full object-cover"
+                  loading="lazy"
+                />
+                {img.caption && (
+                  <div class="gallery-caption-overlay absolute inset-0 flex items-end p-4">
+                    <p class="text-sm font-medium text-white">{img.caption}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            {!img.caption && (
+              <figcaption class="sr-only">{img.alt}</figcaption>
+            )}
+          </figure>
+        ))}
+      </div>
+    )}
   </div>
+
   {lightbox && (
     <dialog
       id={`${galleryId}-dialog`}
@@ -77,11 +161,11 @@ const galleryId = 'gallery-' + Math.random().toString(36).slice(2);
     >
       <button
         type="button"
-        class="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-[var(--radius-full)] bg-[var(--color-bg-page)] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-neutral-100)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+        class="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-bg-page)] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-neutral-100)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
         aria-label="Luk"
         data-lightbox-close
       >
-        ✕
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
       </button>
       <img
         src=""
@@ -93,13 +177,49 @@ const galleryId = 'gallery-' + Math.random().toString(36).slice(2);
   )}
 </section>
 
+<style>
+/* Caption: hidden, slides up on hover */
+.gallery-caption-overlay {
+  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 70%);
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 280ms var(--motion-ease-standard, ease),
+    transform 280ms var(--motion-ease-standard, ease);
+}
+.gallery-item:hover .gallery-caption-overlay,
+.gallery-item:focus-within .gallery-caption-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Masonry */
+.gallery-masonry { column-gap: 1rem; }
+.gallery-masonry-2 { columns: 1; }
+.gallery-masonry-3 { columns: 1; }
+.gallery-masonry-4 { columns: 1; }
+@media (min-width: 640px) {
+  .gallery-masonry-2 { columns: 2; }
+  .gallery-masonry-3 { columns: 2; }
+  .gallery-masonry-4 { columns: 2; }
+}
+@media (min-width: 1024px) {
+  .gallery-masonry-3 { columns: 3; }
+  .gallery-masonry-4 { columns: 4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-caption-overlay { transition: none; opacity: 1; transform: none; }
+}
+</style>
+
 {lightbox && (
   <script is:inline>
     (function(){
       if (window.__galleryLightboxInit) return;
       window.__galleryLightboxInit = true;
       document.addEventListener('click', function(e) {
-      var trigger = (e.target && 'closest' in e.target) ? e.target.closest('[data-lightbox]') : null;
+        var trigger = (e.target && 'closest' in e.target) ? e.target.closest('[data-lightbox]') : null;
         if (trigger) {
           e.preventDefault();
           var id = trigger.getAttribute('data-lightbox');
@@ -107,17 +227,23 @@ const galleryId = 'gallery-' + Math.random().toString(36).slice(2);
           var imgEl = dialogEl && dialogEl.querySelector('[data-lightbox-img]');
           if (dialogEl && imgEl && typeof dialogEl.showModal === 'function') {
             imgEl.src = trigger.getAttribute('data-src') || trigger.getAttribute('href') || '';
-            imgEl.alt = trigger.getAttribute('data-alt') || (trigger.querySelector('img') && trigger.querySelector('img').getAttribute('alt')) || '';
+            imgEl.alt = trigger.getAttribute('data-alt') || '';
             dialogEl.showModal();
           }
         }
-      var closeBtn = (e.target && 'closest' in e.target) ? e.target.closest('[data-lightbox-close]') : null;
+        var closeBtn = (e.target && 'closest' in e.target) ? e.target.closest('[data-lightbox-close]') : null;
         if (closeBtn) {
           var d = closeBtn.closest('dialog');
           if (d && typeof d.close === 'function') d.close();
         }
         if (e.target && e.target.tagName === 'DIALOG' && e.target.open) {
           e.target.close();
+        }
+      });
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          var d = document.querySelector('dialog[open]');
+          if (d && typeof d.close === 'function') d.close();
         }
       });
     })();

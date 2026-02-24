@@ -9,10 +9,24 @@ interface Props {
     photo?: string;
     rating?: number;
   }>;
+  layout?: 'carousel' | 'masonry' | 'grid';
   instanceId?: string | number;
 }
 
-const { headline = 'Anmeldelser', testimonials = [], instanceId = 'default' } = Astro.props;
+const {
+  headline = 'Anmeldelser',
+  testimonials = [],
+  layout = 'carousel',
+  instanceId = 'default',
+} = Astro.props;
+
+const isMasonry  = layout === 'masonry';
+const isGrid     = layout === 'grid';
+const isCarousel = layout === 'carousel';
+
+function initials(name: string) {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+}
 ---
 
 <section
@@ -20,66 +34,267 @@ const { headline = 'Anmeldelser', testimonials = [], instanceId = 'default' } = 
   aria-labelledby={`testimonials-heading-${instanceId}`}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
-    <div class="text-center">
+    <div class="text-center" data-reveal>
       <span class="eyebrow">Kundeoplevelser</span>
     </div>
     <h2
       id={`testimonials-heading-${instanceId}`}
-      class="heading-fluid mt-4 text-center text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
-      style="font-family: var(--font-heading)"
+      class="heading-fluid mt-3 text-center font-bold text-[var(--color-text-primary)]"
+      style="font-family: var(--font-heading); --reveal-delay: 60ms"
+      data-reveal
     >
       {headline}
     </h2>
-    <div
-      class="mt-12 flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth"
-      role="region"
-      aria-roledescription="carousel"
-      aria-label="Kundetilfredsheder"
-    >
-      {testimonials.map((t, i) => (
-        <article
-          class="card-modern min-w-[85vw] shrink-0 snap-center p-[var(--card-padding-lg)] md:min-w-[45vw] lg:min-w-[calc(var(--container-max-width)/3-1rem)]"
-          aria-roledescription="slide"
-          aria-label={`Tilfredshed ${i + 1} af ${testimonials.length}`}
+
+    {/* CAROUSEL layout */}
+    {isCarousel && (
+      <div class="testimonials-carousel-wrap relative mt-10">
+        <div
+          class="testimonials-track flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth"
+          role="region"
+          aria-roledescription="carousel"
+          aria-label="Kundetilfredsheder"
+          id={`testimonials-track-${instanceId}`}
         >
-          {t.rating !== undefined && (
-            <div class="flex gap-1 text-[var(--color-accent)]" aria-hidden="true">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <span>{star <= t.rating! ? '★' : '☆'}</span>
-              ))}
-            </div>
-          )}
-          <blockquote class="mt-5">
-            <p
-              class="text-[var(--font-size-lg)] italic leading-[1.65] text-[var(--color-text-primary)]"
-              style="font-family: var(--font-body)"
+          {testimonials.map((t, i) => (
+            <article
+              class="testimonial-card card-modern relative min-w-[85vw] shrink-0 snap-center p-[var(--card-padding-lg)] md:min-w-[45vw] lg:min-w-[calc(var(--container-max-width)/3-1rem)]"
+              aria-roledescription="slide"
+              aria-label={`Tilfredshed ${i + 1} af ${testimonials.length}`}
             >
-              "{t.quote}"
-            </p>
-          </blockquote>
-          <footer class="mt-4 flex items-center gap-3">
-            {t.photo && (
-              <img
-                src={t.photo}
-                alt=""
-                class="h-12 w-12 rounded-[var(--radius-full)] object-cover"
-                aria-hidden="true"
-              />
+              {/* Decorative large quote mark */}
+              <span class="testimonial-deco-quote" aria-hidden="true">&ldquo;</span>
+
+              {/* Star rating — SVG stars */}
+              {t.rating !== undefined && (
+                <div class="flex gap-0.5" aria-label={`${t.rating} ud af 5 stjerner`} role="img">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      class:list={['testimonial-star', star <= (t.rating ?? 0) ? 'testimonial-star--filled' : 'testimonial-star--empty']}
+                      aria-hidden="true"
+                    >
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                  ))}
+                </div>
+              )}
+
+              <blockquote class="mt-4">
+                <p
+                  class="text-[var(--font-size-base)] leading-[1.7] text-[var(--color-text-primary)]"
+                  style="font-family: var(--font-body)"
+                >
+                  {t.quote}
+                </p>
+              </blockquote>
+
+              <footer class="mt-5 flex items-center gap-3">
+                {t.photo ? (
+                  <img
+                    src={t.photo}
+                    alt=""
+                    class="h-11 w-11 rounded-[var(--radius-full)] object-cover"
+                    aria-hidden="true"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div class="testimonial-avatar" aria-hidden="true">
+                    {initials(t.author)}
+                  </div>
+                )}
+                <div>
+                  <cite class="not-italic text-sm font-semibold text-[var(--color-text-primary)]">
+                    {t.author}
+                  </cite>
+                  <p
+                    class="text-xs text-[var(--color-text-secondary)] mt-0.5"
+                    style="font-family: var(--font-body)"
+                  >
+                    {t.role}{t.company && `, ${t.company}`}
+                  </p>
+                </div>
+              </footer>
+            </article>
+          ))}
+        </div>
+
+        {/* Navigation buttons */}
+        {testimonials.length > 1 && (
+          <div class="mt-5 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              class="testimonials-prev focus-modern flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg-page)] text-[var(--color-text-secondary)] transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+              aria-label="Forrige anmeldelse"
+              data-track-id={instanceId}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <button
+              type="button"
+              class="testimonials-next focus-modern flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg-page)] text-[var(--color-text-secondary)] transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+              aria-label="Næste anmeldelse"
+              data-track-id={instanceId}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* MASONRY layout — CSS columns, no JS */}
+    {isMasonry && (
+      <div class="testimonials-masonry mt-10" data-reveal style="--reveal-delay: 80ms">
+        {testimonials.map((t) => (
+          <article class="testimonial-card card-modern mb-5 p-[var(--card-padding-lg)] break-inside-avoid">
+            <span class="testimonial-deco-quote" aria-hidden="true">&ldquo;</span>
+            {t.rating !== undefined && (
+              <div class="flex gap-0.5 mb-3" aria-label={`${t.rating} ud af 5 stjerner`} role="img">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" class:list={['testimonial-star', star <= (t.rating ?? 0) ? 'testimonial-star--filled' : 'testimonial-star--empty']} aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                ))}
+              </div>
             )}
-            <div>
-              <cite class="not-italic font-semibold text-[var(--color-text-primary)]">
-                {t.author}
-              </cite>
-              <p
-                class="text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
-                style="font-family: var(--font-body)"
-              >
-                {t.role}, {t.company}
-              </p>
-            </div>
-          </footer>
-        </article>
-      ))}
-    </div>
+            <blockquote><p class="text-sm leading-[1.7] text-[var(--color-text-primary)]" style="font-family: var(--font-body)">{t.quote}</p></blockquote>
+            <footer class="mt-4 flex items-center gap-3">
+              {t.photo ? (
+                <img src={t.photo} alt="" class="h-10 w-10 rounded-full object-cover" aria-hidden="true" loading="lazy" />
+              ) : (
+                <div class="testimonial-avatar testimonial-avatar--sm" aria-hidden="true">{initials(t.author)}</div>
+              )}
+              <div>
+                <cite class="not-italic text-sm font-semibold text-[var(--color-text-primary)]">{t.author}</cite>
+                <p class="text-xs text-[var(--color-text-secondary)]" style="font-family: var(--font-body)">{t.role}{t.company && `, ${t.company}`}</p>
+              </div>
+            </footer>
+          </article>
+        ))}
+      </div>
+    )}
+
+    {/* GRID layout */}
+    {isGrid && (
+      <div class="mt-10 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {testimonials.map((t, i) => (
+          <article
+            class="testimonial-card card-modern p-[var(--card-padding-lg)]"
+            data-reveal
+            style={`--reveal-delay: ${i * 60}ms`}
+          >
+            <span class="testimonial-deco-quote" aria-hidden="true">&ldquo;</span>
+            {t.rating !== undefined && (
+              <div class="flex gap-0.5 mb-3" aria-label={`${t.rating} ud af 5 stjerner`} role="img">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" class:list={['testimonial-star', star <= (t.rating ?? 0) ? 'testimonial-star--filled' : 'testimonial-star--empty']} aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                ))}
+              </div>
+            )}
+            <blockquote><p class="text-sm leading-[1.7] text-[var(--color-text-primary)]" style="font-family: var(--font-body)">{t.quote}</p></blockquote>
+            <footer class="mt-4 flex items-center gap-3">
+              {t.photo ? (
+                <img src={t.photo} alt="" class="h-10 w-10 rounded-full object-cover" aria-hidden="true" loading="lazy" />
+              ) : (
+                <div class="testimonial-avatar testimonial-avatar--sm" aria-hidden="true">{initials(t.author)}</div>
+              )}
+              <div>
+                <cite class="not-italic text-sm font-semibold text-[var(--color-text-primary)]">{t.author}</cite>
+                <p class="text-xs text-[var(--color-text-secondary)]" style="font-family: var(--font-body)">{t.role}{t.company && `, ${t.company}`}</p>
+              </div>
+            </footer>
+          </article>
+        ))}
+      </div>
+    )}
   </div>
 </section>
+
+<style>
+/* Decorative large opening quote */
+.testimonial-deco-quote {
+  display: block;
+  font-size: 4rem;
+  line-height: 1;
+  color: var(--color-primary);
+  opacity: 0.12;
+  font-family: Georgia, serif;
+  margin-bottom: -0.5rem;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* SVG star icons */
+.testimonial-star {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.testimonial-star--filled {
+  fill: #f59e0b;
+  stroke: #f59e0b;
+}
+.testimonial-star--empty {
+  fill: none;
+  stroke: var(--color-border);
+}
+
+/* Avatar initials fallback */
+.testimonial-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-full);
+  background: var(--gradient-brand, var(--color-primary));
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.testimonial-avatar--sm {
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: 0.7rem;
+}
+
+/* Masonry CSS columns */
+.testimonials-masonry {
+  columns: 1;
+  column-gap: 1.25rem;
+}
+@media (min-width: 640px) {
+  .testimonials-masonry { columns: 2; }
+}
+@media (min-width: 1024px) {
+  .testimonials-masonry { columns: 3; }
+}
+
+/* Hide scrollbar on carousel track */
+.testimonials-track {
+  scrollbar-width: none;
+}
+.testimonials-track::-webkit-scrollbar {
+  display: none;
+}
+</style>
+
+{isCarousel && testimonials.length > 1 && (
+  <script is:inline define:vars={{ instanceId }}>
+    (function() {
+      var track = document.getElementById('testimonials-track-' + instanceId);
+      if (!track) return;
+      function scrollBy(dir) {
+        var cardWidth = track.querySelector('article')?.offsetWidth || 0;
+        track.scrollBy({ left: dir * (cardWidth + 20), behavior: 'smooth' });
+      }
+      var prev = document.querySelector('.testimonials-prev[data-track-id="' + instanceId + '"]');
+      var next = document.querySelector('.testimonials-next[data-track-id="' + instanceId + '"]');
+      if (prev) prev.addEventListener('click', function() { scrollBy(-1); });
+      if (next) next.addEventListener('click', function() { scrollBy(1); });
+    })();
+  </script>
+)}

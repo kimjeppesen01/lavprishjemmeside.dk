@@ -50,12 +50,16 @@ const overlapPx = Math.min(Math.max(overlapDepth || 0, 0), 120);
 const isLeft = imagePlacement === 'left';
 const isAccent = theme === 'accent';
 const cards = visualCards.slice(0, 3);
+const isCinematic = variant === 'cinematic-overlap';
+const isEditorial = variant === 'editorial-split';
+const isStacked = variant === 'stacked-cards';
 ---
 
 <section
   class:list={[
     'relative overflow-visible px-[var(--container-padding-x)] py-[var(--section-padding-y)]',
     'modern-shell',
+    isAccent ? 'icv-accent-bg' : '',
   ]}
   aria-labelledby={headingId}
 >
@@ -63,21 +67,25 @@ const cards = visualCards.slice(0, 3);
     <div
       class:list={[
         'grid items-center gap-10 lg:gap-14',
-        variant === 'editorial-split' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-12',
+        isEditorial
+          ? 'icv-editorial-grid grid-cols-1 lg:grid-cols-2'
+          : 'grid-cols-1 lg:grid-cols-12',
       ]}
     >
+      {/* Text column */}
       <div
         class:list={[
           'min-w-0',
-          variant === 'editorial-split' ? 'lg:col-span-1' : 'lg:col-span-5',
-          isLeft && variant !== 'editorial-split' ? 'lg:order-2' : 'lg:order-1',
+          isEditorial ? 'lg:col-span-1' : 'lg:col-span-5',
+          isLeft && !isEditorial ? 'lg:order-2' : 'lg:order-1',
         ]}
       >
-        <div class="eyebrow">Langform Sektion</div>
+        <div class="eyebrow" data-reveal>Langform Sektion</div>
         <h2
           id={headingId}
-          class="heading-fluid mt-3 text-[var(--color-text-primary)]"
-          style="font-family: var(--font-heading)"
+          class="heading-fluid mt-3 font-bold text-[var(--color-text-primary)]"
+          style="font-family: var(--font-heading); --reveal-delay: 60ms"
+          data-reveal
         >
           {headline}
         </h2>
@@ -85,7 +93,8 @@ const cards = visualCards.slice(0, 3);
         {leadText && (
           <p
             class="mt-5 max-w-2xl text-[var(--font-size-lg)] text-[var(--color-text-secondary)]"
-            style="font-family: var(--font-body)"
+            style="font-family: var(--font-body); --reveal-delay: 120ms"
+            data-reveal
           >
             {leadText}
           </p>
@@ -93,21 +102,26 @@ const cards = visualCards.slice(0, 3);
 
         <div
           class="mt-6 max-w-2xl text-[var(--font-size-base)] leading-[var(--line-height-normal)] text-[var(--color-text-secondary)] [&>p]:mt-4 [&>p:first-child]:mt-0"
-          style="font-family: var(--font-body)"
+          style="font-family: var(--font-body); --reveal-delay: 160ms"
+          data-reveal
           set:html={content}
         />
 
+        {/* Numbered highlight badges instead of bare dots */}
         {highlights.length > 0 && (
-          <ul class="mt-6 space-y-2" role="list">
-            {highlights.slice(0, 6).map((item) => (
-              <li class="flex items-start gap-2.5 text-sm text-[var(--color-text-secondary)]" style="font-family: var(--font-body)">
+          <ul class="mt-6 space-y-3" role="list" data-reveal style="--reveal-delay: 200ms">
+            {highlights.slice(0, 6).map((item, i) => (
+              <li class="flex items-start gap-3 text-sm text-[var(--color-text-secondary)]" style="font-family: var(--font-body)">
                 <span
                   class:list={[
-                    'mt-1.5 h-2 w-2 shrink-0 rounded-full',
-                    isAccent ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-text-primary)]',
+                    'mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white',
+                    isAccent ? 'bg-[var(--color-primary)]' : '',
                   ]}
+                  style={isAccent ? '' : 'background: var(--gradient-brand, var(--color-primary))'}
                   aria-hidden="true"
-                />
+                >
+                  {i + 1}
+                </span>
                 <span>{item}</span>
               </li>
             ))}
@@ -118,35 +132,38 @@ const cards = visualCards.slice(0, 3);
           <a
             href={cta.href}
             class:list={[
-              'focus-modern mt-8 inline-flex min-h-[44px] min-w-[44px] items-center rounded-full px-5 py-2.5 text-sm font-semibold transition-colors',
+              'focus-modern mt-8 inline-flex min-h-[44px] min-w-[44px] items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all',
               isAccent
-                ? 'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]'
+                ? 'btn-gradient text-[var(--color-text-on-primary)]'
                 : 'bg-[var(--color-text-primary)] text-white hover:opacity-90',
             ]}
-            style="font-family: var(--font-body)"
+            style="font-family: var(--font-body); --reveal-delay: 240ms"
+            data-reveal
           >
             {cta.text}
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </a>
         )}
       </div>
 
+      {/* Image column */}
       <div
         class:list={[
           'relative min-w-0',
-          variant === 'editorial-split' ? 'lg:col-span-1' : 'lg:col-span-7',
-          isLeft && variant !== 'editorial-split' ? 'lg:order-1' : 'lg:order-2',
+          isEditorial ? 'lg:col-span-1' : 'lg:col-span-7',
+          isLeft && !isEditorial ? 'lg:order-1' : 'lg:order-2',
         ]}
       >
         <div
           class:list={[
             'relative overflow-visible',
-            variant === 'editorial-split' ? 'rounded-[var(--radius-lg)]' : '',
+            isEditorial ? 'rounded-[var(--radius-lg)]' : '',
           ]}
         >
           <div
             class:list={[
               'relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)]',
-              variant === 'editorial-split' ? '' : 'card-modern',
+              !isEditorial ? 'card-modern' : '',
             ]}
           >
             <img
@@ -155,14 +172,14 @@ const cards = visualCards.slice(0, 3);
               sizes="(max-width: 1024px) 100vw, 56vw"
               alt={imageAlt || headline}
               class:list={[
-                'w-full object-cover',
-                variant === 'editorial-split' ? 'aspect-[4/3]' : 'aspect-[16/10]',
+                'w-full object-cover transition-transform duration-700 hover:scale-[1.02]',
+                isEditorial ? 'aspect-[4/3]' : 'aspect-[16/10]',
               ]}
               loading="lazy"
             />
           </div>
 
-          {variant === 'cinematic-overlap' && (
+          {isCinematic && (
             <>
               <div
                 class:list={[
@@ -171,9 +188,10 @@ const cards = visualCards.slice(0, 3);
                 ]}
                 aria-hidden="true"
               />
+              {/* Enhanced floating card with backdrop-blur */}
               <div
-                class="glass-surface absolute -bottom-6 left-5 right-5 rounded-[var(--radius-card)] p-4 md:left-8 md:right-8"
-                style={`transform: translateY(${Math.round(overlapPx / 3)}px);`}
+                class="icv-float-card glass-surface absolute left-5 right-5 rounded-[var(--radius-card)] p-4 md:left-8 md:right-8"
+                style={`bottom: -${Math.round(overlapPx / 3 + 24)}px;`}
               >
                 <p class="text-sm font-semibold text-[var(--color-text-primary)]" style="font-family: var(--font-heading)">
                   Visual Narrative
@@ -185,13 +203,13 @@ const cards = visualCards.slice(0, 3);
             </>
           )}
 
-          {variant === 'stacked-cards' && cards.length > 0 && (
+          {isStacked && cards.length > 0 && (
             <div class="pointer-events-none absolute inset-x-2 -bottom-7 hidden md:block">
               <div class="flex justify-end gap-3">
                 {cards.map((card, idx) => (
                   <div
-                    class="glass-surface w-[200px] rounded-[var(--radius-card)] p-4 shadow-[var(--shadow-card)]"
-                    style={`transform: translateY(${idx * 14}px); z-index: ${4 - idx};`}
+                    class="icv-stacked-card glass-surface w-[200px] rounded-[var(--radius-card)] p-4 shadow-[var(--shadow-card)]"
+                    style={`transform: translateY(${idx * 14}px) rotate(${idx === 0 ? '1deg' : idx === 1 ? '-1deg' : '0.5deg'}); z-index: ${4 - idx};`}
                   >
                     {card.kicker && (
                       <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-primary)]" style="font-family: var(--font-body)">
@@ -212,7 +230,7 @@ const cards = visualCards.slice(0, 3);
             </div>
           )}
 
-          {secondaryImageUrl && variant !== 'editorial-split' && (
+          {secondaryImageUrl && !isEditorial && (
             <div
               class="absolute -bottom-8 -left-5 hidden w-[46%] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] shadow-[var(--shadow-lg)] md:block"
               style={`transform: translateY(${overlapPx}px);`}
@@ -232,7 +250,66 @@ const cards = visualCards.slice(0, 3);
     </div>
   </div>
 
-  {(variant !== 'editorial-split' || secondaryImageUrl) && (
+  {(!isEditorial || secondaryImageUrl) && (
     <div style={`height: ${Math.max(Math.round(overlapPx * 0.6), 28)}px`} aria-hidden="true" />
   )}
 </section>
+
+<style>
+/* Editorial split: subtle vertical divider between columns */
+@media (min-width: 1024px) {
+  .icv-editorial-grid {
+    gap: 0;
+  }
+  .icv-editorial-grid > *:first-child {
+    padding-right: 3rem;
+    border-right: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  }
+  .icv-editorial-grid > *:last-child {
+    padding-left: 3rem;
+  }
+}
+
+/* Cinematic floating card: stronger blur depth */
+.icv-float-card {
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+}
+
+/* Stacked cards: enhanced drop shadow */
+.icv-stacked-card {
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-text-primary) 10%, transparent),
+    0 1px 4px color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+  transition: box-shadow 200ms var(--motion-ease-standard, ease);
+}
+.icv-stacked-card:hover {
+  box-shadow:
+    0 8px 24px color-mix(in srgb, var(--color-text-primary) 15%, transparent),
+    0 2px 8px color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+}
+
+/* Teal/accent gradient background */
+.icv-accent-bg {
+  background: linear-gradient(
+    150deg,
+    hsl(175, 60%, 22%) 0%,
+    hsl(175, 58%, 28%) 60%,
+    hsl(175, 55%, 24%) 100%
+  );
+}
+.icv-accent-bg .eyebrow {
+  color: color-mix(in srgb, white 70%, transparent);
+}
+.icv-accent-bg h2,
+.icv-accent-bg p,
+.icv-accent-bg li {
+  color: color-mix(in srgb, white 90%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icv-float-card, .icv-stacked-card { transition: none; }
+}
+</style>

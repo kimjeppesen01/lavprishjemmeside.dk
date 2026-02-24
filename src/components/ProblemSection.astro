@@ -10,7 +10,9 @@ interface Props {
     icon: string;
     title: string;
     description: string;
+    solution?: string;
   }>;
+  showSolutions?: boolean;
   instanceId?: string | number;
 }
 
@@ -18,39 +20,48 @@ const {
   headline = 'Kender du disse udfordringer?',
   description,
   problems = [],
+  showSolutions = false,
   instanceId = 'default',
 } = Astro.props;
 ---
 
 <section
-  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  class="modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
   aria-labelledby={`problem-heading-${instanceId}`}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
-    <div class="text-center">
-      <h2
-        id={`problem-heading-${instanceId}`}
-        class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
-        style="font-family: var(--font-heading)"
-      >
-        {headline}
-      </h2>
-      {description && (
-        <p
-          class="mx-auto mt-4 max-w-2xl text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
-          style="font-family: var(--font-body)"
-        >
-          {description}
-        </p>
-      )}
+    <div class="text-center" data-reveal>
+      <span class="eyebrow">Udfordringer</span>
     </div>
+    <h2
+      id={`problem-heading-${instanceId}`}
+      class="heading-fluid mt-3 text-center font-bold text-[var(--color-text-primary)]"
+      style="font-family: var(--font-heading); --reveal-delay: 60ms"
+      data-reveal
+    >
+      {headline}
+    </h2>
+    {description && (
+      <p
+        class="mx-auto mt-4 max-w-2xl text-center text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+        style="font-family: var(--font-body); --reveal-delay: 120ms"
+        data-reveal
+      >
+        {description}
+      </p>
+    )}
     <div class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      {problems.map((problem) => (
+      {problems.map((problem, i) => (
         <article
-          class="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-[var(--card-padding-lg)] shadow-[var(--shadow-sm)]"
+          class="problem-card card-modern relative flex flex-col p-[var(--card-padding-lg)]"
           role="listitem"
+          data-reveal
+          style={`--reveal-delay: ${i * 70}ms`}
         >
-          <div class="text-2xl text-[var(--color-primary)]" aria-hidden="true">
+          {/* Warning tint top line */}
+          <div class="problem-top-line" aria-hidden="true"></div>
+
+          <div class="icon-wrap" aria-hidden="true">
             {problem.icon}
           </div>
           <h3
@@ -60,13 +71,50 @@ const {
             {problem.title}
           </h3>
           <p
-            class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+            class="mt-2 flex-1 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
             style="font-family: var(--font-body)"
           >
             {problem.description}
           </p>
+
+          {/* Solution hint */}
+          {showSolutions && problem.solution && (
+            <p
+              class="problem-solution mt-3 flex items-start gap-1.5 text-[var(--font-size-sm)]"
+              style="font-family: var(--font-body)"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 shrink-0" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              {problem.solution}
+            </p>
+          )}
         </article>
       ))}
     </div>
   </div>
 </section>
+
+<style>
+/* Subtle warning tint on top of problem cards */
+.problem-top-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, #ef4444 60%, var(--color-primary)),
+    color-mix(in srgb, #f59e0b 60%, var(--color-primary))
+  );
+  opacity: 0.5;
+}
+
+/* Solution hint: green text */
+.problem-solution {
+  color: color-mix(in srgb, #16a34a 80%, var(--color-text-secondary));
+  font-weight: 500;
+}
+.problem-solution svg {
+  color: #16a34a;
+}
+</style>

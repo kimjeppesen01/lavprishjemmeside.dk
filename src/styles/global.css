@@ -340,3 +340,168 @@ html[data-motion='expressive'] .modern-pre-reveal {
     transition: none;
   }
 }
+
+/* ============================================================
+   UNIVERSAL SCROLL-REVEAL  [data-reveal]
+   Works on all themes. IntersectionObserver in Layout adds
+   data-reveal="visible" when element enters the viewport.
+   ============================================================ */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity var(--motion-duration-slow, 500ms) var(--motion-ease-enter, cubic-bezier(0, 0, 0.2, 1)) var(--reveal-delay, 0ms),
+    transform var(--motion-duration-slow, 500ms) var(--motion-ease-enter, cubic-bezier(0, 0, 0.2, 1)) var(--reveal-delay, 0ms);
+}
+[data-reveal="visible"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ============================================================
+   GLOBAL ANIMATION KEYFRAMES
+   ============================================================ */
+
+/* Floating element (hero decoration, badges) */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-float { animation: none; }
+}
+
+/* Infinite marquee scroll (logo cloud, integrations) */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
+}
+
+/* Modal slide-up entry */
+@keyframes modal-enter {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Gradient border spin (CTA sections) */
+@keyframes gradient-border-spin {
+  0%   { --angle: 0deg; }
+  100% { --angle: 360deg; }
+}
+
+/* ============================================================
+   ICON WRAPPER — structured icon container used across cards
+   ============================================================ */
+.icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-md, 0.75rem);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.icon-wrap--lg {
+  width: 3.25rem;
+  height: 3.25rem;
+  font-size: 1.5rem;
+}
+.icon-wrap--accent {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+/* ============================================================
+   GRADIENT BUTTON — primary CTA with brand gradient
+   ============================================================ */
+.btn-gradient {
+  background: var(--gradient-brand, var(--color-primary));
+  color: var(--color-text-on-primary, #fff);
+  border: none;
+  transition:
+    opacity var(--motion-duration-fast, 150ms) ease,
+    transform var(--motion-duration-medium, 260ms) var(--motion-ease-emphasis);
+}
+.btn-gradient:hover {
+  opacity: 0.88;
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   SECTION LABEL — small all-caps tag above section headings
+   ============================================================ */
+.section-label {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+/* ============================================================
+   MODERN CARD UPGRADE — enhanced .card-modern with gradient top accent
+   ============================================================ */
+.card-accent-top {
+  position: relative;
+  overflow: hidden;
+}
+.card-accent-top::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--gradient-brand, var(--color-primary));
+  border-radius: var(--radius-card, 1rem) var(--radius-card, 1rem) 0 0;
+}
+
+/* ============================================================
+   GRADIENT SURFACE — for card/section backgrounds
+   ============================================================ */
+.surface-gradient {
+  background: var(--gradient-surface);
+}
+
+/* ============================================================
+   CONNECTING LINE — used in HowItWorks, Timeline steps
+   ============================================================ */
+.step-connector {
+  position: relative;
+}
+.step-connector::after {
+  content: "";
+  position: absolute;
+  top: 1.25rem;
+  left: calc(100% + 1rem);
+  width: calc(100% - 2rem);
+  height: 1px;
+  border-top: 2px dashed color-mix(in srgb, var(--color-border) 80%, transparent);
+  pointer-events: none;
+}
+@media (max-width: 767px) {
+  .step-connector::after { display: none; }
+}

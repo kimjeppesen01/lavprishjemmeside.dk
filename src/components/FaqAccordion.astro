@@ -1,48 +1,102 @@
 ---
 interface Props {
   headline: string;
-  faqs: Array<{ question: string; answer: string }>;
+  description?: string;
+  faqs: Array<{ question: string; answer: string; category?: string }>;
   defaultOpen?: number;
+  showCategories?: boolean;
   instanceId?: string | number;
 }
 
-const { headline = 'Ofte stillede spørgsmål', faqs = [], defaultOpen = 0, instanceId = 'default' } = Astro.props;
+const {
+  headline = 'Ofte stillede spørgsmål',
+  description,
+  faqs = [],
+  defaultOpen = 0,
+  showCategories = false,
+  instanceId = 'default',
+} = Astro.props;
+
 const headingId = `faq-heading-${instanceId}`;
+
+// Build unique categories list
+const categories = showCategories
+  ? ['Alle', ...Array.from(new Set(faqs.map((f) => f.category).filter(Boolean)))]
+  : [];
 ---
 
 <section
-  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  class="modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
   aria-labelledby={headingId}
 >
-  <div class="mx-auto max-w-[var(--container-max-width)]">
+  <div class="mx-auto max-w-[var(--container-max-width)] lg:max-w-3xl">
+    <div class="text-center" data-reveal>
+      <span class="eyebrow">FAQ</span>
+    </div>
     <h2
       id={headingId}
-      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
-      style="font-family: var(--font-heading)"
+      class="heading-fluid mt-3 text-center font-bold text-[var(--color-text-primary)]"
+      style="font-family: var(--font-heading); --reveal-delay: 60ms"
+      data-reveal
     >
       {headline}
     </h2>
-    <div class="mt-8 divide-y divide-[var(--color-border)]" role="list">
-      {faqs.map((faq, index) => (
-        <details
-          class="group"
-          role="listitem"
-          open={index === defaultOpen}
-        >
-          <summary
-            class="flex cursor-pointer list-none items-center justify-between py-4 text-[var(--font-size-base)] font-medium text-[var(--color-text-primary)] transition-colors hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden"
+    {description && (
+      <p
+        class="mx-auto mt-4 max-w-xl text-center text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+        style="font-family: var(--font-body); --reveal-delay: 120ms"
+        data-reveal
+      >
+        {description}
+      </p>
+    )}
+
+    {/* Category filter tabs */}
+    {showCategories && categories.length > 1 && (
+      <div
+        class="mt-8 flex flex-wrap justify-center gap-2"
+        role="group"
+        aria-label="Filtrer spørgsmål"
+        data-faq-categories={instanceId}
+        data-reveal
+        style="--reveal-delay: 140ms"
+      >
+        {categories.map((cat, i) => (
+          <button
+            type="button"
+            class="faq-cat-btn focus-modern rounded-full border border-[var(--color-border)] bg-[var(--color-bg-page)] px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] transition-all hover:border-[var(--color-primary)]/40 hover:text-[var(--color-primary)]"
+            data-category={cat}
+            data-active={i === 0 ? '' : undefined}
             style="font-family: var(--font-body)"
           >
-            {faq.question}
+            {cat}
+          </button>
+        ))}
+      </div>
+    )}
+
+    <div class="mt-8 divide-y divide-[var(--color-border)]" role="list" data-faq-list={instanceId} data-reveal style="--reveal-delay: 160ms">
+      {faqs.map((faq, index) => (
+        <details
+          class="faq-item group"
+          role="listitem"
+          open={index === defaultOpen}
+          data-faq-category={faq.category || 'Alle'}
+        >
+          <summary
+            class="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-[var(--font-size-base)] font-medium text-[var(--color-text-primary)] transition-colors hover:text-[var(--color-primary)] group-open:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden"
+            style="font-family: var(--font-body)"
+          >
+            <span>{faq.question}</span>
             <span
-              class="ml-2 shrink-0 text-[var(--color-primary)] transition-transform group-open:rotate-180"
+              class="faq-chevron ml-2 shrink-0 text-[var(--color-primary)] transition-transform duration-200 group-open:rotate-180"
               aria-hidden="true"
             >
-              ▼
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </span>
           </summary>
           <div
-            class="pb-4 pt-0 text-[var(--font-size-base)] leading-[var(--line-height-normal)] text-[var(--color-text-secondary)]"
+            class="pb-5 pt-0 text-[var(--font-size-base)] leading-[var(--line-height-normal)] text-[var(--color-text-secondary)]"
             style="font-family: var(--font-body)"
           >
             {faq.answer}
@@ -52,3 +106,45 @@ const headingId = `faq-heading-${instanceId}`;
     </div>
   </div>
 </section>
+
+<style>
+.faq-chevron {
+  display: inline-flex;
+  align-items: center;
+}
+.faq-cat-btn[data-active] {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-bg-page));
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.faq-item[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .faq-chevron { transition: none; }
+}
+</style>
+
+{showCategories && categories.length > 1 && (
+  <script is:inline define:vars={{ instanceId }}>
+    (function() {
+      var catBar = document.querySelector('[data-faq-categories="' + instanceId + '"]');
+      var faqList = document.querySelector('[data-faq-list="' + instanceId + '"]');
+      if (!catBar || !faqList) return;
+      catBar.addEventListener('click', function(e) {
+        var btn = e.target.closest('.faq-cat-btn');
+        if (!btn) return;
+        var cat = btn.dataset.category;
+        catBar.querySelectorAll('.faq-cat-btn').forEach(function(b) { b.removeAttribute('data-active'); });
+        btn.setAttribute('data-active', '');
+        faqList.querySelectorAll('.faq-item').forEach(function(item) {
+          if (cat === 'Alle' || item.dataset.faqCategory === cat) {
+            item.removeAttribute('hidden');
+          } else {
+            item.setAttribute('hidden', '');
+          }
+        });
+      });
+    })();
+  </script>
+)}

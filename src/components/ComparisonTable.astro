@@ -1,51 +1,80 @@
 ---
 interface Props {
   headline: string;
+  description?: string;
   products: string[];
   features: string[];
   data: (string | boolean | null)[][];
+  highlightColumn?: number;
   instanceId?: string | number;
 }
 
-const { headline = 'Sammenlign', products = [], features = [], data = [], instanceId = 'default' } = Astro.props;
+const {
+  headline = 'Sammenlign',
+  description,
+  products = [],
+  features = [],
+  data = [],
+  highlightColumn,
+  instanceId = 'default',
+} = Astro.props;
 
-function renderCell(value: string | boolean | null): string {
-  if (value === true) return '✓';
-  if (value === false) return '✗';
-  if (value === null) return '—';
-  return value;
+function renderCell(value: string | boolean | null) {
+  if (value === true) return { type: 'check' as const };
+  if (value === false) return { type: 'cross' as const };
+  if (value === null) return { type: 'dash' as const };
+  return { type: 'text' as const, text: value };
 }
 ---
 
 <section
-  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  class="modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
   aria-labelledby={`comparison-heading-${instanceId}`}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div class="text-center" data-reveal>
+      <span class="eyebrow">Sammenligning</span>
+    </div>
     <h2
       id={`comparison-heading-${instanceId}`}
-      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
-      style="font-family: var(--font-heading)"
+      class="heading-fluid mt-3 text-center font-bold text-[var(--color-text-primary)]"
+      style="font-family: var(--font-heading); --reveal-delay: 60ms"
+      data-reveal
     >
       {headline}
     </h2>
-    <div class="mt-8 overflow-x-auto">
+    {description && (
+      <p
+        class="mx-auto mt-4 max-w-2xl text-center text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+        style="font-family: var(--font-body); --reveal-delay: 120ms"
+        data-reveal
+      >
+        {description}
+      </p>
+    )}
+    <div class="mt-10 overflow-x-auto" data-reveal style="--reveal-delay: 160ms">
       <table class="w-full min-w-[400px] border-collapse" role="table">
         <thead>
           <tr class="border-b-2 border-[var(--color-border)]">
             <th
               scope="col"
-              class="px-4 py-3 text-left text-[var(--font-size-base)] font-semibold text-[var(--color-text-primary)]"
+              class="px-4 py-3 text-left"
               style="font-family: var(--font-heading)"
             >
               <span class="sr-only">Funktion</span>
             </th>
-            {products.map((name) => (
+            {products.map((name, colIdx) => (
               <th
                 scope="col"
-                class="px-4 py-3 text-center text-[var(--font-size-base)] font-semibold text-[var(--color-text-primary)]"
+                class:list={[
+                  'px-4 py-3 text-center text-[var(--font-size-base)] font-bold text-[var(--color-text-primary)]',
+                  colIdx === highlightColumn && 'comp-col-highlight rounded-t-[var(--radius-card)]',
+                ]}
                 style="font-family: var(--font-heading)"
               >
+                {colIdx === highlightColumn && (
+                  <span class="comp-best-badge mb-1 block text-xs font-semibold text-[var(--color-primary)]">★ Anbefalet</span>
+                )}
                 {name}
               </th>
             ))}
@@ -53,9 +82,7 @@ function renderCell(value: string | boolean | null): string {
         </thead>
         <tbody>
           {features.map((feature, rowIndex) => (
-            <tr
-              class="border-b border-[var(--color-border)] bg-[var(--color-bg-page)] even:bg-[var(--color-bg-section-alt)]"
-            >
+            <tr class="border-b border-[var(--color-border)] even:bg-[var(--color-bg-section-alt)]">
               <th
                 scope="row"
                 class="px-4 py-3 text-left text-[var(--font-size-base)] font-medium text-[var(--color-text-primary)]"
@@ -65,23 +92,32 @@ function renderCell(value: string | boolean | null): string {
               </th>
               {products.map((_, colIndex) => {
                 const val = data[rowIndex]?.[colIndex];
-                const display = renderCell(val);
-                const isCheck = val === true;
-                const isCross = val === false;
+                const cell = renderCell(val ?? null);
+                const isHighlight = colIndex === highlightColumn;
                 return (
                   <td
-                    class="px-4 py-3 text-center text-[var(--font-size-base)]"
+                    class:list={[
+                      'px-4 py-3 text-center',
+                      isHighlight && 'comp-col-highlight',
+                    ]}
                     style="font-family: var(--font-body)"
                   >
-                    <span
-                      class:list={[
-                        isCheck && 'text-[var(--color-primary)]',
-                        isCross && 'text-[var(--color-text-secondary)]',
-                        !isCheck && !isCross && 'text-[var(--color-text-secondary)]',
-                      ]}
-                    >
-                      {display}
-                    </span>
+                    {cell.type === 'check' && (
+                      <span class="comp-check-icon inline-flex h-6 w-6 items-center justify-center rounded-full" aria-label="Ja">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                      </span>
+                    )}
+                    {cell.type === 'cross' && (
+                      <span class="comp-cross-icon inline-flex h-6 w-6 items-center justify-center rounded-full" aria-label="Nej">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                      </span>
+                    )}
+                    {cell.type === 'dash' && (
+                      <span class="text-[var(--color-text-secondary)]" aria-label="Ikke oplyst">—</span>
+                    )}
+                    {cell.type === 'text' && (
+                      <span class="text-[var(--font-size-base)] text-[var(--color-text-secondary)]">{cell.text}</span>
+                    )}
                   </td>
                 );
               })}
@@ -92,3 +128,25 @@ function renderCell(value: string | boolean | null): string {
     </div>
   </div>
 </section>
+
+<style>
+/* Highlighted column background */
+.comp-col-highlight {
+  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+}
+tr:nth-child(even) .comp-col-highlight {
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg-section-alt));
+}
+
+/* Checkmark: colored circle */
+.comp-check-icon {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+}
+
+/* Cross: muted circle */
+.comp-cross-icon {
+  background: color-mix(in srgb, var(--color-text-secondary) 8%, transparent);
+  color: var(--color-text-secondary);
+}
+</style>

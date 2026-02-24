@@ -9,7 +9,9 @@ interface Props {
   steps: Array<{
     title: string;
     description: string;
+    icon?: string;
   }>;
+  layout?: 'horizontal' | 'vertical';
   instanceId?: string | number;
 }
 
@@ -17,59 +19,171 @@ const {
   headline = 'Sådan fungerer det',
   description,
   steps = [],
+  layout = 'horizontal',
   instanceId = 'default',
 } = Astro.props;
+
+const isVertical = layout === 'vertical';
+const colCount = Math.min(steps.length, 4);
 ---
 
 <section
-  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  class="modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
   aria-labelledby={`how-it-works-heading-${instanceId}`}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
-    <div class="text-center">
-      <h2
-        id={`how-it-works-heading-${instanceId}`}
-        class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
-        style="font-family: var(--font-heading)"
+    <div class="text-center" data-reveal>
+      <span class="eyebrow">Processen</span>
+    </div>
+    <h2
+      id={`how-it-works-heading-${instanceId}`}
+      class="heading-fluid mt-3 text-center font-bold text-[var(--color-text-primary)]"
+      style="font-family: var(--font-heading); --reveal-delay: 60ms"
+      data-reveal
+    >
+      {headline}
+    </h2>
+    {description && (
+      <p
+        class="mx-auto mt-4 max-w-2xl text-[var(--font-size-base)] text-[var(--color-text-secondary)] text-center"
+        style="font-family: var(--font-body); --reveal-delay: 120ms"
+        data-reveal
       >
-        {headline}
-      </h2>
-      {description && (
-        <p
-          class="mx-auto mt-4 max-w-2xl text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
-          style="font-family: var(--font-body)"
-        >
-          {description}
-        </p>
-      )}
-    </div>
-    <div class="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4" role="list">
-      {steps.map((step, index) => (
-        <article
-          class="relative flex flex-col rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-[var(--card-padding-lg)] shadow-[var(--shadow-sm)]"
-          role="listitem"
-        >
-          <span
-            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-full)] bg-[var(--color-primary)] text-[var(--font-size-lg)] font-bold text-[var(--color-text-on-primary)]"
-            style="font-family: var(--font-heading)"
-            aria-hidden="true"
+        {description}
+      </p>
+    )}
+
+    {/* Horizontal layout */}
+    {!isVertical && (
+      <div
+        class={`mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-${colCount}`}
+        role="list"
+      >
+        {steps.map((step, index) => (
+          <article
+            class="hiw-step relative flex flex-col card-modern p-[var(--card-padding-lg)]"
+            role="listitem"
+            data-reveal
+            style={`--reveal-delay: ${index * 80}ms`}
           >
-            {index + 1}
-          </span>
-          <h3
-            class="mt-4 text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)]"
-            style="font-family: var(--font-heading)"
+            {/* Dashed connector to next step (CSS ::after, hidden on last) */}
+            {index < steps.length - 1 && (
+              <div class="hiw-connector" aria-hidden="true"></div>
+            )}
+
+            {/* Gradient number badge */}
+            <span
+              class="hiw-badge inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--font-size-lg)] font-bold text-white"
+              style="font-family: var(--font-heading)"
+              aria-hidden="true"
+            >
+              {index + 1}
+            </span>
+
+            {step.icon && (
+              <div class="icon-wrap mt-4" aria-hidden="true">{step.icon}</div>
+            )}
+
+            <h3
+              class="mt-4 text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)]"
+              style="font-family: var(--font-heading)"
+            >
+              {step.title}
+            </h3>
+            <p
+              class="mt-2 flex-1 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+              style="font-family: var(--font-body)"
+            >
+              {step.description}
+            </p>
+          </article>
+        ))}
+      </div>
+    )}
+
+    {/* Vertical layout — single column, left-side numbered badges */}
+    {isVertical && (
+      <div class="mt-12 flex flex-col gap-0" role="list">
+        {steps.map((step, index) => (
+          <article
+            class="hiw-vertical-step relative flex gap-6 pb-8"
+            role="listitem"
+            data-reveal
+            style={`--reveal-delay: ${index * 80}ms`}
           >
-            {step.title}
-          </h3>
-          <p
-            class="mt-2 flex-1 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
-            style="font-family: var(--font-body)"
-          >
-            {step.description}
-          </p>
-        </article>
-      ))}
-    </div>
+            {/* Left column: badge + vertical line */}
+            <div class="flex flex-col items-center shrink-0">
+              <span
+                class="hiw-badge inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--font-size-lg)] font-bold text-white"
+                style="font-family: var(--font-heading)"
+                aria-hidden="true"
+              >
+                {index + 1}
+              </span>
+              {index < steps.length - 1 && (
+                <div class="hiw-vertical-line flex-1 mt-2" aria-hidden="true"></div>
+              )}
+            </div>
+
+            {/* Right column: content */}
+            <div class="flex-1 pb-2">
+              {step.icon && (
+                <div class="icon-wrap mb-3" aria-hidden="true">{step.icon}</div>
+              )}
+              <h3
+                class="text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)]"
+                style="font-family: var(--font-heading)"
+              >
+                {step.title}
+              </h3>
+              <p
+                class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+                style="font-family: var(--font-body)"
+              >
+                {step.description}
+              </p>
+            </div>
+          </article>
+        ))}
+      </div>
+    )}
   </div>
 </section>
+
+<style>
+/* Gradient number badge */
+.hiw-badge {
+  background: var(--gradient-brand, var(--color-primary));
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+/* Dashed horizontal connector (horizontal layout) */
+.hiw-connector {
+  position: absolute;
+  top: 2.125rem; /* center of badge */
+  left: calc(100% + 0.25rem);
+  width: calc(2rem - 0.5rem);
+  border-top: 2px dashed color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+  pointer-events: none;
+  display: none;
+}
+@media (min-width: 1024px) {
+  .hiw-connector { display: block; }
+}
+
+/* Vertical connecting line (vertical layout) */
+.hiw-vertical-line {
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-primary) 40%, transparent),
+    color-mix(in srgb, var(--color-border) 60%, transparent)
+  );
+  border-radius: 1px;
+  min-height: 2rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hiw-step, .hiw-vertical-step { transition: none; }
+}
+</style>

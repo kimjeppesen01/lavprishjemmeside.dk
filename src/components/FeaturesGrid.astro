@@ -4,6 +4,7 @@ interface Props {
   description?: string;
   features: Array<{ icon: string; title: string; description: string }>;
   columns?: 2 | 3 | 4;
+  layout?: 'icon-top' | 'icon-left';
   instanceId?: string | number;
 }
 
@@ -11,11 +12,11 @@ const {
   headline = 'Funktioner',
   description,
   features = [],
+  layout = 'icon-top',
   instanceId = 'default',
 } = Astro.props;
 
-// Flexible grid: auto-fit avoids orphaned single items (e.g. 5 items in 4-col = no empty slot)
-// Min 260px per card, fills available space. Works for 3, 4, 5, 6+ items.
+const isIconLeft = layout === 'icon-left';
 ---
 
 <section
@@ -23,47 +24,70 @@ const {
   aria-labelledby={`features-heading-${instanceId}`}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
-    <div class="text-center">
+    <div class="text-center" data-reveal>
       <h2
         id={`features-heading-${instanceId}`}
-        class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+        class="heading-fluid font-bold text-[var(--color-text-primary)]"
         style="font-family: var(--font-heading)"
       >
         {headline}
       </h2>
       {description && (
         <p
-          class="mx-auto mt-4 max-w-2xl text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+          class="mx-auto mt-4 max-w-2xl text-[var(--font-size-base)] leading-relaxed text-[var(--color-text-secondary)]"
           style="font-family: var(--font-body)"
         >
           {description}
         </p>
       )}
     </div>
+
     <div class="container-query">
-      <div class="mt-12 grid grid-cols-1 gap-6 cq-grid-sm">
-      {features.map((feature) => (
-        <article
-          class="rounded-[var(--radius-card)] bg-[var(--color-bg-page)] p-[var(--card-padding-lg)] shadow-[var(--shadow-card)]"
-        >
-          <div class="text-2xl text-[var(--color-primary)]" aria-hidden="true">
-            {feature.icon}
-          </div>
-          <h3
-            class="mt-4 text-[var(--font-size-xl)] font-semibold text-[var(--color-text-primary)]"
-            style="font-family: var(--font-heading)"
+      <div class:list={['mt-10 grid grid-cols-1 gap-5', isIconLeft ? 'features-icon-left-grid' : 'cq-grid-sm']}>
+        {features.map((feature, i) => (
+          <article
+            class:list={[
+              'card-modern',
+              isIconLeft ? 'flex gap-4 p-[var(--card-padding-lg)]' : 'p-[var(--card-padding-lg)]',
+            ]}
+            data-reveal
+            style={`--reveal-delay: ${i * 60}ms`}
           >
-            {feature.title}
-          </h3>
-          <p
-            class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
-            style="font-family: var(--font-body)"
-          >
-            {feature.description}
-          </p>
-        </article>
-      ))}
+            {/* Icon container */}
+            <div
+              class:list={[
+                'icon-wrap icon-wrap--lg shrink-0',
+                isIconLeft ? 'mt-0.5' : 'mb-4',
+              ]}
+              aria-hidden="true"
+            >
+              {feature.icon}
+            </div>
+
+            <div>
+              <h3
+                class="text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)]"
+                style="font-family: var(--font-heading)"
+              >
+                {feature.title}
+              </h3>
+              <p
+                class="mt-2 text-[var(--font-size-base)] leading-relaxed text-[var(--color-text-secondary)]"
+                style="font-family: var(--font-body)"
+              >
+                {feature.description}
+              </p>
+            </div>
+          </article>
+        ))}
       </div>
     </div>
   </div>
 </section>
+
+<style>
+/* Icon-left layout: two-column auto-fit grid */
+.features-icon-left-grid {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+</style>

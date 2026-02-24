@@ -13,6 +13,7 @@ interface Props {
     description?: string;
   }>;
   columns?: 2 | 3 | 4;
+  layout?: 'grid' | 'marquee';
   instanceId?: string | number;
 }
 
@@ -21,6 +22,7 @@ const {
   description,
   integrations = [],
   columns = 4,
+  layout = 'grid',
   instanceId = 'default',
 } = Astro.props;
 
@@ -31,76 +33,141 @@ const colClass =
       ? 'md:grid-cols-2 lg:grid-cols-3'
       : 'md:grid-cols-2 lg:grid-cols-4';
 const headingId = `integrations-heading-${instanceId}`;
+
+/* Duplicate list for seamless marquee */
+const marqueeItems = layout === 'marquee' ? [...integrations, ...integrations] : integrations;
 ---
 
 <section
-  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  class="modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
   aria-labelledby={headingId}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div class="text-center" data-reveal>
+      <span class="eyebrow">Integrationer</span>
+    </div>
     <h2
       id={headingId}
-      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
-      style="font-family: var(--font-heading)"
+      class="heading-fluid mt-3 text-center font-bold text-[var(--color-text-primary)]"
+      style="font-family: var(--font-heading); --reveal-delay: 60ms"
+      data-reveal
     >
       {headline}
     </h2>
     {description && (
       <p
-        class="mt-2 max-w-2xl text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
-        style="font-family: var(--font-body)"
+        class="mx-auto mt-4 max-w-2xl text-center text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+        style="font-family: var(--font-body); --reveal-delay: 120ms"
+        data-reveal
       >
         {description}
       </p>
     )}
+
     {integrations.length > 0 && (
-      <div class={`mt-10 grid grid-cols-1 gap-6 ${colClass}`}>
-        {integrations.map((item) => {
-          const cardContent = (
-            <>
-              <img
-                src={item.logoUrl}
-                alt={`${item.name} logo`}
-                class="h-12 w-auto object-contain"
-                loading="lazy"
-              />
-              <span
-                class="mt-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-primary)]"
-                style="font-family: var(--font-heading)"
+      layout === 'marquee' ? (
+        /* Marquee variant — infinite CSS scroll */
+        <div class="integrations-marquee-wrapper mt-12 overflow-hidden" data-reveal style="--reveal-delay: 160ms">
+          <div class="integrations-marquee-track flex gap-6">
+            {marqueeItems.map((item, i) => (
+              <div
+                class="integrations-card shrink-0 flex flex-col items-center rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-6 shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] hover:border-[var(--color-primary)]/30 min-w-[160px]"
+                aria-hidden={i >= integrations.length ? 'true' : undefined}
               >
-                {item.name}
-              </span>
-              {item.description && (
-                <p
-                  class="mt-1 text-center text-[var(--font-size-sm)] text-[var(--color-text-secondary)]"
-                  style="font-family: var(--font-body)"
+                <img
+                  src={item.logoUrl}
+                  alt={`${item.name} logo`}
+                  class="h-12 w-auto object-contain"
+                  loading="lazy"
+                />
+                <span
+                  class="mt-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-primary)] text-center"
+                  style="font-family: var(--font-heading)"
                 >
-                  {item.description}
-                </p>
-              )}
-            </>
-          );
-          return (
-            <div
-              class="flex flex-col items-center rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-6 shadow-[var(--shadow-sm)] transition-shadow hover:shadow-[var(--shadow-md)]"
-            >
-              {item.link ? (
-                <a
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="flex flex-col items-center transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 rounded-[var(--radius-md)] -m-2 p-2"
-                  aria-label={`${item.name} integration`}
+                  {item.name}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        /* Grid variant */
+        <div class={`mt-12 grid grid-cols-1 gap-6 ${colClass}`} data-reveal style="--reveal-delay: 160ms">
+          {integrations.map((item, i) => {
+            const cardInner = (
+              <>
+                <img
+                  src={item.logoUrl}
+                  alt={`${item.name} logo`}
+                  class="h-12 w-auto object-contain"
+                  loading="lazy"
+                />
+                <span
+                  class="mt-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-primary)] text-center"
+                  style="font-family: var(--font-heading)"
                 >
-                  {cardContent}
-                </a>
-              ) : (
-                cardContent
-              )}
-            </div>
-          );
-        })}
-      </div>
+                  {item.name}
+                </span>
+                {item.description && (
+                  <p
+                    class="mt-1 text-center text-[var(--font-size-sm)] text-[var(--color-text-secondary)]"
+                    style="font-family: var(--font-body)"
+                  >
+                    {item.description}
+                  </p>
+                )}
+              </>
+            );
+            return (
+              <div
+                class="integrations-card flex flex-col items-center rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-6 shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] hover:border-[var(--color-primary)]/30"
+                data-reveal
+                style={`--reveal-delay: ${i * 60}ms`}
+              >
+                {item.link ? (
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="flex flex-col items-center transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 rounded-[var(--radius-md)] -m-2 p-2 w-full"
+                    aria-label={`${item.name} integration`}
+                  >
+                    {cardInner}
+                  </a>
+                ) : (
+                  cardInner
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )
     )}
   </div>
 </section>
+
+<style>
+/* Marquee animation */
+.integrations-marquee-track {
+  animation: integrations-marquee 32s linear infinite;
+  width: max-content;
+}
+.integrations-marquee-wrapper:hover .integrations-marquee-track {
+  animation-play-state: paused;
+}
+@keyframes integrations-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Fade edges for marquee */
+.integrations-marquee-wrapper {
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .integrations-marquee-track { animation: none; }
+  .integrations-card { transition: none; }
+}
+</style>

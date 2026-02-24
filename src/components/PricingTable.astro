@@ -9,10 +9,18 @@ interface Props {
     cta: { text: string; href: string };
     featured?: boolean;
   }>;
+  annualDiscount?: number;
   instanceId?: string | number;
 }
 
-const { headline = 'Priser', tiers = [], instanceId = 'default' } = Astro.props;
+const {
+  headline = 'Priser',
+  tiers = [],
+  annualDiscount,
+  instanceId = 'default',
+} = Astro.props;
+
+const hasAnnual = typeof annualDiscount === 'number' && annualDiscount > 0;
 ---
 
 <section
@@ -20,75 +28,171 @@ const { headline = 'Priser', tiers = [], instanceId = 'default' } = Astro.props;
   aria-labelledby={`pricing-heading-${instanceId}`}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
-    <div class="text-center">
+    <div class="text-center" data-reveal>
       <span class="eyebrow">Pakker</span>
     </div>
     <h2
       id={`pricing-heading-${instanceId}`}
-      class="heading-fluid mt-4 text-center text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
-      style="font-family: var(--font-heading)"
+      class="heading-fluid mt-3 text-center font-bold text-[var(--color-text-primary)]"
+      style="font-family: var(--font-heading); --reveal-delay: 60ms"
+      data-reveal
     >
       {headline}
     </h2>
-    <div class="container-query">
-      <div class="mt-12 grid grid-cols-1 gap-8 cq-pricing-2 cq-pricing-3">
-      {tiers.map((tier) => (
-        <article
-          class:list={[
-            'card-modern relative flex flex-col p-[var(--card-padding-lg)]',
-            tier.featured
-              ? 'border-[var(--color-primary)] shadow-[var(--shadow-lg)]'
-              : 'border-[var(--color-border)]',
-          ]}
+
+    {/* Annual/monthly toggle */}
+    {hasAnnual && (
+      <div class="mt-6 flex items-center justify-center gap-3" data-reveal style="--reveal-delay: 120ms">
+        <span class="pricing-billing-label text-sm text-[var(--color-text-secondary)]" id={`billing-monthly-${instanceId}`}>Månedlig</span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked="false"
+          aria-labelledby={`billing-monthly-${instanceId}`}
+          class="pricing-toggle relative inline-flex h-6 w-11 items-center rounded-full border-2 border-[var(--color-primary)] bg-[var(--color-bg-page)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+          data-instance={instanceId}
+          data-discount={annualDiscount}
         >
-          {tier.featured && (
-            <span class="absolute -top-3 right-4 rounded-[var(--radius-full)] bg-[var(--color-primary)] px-3 py-1 text-xs font-semibold tracking-wide text-[var(--color-text-on-primary)]">
-              Mest valgt
-            </span>
-          )}
-          <h3
-            class="text-[var(--font-size-xl)] font-semibold text-[var(--color-text-primary)]"
-            style="font-family: var(--font-heading)"
+          <span class="pricing-toggle-thumb pointer-events-none inline-block h-4 w-4 rounded-full bg-[var(--color-primary)] shadow transition-transform translate-x-0.5"></span>
+        </button>
+        <span class="text-sm text-[var(--color-text-secondary)]">
+          Årlig
+          <span class="ml-1 rounded-full bg-[var(--color-primary)]/10 px-2 py-0.5 text-xs font-semibold text-[var(--color-primary)]">
+            -{annualDiscount}%
+          </span>
+        </span>
+      </div>
+    )}
+
+    <div class="container-query">
+      <div class="mt-10 grid grid-cols-1 gap-6 cq-pricing-2 cq-pricing-3">
+        {tiers.map((tier, i) => (
+          <article
+            class:list={[
+              'card-modern relative flex flex-col p-[var(--card-padding-lg)]',
+              tier.featured ? 'pricing-featured' : '',
+            ]}
+            data-reveal
+            style={`--reveal-delay: ${i * 80}ms`}
           >
-            {tier.name}
-          </h3>
-          <div class="mt-4 flex items-baseline gap-1">
-            <span
-              class="text-[var(--font-size-3xl)] font-bold text-[var(--color-primary)]"
+            {/* Gradient top accent line */}
+            <div class="pricing-top-line" aria-hidden="true"></div>
+
+            {/* Featured badge (inline, not absolutely positioned) */}
+            {tier.featured && (
+              <div class="mb-3">
+                <span class="inline-flex items-center gap-1 rounded-full bg-[var(--color-primary)]/10 px-3 py-1 text-xs font-semibold text-[var(--color-primary)]">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  Mest valgt
+                </span>
+              </div>
+            )}
+
+            <h3
+              class="text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)]"
               style="font-family: var(--font-heading)"
             >
-              {tier.price}
-            </span>
-            <span
-              class="text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
-              style="font-family: var(--font-body)"
-            >
-              {tier.period}
-            </span>
-          </div>
-          <ul class="mt-6 flex-1 space-y-2" role="list">
-            {(tier.features || []).map((f) => (
-              <li
-                class="flex items-center gap-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+              {tier.name}
+            </h3>
+
+            <div class="mt-4 flex items-baseline gap-1">
+              <span
+                class="pricing-price text-[clamp(2rem,4vw,2.75rem)] font-bold leading-none text-[var(--color-primary)] tabular-nums"
+                style="font-family: var(--font-heading)"
+                data-monthly-price={tier.price}
+                data-annual-price={hasAnnual ? String(Math.round(Number(tier.price.replace(/\D/g, '')) * (1 - (annualDiscount ?? 0) / 100))) : tier.price}
+              >
+                {tier.price}
+              </span>
+              <span
+                class="text-sm text-[var(--color-text-secondary)] ml-1"
                 style="font-family: var(--font-body)"
               >
-                <span class="text-[var(--color-primary)]" aria-hidden="true">
-                  ✓
-                </span>
-                {f}
-              </li>
-            ))}
-          </ul>
-          <a
-            href={tier.cta?.href || '#'}
-            class="focus-modern mt-6 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-full)] bg-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)]"
-            style="font-family: var(--font-body)"
-          >
-            {tier.cta?.text || 'Læs mere'}
-          </a>
-        </article>
-      ))}
+                {tier.period}
+              </span>
+            </div>
+
+            <ul class="mt-6 flex-1 space-y-2.5" role="list">
+              {(tier.features || []).map((f) => (
+                <li
+                  class="flex items-start gap-2.5 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+                  style="font-family: var(--font-body)"
+                >
+                  <span class="pricing-check mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            <a
+              href={tier.cta?.href || '#'}
+              class:list={[
+                'focus-modern mt-6 inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-[var(--radius-full)] px-6 py-3 text-[var(--font-size-base)] font-semibold transition-all',
+                tier.featured
+                  ? 'btn-gradient text-[var(--color-text-on-primary)]'
+                  : 'border-2 border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary-light)]',
+              ]}
+              style="font-family: var(--font-body)"
+            >
+              {tier.cta?.text || 'Kom i gang'}
+            </a>
+          </article>
+        ))}
       </div>
     </div>
   </div>
 </section>
+
+<style>
+/* Gradient top accent line on all cards */
+.pricing-top-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: color-mix(in srgb, var(--color-border) 80%, transparent);
+}
+
+/* Featured tier: stronger gradient line */
+.pricing-featured .pricing-top-line {
+  background: var(--gradient-brand, var(--color-primary));
+}
+
+/* Feature checkmark circle */
+.pricing-check {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+}
+
+/* Annual toggle switch */
+.pricing-toggle[aria-checked="true"] {
+  background: var(--color-primary);
+}
+.pricing-toggle[aria-checked="true"] .pricing-toggle-thumb {
+  background: white;
+  transform: translateX(1.35rem);
+}
+</style>
+
+{hasAnnual && (
+  <script is:inline define:vars={{ instanceId }}>
+    (function() {
+      var toggle = document.querySelector('[data-instance="' + instanceId + '"].pricing-toggle');
+      if (!toggle) return;
+      var prices = document.querySelectorAll('.pricing-price[data-monthly-price]');
+      toggle.addEventListener('click', function() {
+        var isAnnual = toggle.getAttribute('aria-checked') !== 'true';
+        toggle.setAttribute('aria-checked', isAnnual ? 'true' : 'false');
+        prices.forEach(function(el) {
+          el.textContent = isAnnual
+            ? el.getAttribute('data-annual-price')
+            : el.getAttribute('data-monthly-price');
+        });
+      });
+    })();
+  </script>
+)}

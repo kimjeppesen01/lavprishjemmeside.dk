@@ -3,6 +3,7 @@ import { buildSrcset } from '../utils/image';
 
 interface Props {
   headline: string;
+  description?: string;
   members: Array<{
     name: string;
     role: string;
@@ -11,10 +12,18 @@ interface Props {
     social?: Array<{ platform: string; url: string }>;
   }>;
   columns?: 2 | 3 | 4;
+  layout?: 'grid' | 'compact';
   instanceId?: string | number;
 }
 
-const { headline = 'Vores team', members = [], columns = 3, instanceId = 'default' } = Astro.props;
+const {
+  headline = 'Vores team',
+  description,
+  members = [],
+  columns = 3,
+  layout = 'grid',
+  instanceId = 'default',
+} = Astro.props;
 
 const colClass =
   columns === 2
@@ -26,85 +35,211 @@ const colClass =
 function socialLabel(platform: string, name: string): string {
   const labels: Record<string, string> = {
     linkedin: `${name} på LinkedIn`,
-    twitter: `${name} på Twitter`,
+    twitter: `${name} på X (Twitter)`,
     x: `${name} på X`,
   };
-  return labels[platform.toLowerCase()] || `${name} ${platform}`;
+  return labels[platform.toLowerCase()] || `${name} på ${platform}`;
 }
+
+const isCompact = layout === 'compact';
 ---
 
 <section
-  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  class="modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
   aria-labelledby={`team-heading-${instanceId}`}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div class="text-center" data-reveal>
+      <span class="eyebrow">Teamet</span>
+    </div>
     <h2
       id={`team-heading-${instanceId}`}
-      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
-      style="font-family: var(--font-heading)"
+      class="heading-fluid mt-3 text-center font-bold text-[var(--color-text-primary)]"
+      style="font-family: var(--font-heading); --reveal-delay: 60ms"
+      data-reveal
     >
       {headline}
     </h2>
-    <div class={`mt-12 grid grid-cols-1 gap-8 ${colClass}`}>
-      {members.map((member) => (
-        <article class="text-center">
-          <img
-            src={member.photo}
-            srcset={buildSrcset(member.photo, [128, 256, 400])}
-            sizes="128px"
-            alt={`Portræt af ${member.name}`}
-            class="mx-auto h-32 w-32 rounded-[var(--radius-full)] object-cover shadow-[var(--shadow-md)]"
-            loading="lazy"
-          />
-          <h3
-            class="mt-4 text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)]"
-            style="font-family: var(--font-heading)"
+    {description && (
+      <p
+        class="mx-auto mt-4 max-w-2xl text-center text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+        style="font-family: var(--font-body); --reveal-delay: 120ms"
+        data-reveal
+      >
+        {description}
+      </p>
+    )}
+
+    {isCompact ? (
+      /* Compact layout: horizontal cards */
+      <div class="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2">
+        {members.map((member, i) => (
+          <article
+            class="card-modern flex items-center gap-5 p-5"
+            data-reveal
+            style={`--reveal-delay: ${i * 60}ms`}
           >
-            {member.name}
-          </h3>
-          <p
-            class="text-[var(--font-size-base)] text-[var(--color-primary)]"
-            style="font-family: var(--font-body)"
+            <div class="team-photo-wrap relative shrink-0">
+              <img
+                src={member.photo}
+                srcset={buildSrcset(member.photo, [96, 192])}
+                sizes="80px"
+                alt={`Portræt af ${member.name}`}
+                class="h-20 w-20 rounded-full object-cover"
+                loading="lazy"
+              />
+              <div class="team-photo-ring" aria-hidden="true"></div>
+            </div>
+            <div class="min-w-0">
+              <h3
+                class="truncate text-[var(--font-size-base)] font-semibold text-[var(--color-text-primary)]"
+                style="font-family: var(--font-heading)"
+              >
+                {member.name}
+              </h3>
+              <p
+                class="text-[var(--font-size-sm)] font-medium text-[var(--color-primary)]"
+                style="font-family: var(--font-body)"
+              >
+                {member.role}
+              </p>
+              {member.bio && (
+                <p
+                  class="mt-1 text-[var(--font-size-sm)] text-[var(--color-text-secondary)] line-clamp-2"
+                  style="font-family: var(--font-body)"
+                >
+                  {member.bio}
+                </p>
+              )}
+              {member.social && member.social.length > 0 && (
+                <div class="mt-2 flex gap-2">
+                  {member.social.map((s) => (
+                    <a
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="team-social-link focus-modern"
+                      aria-label={socialLabel(s.platform, member.name)}
+                    >
+                      {s.platform.toLowerCase() === 'linkedin' ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                      ) : (s.platform.toLowerCase() === 'twitter' || s.platform.toLowerCase() === 'x') ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.738l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                      ) : (
+                        <span class="text-xs font-medium" aria-hidden="true">{s.platform}</span>
+                      )}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    ) : (
+      /* Grid layout: centered cards */
+      <div class={`mt-12 grid grid-cols-1 gap-8 ${colClass}`}>
+        {members.map((member, i) => (
+          <article
+            class="team-card group text-center"
+            data-reveal
+            style={`--reveal-delay: ${i * 60}ms`}
           >
-            {member.role}
-          </p>
-          {member.bio && (
+            <div class="team-photo-wrap relative mx-auto w-fit">
+              <img
+                src={member.photo}
+                srcset={buildSrcset(member.photo, [128, 256, 400])}
+                sizes="128px"
+                alt={`Portræt af ${member.name}`}
+                class="mx-auto h-32 w-32 rounded-full object-cover shadow-[var(--shadow-md)] transition-transform duration-300 group-hover:scale-105"
+                loading="lazy"
+              />
+              <div class="team-photo-ring" aria-hidden="true"></div>
+            </div>
+            <h3
+              class="mt-4 text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)]"
+              style="font-family: var(--font-heading)"
+            >
+              {member.name}
+            </h3>
             <p
-              class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+              class="text-[var(--font-size-base)] font-medium text-[var(--color-primary)]"
               style="font-family: var(--font-body)"
             >
-              {member.bio}
+              {member.role}
             </p>
-          )}
-          {member.social && member.social.length > 0 && (
-            <div class="mt-4 flex justify-center gap-3">
-              {member.social.map((s) => (
-                <a
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
-                  aria-label={socialLabel(s.platform, member.name)}
-                >
-                  {s.platform === 'linkedin' && (
-                    <span class="text-lg" aria-hidden="true">
-                      in
-                    </span>
-                  )}
-                  {s.platform === 'twitter' && (
-                    <span class="text-lg" aria-hidden="true">
-                      𝕏
-                    </span>
-                  )}
-                  {!['linkedin', 'twitter'].includes(s.platform.toLowerCase()) && (
-                    <span aria-hidden="true">{s.platform}</span>
-                  )}
-                </a>
-              ))}
-            </div>
-          )}
-        </article>
-      ))}
-    </div>
+            {member.bio && (
+              <p
+                class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+                style="font-family: var(--font-body)"
+              >
+                {member.bio}
+              </p>
+            )}
+            {member.social && member.social.length > 0 && (
+              <div class="mt-4 flex justify-center gap-3">
+                {member.social.map((s) => (
+                  <a
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="team-social-link focus-modern"
+                    aria-label={socialLabel(s.platform, member.name)}
+                  >
+                    {s.platform.toLowerCase() === 'linkedin' ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                    ) : (s.platform.toLowerCase() === 'twitter' || s.platform.toLowerCase() === 'x') ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.738l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    ) : (
+                      <span class="text-sm font-medium" aria-hidden="true">{s.platform}</span>
+                    )}
+                  </a>
+                ))}
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+    )}
   </div>
 </section>
+
+<style>
+/* Photo gradient ring on hover */
+.team-photo-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  background: var(--gradient-brand, var(--color-primary));
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 280ms var(--motion-ease-standard, ease);
+}
+.team-card:hover .team-photo-ring,
+.card-modern:hover .team-photo-ring {
+  opacity: 0.25;
+}
+
+/* Social icon links */
+.team-social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+.team-social-link:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .team-photo-ring { transition: none; }
+  .team-card .team-photo-wrap img { transition: none; }
+}
+</style>

@@ -22,7 +22,7 @@ const {
     { type: 'email', name: 'email', label: 'E-mail', required: true },
     { type: 'textarea', name: 'message', label: 'Besked', required: true },
   ],
-  submitText = 'Send',
+  submitText = 'Send besked',
   successMessage = 'Tak for din henvendelse! Vi vender tilbage hurtigst muligt.',
   instanceId = 'default',
 } = Astro.props;
@@ -30,101 +30,190 @@ const headingId = `contact-heading-${instanceId}`;
 ---
 
 <section
-  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  class="modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
   aria-labelledby={headingId}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div class="text-center" data-reveal>
+      <span class="eyebrow">Kontakt</span>
+    </div>
     <h2
       id={headingId}
-      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
-      style="font-family: var(--font-heading)"
+      class="heading-fluid mt-3 text-center font-bold text-[var(--color-text-primary)]"
+      style="font-family: var(--font-heading); --reveal-delay: 60ms"
+      data-reveal
     >
       {headline}
     </h2>
     {description && (
       <p
-        class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
-        style="font-family: var(--font-body)"
+        class="mx-auto mt-4 max-w-2xl text-center text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+        style="font-family: var(--font-body); --reveal-delay: 120ms"
+        data-reveal
       >
         {description}
       </p>
     )}
     <form
       id={`contact-form-${instanceId}`}
-      class="mt-8 max-w-xl space-y-4"
+      class="contact-form mx-auto mt-10 max-w-xl space-y-5 card-modern p-8"
       method="post"
       action="/api/contact"
+      data-reveal
+      style="--reveal-delay: 160ms"
     >
       {fields.map((field) => (
-        <div>
-          <label
-            for={`field-${instanceId}-${field.name}`}
-            class="mb-1 block text-[var(--font-size-base)] font-medium text-[var(--color-text-primary)]"
-            style="font-family: var(--font-body)"
-          >
-            {field.label}
-            {field.required && <span class="text-[var(--color-primary)]">*</span>}
-          </label>
+        <div class="cf-field-wrap relative">
           {field.type === 'textarea' ? (
-            <textarea
-              id={`field-${instanceId}-${field.name}`}
-              name={field.name}
-              required={field.required}
-              rows={4}
-              class="w-full rounded-[var(--radius-input)] border border-[var(--color-border)] bg-[var(--color-bg-page)] px-4 py-2 text-[var(--font-size-base)] text-[var(--color-text-primary)] transition-colors focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
-              style="font-family: var(--font-body)"
-              aria-required={field.required || undefined}
-            />
+            <>
+              <label
+                for={`field-${instanceId}-${field.name}`}
+                class="cf-label mb-1 block text-[var(--font-size-sm)] font-medium text-[var(--color-text-primary)]"
+                style="font-family: var(--font-body)"
+              >
+                {field.label}{field.required && <span class="ml-0.5 text-[var(--color-primary)]">*</span>}
+              </label>
+              <textarea
+                id={`field-${instanceId}-${field.name}`}
+                name={field.name}
+                required={field.required}
+                rows={4}
+                class="cf-input w-full rounded-[var(--radius-input)] border border-[var(--color-border)] bg-[var(--color-bg-page)] px-4 py-3 text-[var(--font-size-base)] text-[var(--color-text-primary)] transition-all focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-primary)_10%,transparent)]"
+                style="font-family: var(--font-body)"
+                aria-required={field.required || undefined}
+              />
+            </>
           ) : field.type === 'select' ? (
-            <select
-              id={`field-${instanceId}-${field.name}`}
-              name={field.name}
-              required={field.required}
-              class="w-full rounded-[var(--radius-input)] border border-[var(--color-border)] bg-[var(--color-bg-page)] px-4 py-2 text-[var(--font-size-base)] text-[var(--color-text-primary)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
-              style="font-family: var(--font-body)"
-            >
-              <option value="">Vælg...</option>
-              {field.options?.map((opt) => (
-                <option value={opt}>{opt}</option>
-              ))}
-            </select>
+            <>
+              <label
+                for={`field-${instanceId}-${field.name}`}
+                class="cf-label mb-1 block text-[var(--font-size-sm)] font-medium text-[var(--color-text-primary)]"
+                style="font-family: var(--font-body)"
+              >
+                {field.label}{field.required && <span class="ml-0.5 text-[var(--color-primary)]">*</span>}
+              </label>
+              <select
+                id={`field-${instanceId}-${field.name}`}
+                name={field.name}
+                required={field.required}
+                class="cf-input w-full rounded-[var(--radius-input)] border border-[var(--color-border)] bg-[var(--color-bg-page)] px-4 py-3 text-[var(--font-size-base)] text-[var(--color-text-primary)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+                style="font-family: var(--font-body)"
+              >
+                <option value="">Vælg...</option>
+                {field.options?.map((opt) => (
+                  <option value={opt}>{opt}</option>
+                ))}
+              </select>
+            </>
           ) : (
-            <input
-              type={field.type}
-              id={`field-${instanceId}-${field.name}`}
-              name={field.name}
-              required={field.required}
-              autocomplete={
-                field.type === 'email'
-                  ? 'email'
-                  : field.type === 'tel'
-                    ? 'tel'
-                    : field.name === 'name'
-                      ? 'name'
-                      : undefined
-              }
-              class="w-full rounded-[var(--radius-input)] border border-[var(--color-border)] bg-[var(--color-bg-page)] px-4 py-2 text-[var(--font-size-base)] text-[var(--color-text-primary)] transition-colors focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
-              style="font-family: var(--font-body)"
-              aria-required={field.required || undefined}
-            />
+            <>
+              <label
+                for={`field-${instanceId}-${field.name}`}
+                class="cf-label mb-1 block text-[var(--font-size-sm)] font-medium text-[var(--color-text-primary)]"
+                style="font-family: var(--font-body)"
+              >
+                {field.label}{field.required && <span class="ml-0.5 text-[var(--color-primary)]">*</span>}
+              </label>
+              <input
+                type={field.type}
+                id={`field-${instanceId}-${field.name}`}
+                name={field.name}
+                required={field.required}
+                autocomplete={
+                  field.type === 'email'
+                    ? 'email'
+                    : field.type === 'tel'
+                      ? 'tel'
+                      : field.name === 'name'
+                        ? 'name'
+                        : undefined
+                }
+                class="cf-input w-full rounded-[var(--radius-input)] border border-[var(--color-border)] bg-[var(--color-bg-page)] px-4 py-3 text-[var(--font-size-base)] text-[var(--color-text-primary)] transition-all focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-primary)_10%,transparent)]"
+                style="font-family: var(--font-body)"
+                aria-required={field.required || undefined}
+              />
+            </>
           )}
         </div>
       ))}
+
+      {/* Submit button with loading spinner */}
       <button
         type="submit"
-        class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 disabled:opacity-50"
+        class="cf-submit focus-modern inline-flex min-h-[44px] min-w-[44px] w-full items-center justify-center gap-2 rounded-[var(--radius-full)] px-6 py-3 text-[var(--font-size-base)] font-semibold text-[var(--color-text-on-primary)] transition-all btn-gradient"
         style="font-family: var(--font-body)"
       >
-        {submitText}
+        <span class="cf-submit-text">{submitText}</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="cf-submit-arrow" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        <svg class="cf-submit-spinner hidden animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
       </button>
     </form>
+
+    {/* Success state */}
     <div
       id={`form-success-${instanceId}`}
-      class="mt-4 hidden rounded-[var(--radius-md)] bg-[var(--color-primary-light)] p-4 text-[var(--font-size-base)] text-[var(--color-text-primary)]"
+      class="cf-success mx-auto mt-4 max-w-xl hidden rounded-[var(--radius-card)] border border-[var(--color-primary)]/20 bg-[var(--color-primary-light)] p-6 text-center"
       role="status"
       aria-live="polite"
     >
-      {successMessage}
+      <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary)]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <p class="text-[var(--font-size-base)] font-medium text-[var(--color-text-primary)]" style="font-family: var(--font-body)">
+        {successMessage}
+      </p>
     </div>
   </div>
 </section>
+
+<style>
+/* Input focus ring */
+.cf-input {
+  min-height: 44px;
+}
+
+/* Arrow disappears while loading */
+.cf-submit[data-loading] .cf-submit-arrow { display: none; }
+.cf-submit[data-loading] .cf-submit-spinner { display: block !important; }
+.cf-submit[data-loading] { opacity: 0.8; cursor: not-allowed; }
+
+/* Success state animation */
+.cf-success:not(.hidden) {
+  animation: modal-enter 400ms var(--motion-ease-enter, cubic-bezier(0, 0, 0.2, 1)) forwards;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin { animation: none; }
+  .cf-success:not(.hidden) { animation: none; }
+}
+</style>
+
+<script is:inline define:vars={{ instanceId }}>
+  (function() {
+    var form = document.getElementById('contact-form-' + instanceId);
+    var success = document.getElementById('form-success-' + instanceId);
+    if (!form) return;
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var btn = form.querySelector('.cf-submit');
+      if (btn) btn.setAttribute('data-loading', '');
+      var data = new FormData(form);
+      fetch(form.action, { method: 'POST', body: data })
+        .then(function(r) { return r.ok ? r : Promise.reject(r); })
+        .then(function() {
+          form.classList.add('hidden');
+          if (success) success.classList.remove('hidden');
+        })
+        .catch(function() {
+          if (btn) btn.removeAttribute('data-loading');
+        });
+    });
+  })();
+</script>

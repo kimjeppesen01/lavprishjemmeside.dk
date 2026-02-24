@@ -2,7 +2,7 @@
 /**
  * Scroll-pinned horizontal product carousel with scroll-driven scale.
  * Section stays fixed while the carousel scales from 0.5→1 and slides move horizontally on vertical scroll.
- * Uses GSAP ScrollTrigger. Requires client:load for GSAP.
+ * Uses GSAP ScrollTrigger. Falls back to CSS scroll-snap for prefers-reduced-motion.
  *
  * Props:
  *   slides: array of { img, alt?, caption? }
@@ -20,11 +20,11 @@ interface Props {
 const { slides = [], heading = 'Udvalgte produkter' } = Astro.props;
 
 const defaultSlides = slides.length > 0 ? slides : [
-  { img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800', alt: 'Produkt 1' },
-  { img: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800', alt: 'Produkt 2' },
-  { img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800', alt: 'Produkt 3' },
-  { img: 'https://images.unsplash.com/photo-1556742044-3c52e6e84cbd?w=800', alt: 'Produkt 4' },
-  { img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800', alt: 'Produkt 5' },
+  { img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800', alt: 'Produkt 1', caption: 'Produkt 1' },
+  { img: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800', alt: 'Produkt 2', caption: 'Produkt 2' },
+  { img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800', alt: 'Produkt 3', caption: 'Produkt 3' },
+  { img: 'https://images.unsplash.com/photo-1556742044-3c52e6e84cbd?w=800', alt: 'Produkt 4', caption: 'Produkt 4' },
+  { img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800', alt: 'Produkt 5', caption: 'Produkt 5' },
 ];
 ---
 
@@ -35,21 +35,25 @@ const defaultSlides = slides.length > 0 ? slides : [
 >
   <h2 id="product-carousel-heading" class="sr-only">{heading}</h2>
 
+  {/* GSAP-driven carousel (hidden for reduced-motion via JS) */}
   <div id="product-carousel-scale-wrapper" class="h-full origin-center">
     <div class="overflow-hidden h-full">
       <ul id="product-carousel-wrapper" class="flex h-full gap-8 md:gap-12 pl-4 md:pl-8">
-        {defaultSlides.map((slide) => (
+        {defaultSlides.map((slide, i) => (
           <li class="flex-none w-[52vw] md:w-[38vw] h-full shrink-0">
-            <figure class="w-full h-full overflow-hidden rounded-[var(--radius-card)] shadow-[var(--shadow-card)]">
+            <figure class="carousel-slide-figure relative w-full h-full overflow-hidden rounded-[var(--radius-card)] shadow-[var(--shadow-card)]">
               <img
                 src={slide.img}
                 alt={slide.alt ?? slide.caption ?? 'Produkt'}
-                class="w-full h-full object-cover"
+                class="w-full h-full object-cover transition-transform duration-500"
                 loading="lazy"
                 decoding="async"
               />
+              {/* Caption overlay — slides up on hover */}
               {slide.caption && (
-                <figcaption class="sr-only">{slide.caption}</figcaption>
+                <figcaption class="carousel-caption">
+                  {slide.caption}
+                </figcaption>
               )}
             </figure>
           </li>
@@ -57,7 +61,103 @@ const defaultSlides = slides.length > 0 ? slides : [
       </ul>
     </div>
   </div>
+
+  {/* CSS scroll-snap fallback (shown only for prefers-reduced-motion) */}
+  <div id="product-carousel-fallback" class="carousel-fallback hidden h-full">
+    <ul class="carousel-snap-track flex h-full gap-6 overflow-x-auto px-4 md:px-8 snap-x snap-mandatory scroll-smooth">
+      {defaultSlides.map((slide) => (
+        <li class="snap-start flex-none w-[80vw] md:w-[40vw] h-full">
+          <figure class="carousel-slide-figure relative w-full h-full overflow-hidden rounded-[var(--radius-card)] shadow-[var(--shadow-card)]">
+            <img
+              src={slide.img}
+              alt={slide.alt ?? slide.caption ?? 'Produkt'}
+              class="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+            {slide.caption && (
+              <figcaption class="carousel-caption">
+                {slide.caption}
+              </figcaption>
+            )}
+          </figure>
+        </li>
+      ))}
+    </ul>
+  </div>
+
+  {/* Progress dots */}
+  <div
+    id="product-carousel-dots"
+    class="carousel-dots absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2"
+    role="tablist"
+    aria-label="Slide navigation"
+  >
+    {defaultSlides.map((_, i) => (
+      <button
+        class="carousel-dot"
+        role="tab"
+        aria-selected={i === 0 ? 'true' : 'false'}
+        aria-label={`Slide ${i + 1}`}
+        data-slide={i}
+        type="button"
+      ></button>
+    ))}
+  </div>
 </section>
+
+<style>
+/* Caption overlay */
+.carousel-slide-figure .carousel-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1.5rem 1rem 1rem;
+  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+  color: white;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  transform: translateY(100%);
+  transition: transform 300ms var(--motion-ease-standard, ease);
+}
+.carousel-slide-figure:hover .carousel-caption {
+  transform: translateY(0);
+}
+
+/* CSS scroll-snap fallback */
+.carousel-snap-track {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.carousel-snap-track::-webkit-scrollbar { display: none; }
+
+/* Progress dots */
+.carousel-dots {
+  z-index: 10;
+}
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.4);
+  border: none;
+  cursor: pointer;
+  transition: background 200ms ease, width 200ms ease;
+}
+.carousel-dot[aria-selected="true"] {
+  background: white;
+  width: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carousel-slide-figure .carousel-caption {
+    transform: translateY(0);
+    transition: none;
+  }
+  .carousel-dot { transition: none; }
+}
+</style>
 
 <script>
   import gsap from 'gsap';
@@ -69,11 +169,15 @@ const defaultSlides = slides.length > 0 ? slides : [
     const section = document.getElementById('product-carousel');
     const scaleWrapper = document.getElementById('product-carousel-scale-wrapper');
     const list = document.getElementById('product-carousel-wrapper');
+    const fallback = document.getElementById('product-carousel-fallback');
+    const dots = document.querySelectorAll('#product-carousel-dots .carousel-dot');
     if (!section || !scaleWrapper || !list) return;
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     if (prefersReducedMotion) {
-      scaleWrapper.style.transform = 'scale(1)';
+      scaleWrapper.style.display = 'none';
+      fallback?.classList.remove('hidden');
       return;
     }
 
@@ -83,7 +187,7 @@ const defaultSlides = slides.length > 0 ? slides : [
     const totalWidth = list.scrollWidth - window.innerWidth;
     const scrollDistance = totalWidth > 0 ? totalWidth : window.innerHeight;
 
-    gsap.timeline({
+    const tl = gsap.timeline({
       scrollTrigger: {
         trigger: section,
         start: 'top top',
@@ -92,10 +196,16 @@ const defaultSlides = slides.length > 0 ? slides : [
         pin: true,
         anticipatePin: 1,
         invalidateOnRefresh: true,
+        onUpdate: (self) => {
+          /* Update active dot based on scroll progress */
+          if (dots.length === 0) return;
+          const idx = Math.round(self.progress * (dots.length - 1));
+          dots.forEach((d, i) => d.setAttribute('aria-selected', String(i === idx)));
+        },
       },
-    })
-      .fromTo(scaleWrapper, { scale: 0.5 }, { scale: 1 }, 0)
-      .to(list, { x: -Math.max(0, totalWidth), ease: 'none' }, 0);
+    });
+    tl.fromTo(scaleWrapper, { scale: 0.5 }, { scale: 1 }, 0);
+    tl.to(list, { x: -Math.max(0, totalWidth), ease: 'none' }, 0);
   }
 
   if (typeof document !== 'undefined') {

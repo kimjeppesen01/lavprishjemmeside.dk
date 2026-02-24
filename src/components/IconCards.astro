@@ -1,6 +1,7 @@
 ---
 interface Props {
   headline: string;
+  description?: string;
   cards: Array<{
     icon: string;
     title: string;
@@ -8,59 +9,130 @@ interface Props {
     link?: { text: string; href: string };
   }>;
   columns?: 2 | 3 | 4;
+  variant?: 'default' | 'bordered' | 'minimal';
   instanceId?: string | number;
 }
 
-const { headline = 'Kort', cards = [], instanceId = 'default' } = Astro.props;
+const {
+  headline = 'Kort',
+  description,
+  cards = [],
+  variant = 'default',
+  instanceId = 'default',
+} = Astro.props;
 
-// Flexible grid: auto-fit avoids orphaned single items (e.g. 5 cards in 4-col layout)
+const isBordered = variant === 'bordered';
+const isMinimal = variant === 'minimal';
 ---
 
 <section
-  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  class="modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
   aria-labelledby={`icon-cards-heading-${instanceId}`}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div class="text-center" data-reveal>
+      <span class="eyebrow">Features</span>
+    </div>
     <h2
       id={`icon-cards-heading-${instanceId}`}
-      class="text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
-      style="font-family: var(--font-heading)"
+      class="heading-fluid mt-3 text-center font-bold text-[var(--color-text-primary)]"
+      style="font-family: var(--font-heading); --reveal-delay: 60ms"
+      data-reveal
     >
       {headline}
     </h2>
+    {description && (
+      <p
+        class="mx-auto mt-4 max-w-2xl text-center text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+        style="font-family: var(--font-body); --reveal-delay: 120ms"
+        data-reveal
+      >
+        {description}
+      </p>
+    )}
     <div class="container-query">
       <div class="mt-12 grid grid-cols-1 gap-6 cq-grid-sm">
-      {cards.map((card) => (
-        <article
-          class="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-[var(--card-padding-lg)] shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--color-primary)]/30"
-        >
-          <div class="text-2xl text-[var(--color-primary)]" aria-hidden="true">
-            {card.icon}
-          </div>
-          <h3
-            class="mt-4 text-[var(--font-size-xl)] font-semibold text-[var(--color-text-primary)]"
-            style="font-family: var(--font-heading)"
+        {cards.map((card, i) => (
+          <article
+            class:list={[
+              'icon-card group relative flex flex-col transition-all duration-200',
+              isBordered
+                ? 'icon-card--bordered rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-[var(--card-padding-lg)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5'
+                : isMinimal
+                  ? 'p-[var(--card-padding-lg)]'
+                  : 'card-modern p-[var(--card-padding-lg)]',
+            ]}
+            data-reveal
+            style={`--reveal-delay: ${i * 60}ms`}
           >
-            {card.title}
-          </h3>
-          <p
-            class="mt-2 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
-            style="font-family: var(--font-body)"
-          >
-            {card.description}
-          </p>
-          {card.link && (
-            <a
-              href={card.link.href}
-              class="mt-4 inline-flex min-h-[44px] items-center text-[var(--font-size-base)] font-medium text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+            <div class="icon-wrap" aria-hidden="true">
+              {card.icon}
+            </div>
+            <h3
+              class="mt-4 text-[var(--font-size-xl)] font-semibold text-[var(--color-text-primary)]"
+              style="font-family: var(--font-heading)"
+            >
+              {card.title}
+            </h3>
+            <p
+              class="mt-2 flex-1 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
               style="font-family: var(--font-body)"
             >
-              {card.link.text} →
-            </a>
-          )}
-        </article>
-      ))}
+              {card.description}
+            </p>
+            {card.link && (
+              <a
+                href={card.link.href}
+                class="icon-card-link focus-modern mt-4 inline-flex min-h-[44px] items-center gap-1.5 text-[var(--font-size-base)] font-medium text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-hover)]"
+                style="font-family: var(--font-body)"
+              >
+                {card.link.text}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="icon-card-arrow"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
+              </a>
+            )}
+          </article>
+        ))}
       </div>
     </div>
   </div>
 </section>
+
+<style>
+/* Bordered variant: colored left-border accent */
+.icon-card--bordered {
+  border-left: 4px solid transparent;
+  transition: border-color 200ms var(--motion-ease-standard, ease),
+              box-shadow 200ms var(--motion-ease-standard, ease),
+              transform 200ms var(--motion-ease-standard, ease);
+}
+.icon-card--bordered:hover {
+  border-left-color: var(--color-primary);
+}
+
+/* Link arrow: slide 4px right on hover */
+.icon-card-arrow {
+  transition: transform 200ms var(--motion-ease-emphasis, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+.icon-card-link:hover .icon-card-arrow {
+  transform: translateX(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-card--bordered,
+  .icon-card-arrow { transition: none; }
+}
+</style>

@@ -33,48 +33,81 @@ const defaultItems = items.length > 0 ? items : [
 <section
   id="sticky-column-section"
   aria-labelledby="sticky-column-heading"
-  class="w-full py-12 md:py-16"
+  class="modern-shell w-full py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
 >
-  <div class="mx-auto max-w-6xl px-4 grid gap-8 md:grid-cols-12">
-    <aside class="md:col-span-4 sticky top-20 self-start p-4">
+  <div class="mx-auto max-w-[var(--container-max-width)] grid gap-8 md:grid-cols-12">
+    <aside class="md:col-span-4 sticky top-20 self-start" data-reveal>
       {tagline && (
-        <p class="text-sm uppercase tracking-widest font-semibold text-[var(--color-text-secondary)] flex items-center gap-2">
-          <svg aria-hidden="true" class="w-3 h-3 fill-current" viewBox="0 0 512 512">
-            <path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8z" />
-          </svg>
-          {tagline}
-        </p>
+        <span class="eyebrow">{tagline}</span>
       )}
-      <h2 id="sticky-column-heading" class="mt-2 text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
+      <h2
+        id="sticky-column-heading"
+        class="heading-fluid mt-3 font-bold text-[var(--color-text-primary)]"
+        style="font-family: var(--font-heading)"
+      >
         {heading}
       </h2>
       {description && (
-        <p class="mt-4 text-base text-[var(--color-text-secondary)]">
+        <p
+          class="mt-4 text-[var(--font-size-base)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]"
+          style="font-family: var(--font-body)"
+        >
           {description}
         </p>
       )}
+      {/* Gradient fade at bottom of sticky sidebar */}
+      <div class="sticky-fade-bottom" aria-hidden="true"></div>
     </aside>
 
     <div class="md:col-span-8 grid grid-cols-1 gap-6">
-      {defaultItems.map((item) => (
+      {defaultItems.map((item, i) => (
         <article
-          class="flex items-start gap-4 border border-[var(--color-border)] rounded-[var(--radius-card)] shadow-[var(--shadow-sm)] p-[var(--card-padding)] bg-[var(--color-bg-page)] hover:shadow-[var(--shadow-md)] transition-shadow duration-300"
+          class="card-modern flex items-start gap-4 p-[var(--card-padding)]"
+          data-reveal
+          style={`--reveal-delay: ${i * 80}ms`}
         >
-          <figure class="w-14 h-14 shrink-0">
+          <div class="icon-wrap shrink-0" aria-hidden="true">
             <img
               src={item.img}
-              alt={item.title}
+              alt=""
               class="w-full h-full object-contain rounded-[var(--radius-sm)]"
               loading="lazy"
               decoding="async"
             />
-          </figure>
-          <div>
-            <h3 class="text-lg font-semibold text-[var(--color-text-primary)]">{item.title}</h3>
-            <p class="mt-1 text-sm text-[var(--color-text-secondary)]">{item.desc}</p>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3
+              class="text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)]"
+              style="font-family: var(--font-heading)"
+            >
+              {item.title}
+            </h3>
+            <p
+              class="mt-1 text-[var(--font-size-sm)] text-[var(--color-text-secondary)]"
+              style="font-family: var(--font-body)"
+            >
+              {item.desc}
+            </p>
           </div>
         </article>
       ))}
     </div>
   </div>
 </section>
+
+<style>
+/* Gradient fade at bottom of sticky sidebar */
+.sticky-fade-bottom {
+  position: absolute;
+  bottom: -2rem;
+  left: 0;
+  right: 0;
+  height: 3rem;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--color-bg-section-alt, var(--color-bg-page)) 80%, transparent)
+  );
+  pointer-events: none;
+}
+</style>

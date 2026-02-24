@@ -4,41 +4,64 @@
  */
 interface Props {
   headline: string;
+  description?: string;
   tabs: Array<{ label: string; content: string }>;
   defaultTab?: number;
+  orientation?: 'horizontal' | 'vertical';
   instanceId?: string | number;
 }
 
 const {
   headline,
+  description,
   tabs = [],
   defaultTab = 0,
+  orientation = 'horizontal',
   instanceId = 'default',
 } = Astro.props;
+
+const isVertical = orientation === 'vertical';
 
 const headingId = `tabs-heading-${instanceId}`;
 const tablistId = `tabs-list-${instanceId}`;
 ---
 
 <section
-  class="tabs-section py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  class="tabs-section modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
   aria-labelledby={headingId}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
+    <div class="text-center" data-reveal>
+      <span class="eyebrow">Oversigt</span>
+    </div>
     <h2
       id={headingId}
-      class="tabs-heading text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
-      style="font-family: var(--font-heading)"
+      class="tabs-heading heading-fluid mt-3 text-center font-bold text-[var(--color-text-primary)]"
+      style="font-family: var(--font-heading); --reveal-delay: 60ms"
+      data-reveal
     >
       {headline}
     </h2>
+    {description && (
+      <p
+        class="mx-auto mt-4 max-w-2xl text-center text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
+        style="font-family: var(--font-body); --reveal-delay: 120ms"
+        data-reveal
+      >
+        {description}
+      </p>
+    )}
     {tabs.length > 0 && (
-      <div class="tabs-shell mt-8" data-tabs-instance={instanceId}>
+      <div
+        class:list={['tabs-shell mt-8', isVertical && 'tabs-shell--vertical']}
+        data-tabs-instance={instanceId}
+      >
         <div
           role="tablist"
           id={tablistId}
           aria-label="Faner"
-          class="tabs-chip-list"
+          class:list={['tabs-chip-list', isVertical && 'tabs-chip-list--vertical']}
+          aria-orientation={isVertical ? 'vertical' : 'horizontal'}
         >
           {tabs.map((tab, i) => (
             <button
@@ -57,7 +80,7 @@ const tablistId = `tabs-list-${instanceId}`;
             </button>
           ))}
         </div>
-        <div class="tabs-panel-shell mt-6">
+        <div class:list={['tabs-panel-shell', isVertical ? 'tabs-panel-shell--vertical' : 'mt-6']}>
           {tabs.map((tab, i) => (
             <div
               role="tabpanel"
@@ -260,14 +283,52 @@ const tablistId = `tabs-list-${instanceId}`;
     }
   }
 
+  /* Vertical orientation */
+  .tabs-shell--vertical {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+  .tabs-chip-list--vertical {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    border-bottom: none;
+    border-right: 1px solid var(--color-border);
+    padding-bottom: 0.2rem;
+    padding-right: 1rem;
+    min-width: 180px;
+    flex-shrink: 0;
+  }
+  .tabs-shell--vertical .tabs-panel-shell--vertical {
+    flex: 1;
+    margin-top: 0;
+  }
+  .tabs-shell--vertical .tabs-trigger {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
   @media (max-width: 767px) {
     .tabs-trigger {
       width: 100%;
       justify-content: flex-start;
     }
-
     .tabs-chip-list {
       flex-direction: column;
+    }
+    /* Stack vertical layout on mobile */
+    .tabs-shell--vertical {
+      flex-direction: column;
+    }
+    .tabs-chip-list--vertical {
+      border-right: none;
+      border-bottom: 1px solid var(--color-border);
+      padding-right: 0.2rem;
+      padding-bottom: 1rem;
+      min-width: unset;
+    }
+    .tabs-shell--vertical .tabs-panel-shell--vertical {
+      margin-top: 1rem;
     }
   }
 

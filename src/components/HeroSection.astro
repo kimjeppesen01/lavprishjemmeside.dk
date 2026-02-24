@@ -4,17 +4,19 @@ import { buildSrcset } from '../utils/image';
 interface Props {
   headline: string;
   description: string;
+  tagline?: string;
   primaryCta?: { text: string; href: string };
   secondaryCta?: { text: string; href: string };
   backgroundImage?: string;
   alignment?: 'left' | 'center';
-  version?: 'default' | 'minimal' | 'split';
+  version?: 'default' | 'minimal' | 'split' | 'cinematic';
   instanceId?: string | number;
 }
 
 const {
   headline = '',
   description = '',
+  tagline,
   primaryCta,
   secondaryCta,
   backgroundImage,
@@ -23,18 +25,26 @@ const {
   instanceId = 'default',
 } = Astro.props;
 
-const isMinimal = version === 'minimal';
-const isSplit = version === 'split';
+const isMinimal    = version === 'minimal';
+const isSplit      = version === 'split';
+const isCinematic  = version === 'cinematic';
 const overlayOpacity = isMinimal ? 'bg-[var(--color-bg-page)]/70' : 'bg-[var(--color-bg-page)]/90';
-const pyClass = isMinimal ? 'py-12 md:py-16' : 'py-[var(--section-padding-y-lg)]';
+const pyClass = isMinimal
+  ? 'py-12 md:py-16'
+  : isCinematic
+    ? 'py-[clamp(5rem,10vw,9rem)]'
+    : 'py-[var(--section-padding-y-lg)]';
 const heroSrcset = backgroundImage ? buildSrcset(backgroundImage) : undefined;
+const eyebrowLabel = tagline || 'Digital oplevelse';
 ---
 
 <header
-  class={`modern-shell relative overflow-hidden ${pyClass} px-[var(--container-padding-x)]`}
+  class={`hero-shell modern-shell relative overflow-hidden ${pyClass} px-[var(--container-padding-x)]`}
+  class:list={[isCinematic && 'hero-cinematic']}
   role="banner"
 >
-  {backgroundImage && !isSplit && (
+  {/* Background image for non-split, non-cinematic */}
+  {backgroundImage && !isSplit && !isCinematic && (
     <div class="absolute inset-0 z-0">
       <img
         src={backgroundImage}
@@ -49,50 +59,82 @@ const heroSrcset = backgroundImage ? buildSrcset(backgroundImage) : undefined;
       <div class={`absolute inset-0 ${overlayOpacity}`} aria-hidden="true"></div>
     </div>
   )}
+
+  {/* Cinematic decorative blobs (CSS only, no JS) */}
+  {isCinematic && (
+    <>
+      <div class="hero-blob hero-blob--a" aria-hidden="true"></div>
+      <div class="hero-blob hero-blob--b" aria-hidden="true"></div>
+    </>
+  )}
+
   <div class="relative z-10 mx-auto max-w-[var(--container-max-width)]">
     <div
       class:list={[
         isSplit
-          ? 'flex flex-col gap-8 md:flex-row md:items-center md:gap-12'
+          ? 'flex flex-col gap-8 md:flex-row md:items-center md:gap-14'
           : 'flex flex-col gap-6',
         !isSplit && alignment === 'center' && 'items-center text-center',
       ]}
     >
       <div class={isSplit ? 'flex-1' : ''}>
-        <span class="eyebrow mb-4">Digital oplevelse</span>
+        {/* Eyebrow / tagline badge */}
+        <span
+          class="eyebrow mb-4 animate-float"
+          data-reveal
+          style="--reveal-delay: 0ms"
+        >
+          {eyebrowLabel}
+        </span>
+
         <h1
-          class={`heading-fluid font-bold leading-[var(--line-height-tight)] text-[var(--color-text-primary)] ${
+          class:list={[
+            'heading-fluid font-bold leading-[var(--line-height-tight)] text-[var(--color-text-primary)]',
             isMinimal
               ? 'text-[var(--font-size-3xl)] md:text-[var(--font-size-4xl)]'
-              : 'text-[var(--font-size-4xl)] md:text-[var(--font-size-5xl)]'
-          }`}
-          style="font-family: var(--font-heading)"
+              : isCinematic
+                ? 'text-[clamp(2.6rem,6vw,5rem)] tracking-[-0.03em]'
+                : 'text-[var(--font-size-4xl)] md:text-[var(--font-size-5xl)]',
+          ]}
+          style="font-family: var(--font-heading); --reveal-delay: 80ms"
+          data-reveal
         >
           {headline}
         </h1>
+
         <p
-          class={`max-w-2xl leading-[var(--line-height-normal)] text-[var(--color-text-secondary)] ${
-            isMinimal ? 'text-[var(--font-size-base)] mt-2' : 'text-[var(--font-size-lg)]'
-          }`}
-          style="font-family: var(--font-body)"
+          class:list={[
+            'max-w-2xl leading-[var(--line-height-normal)] text-[var(--color-text-secondary)]',
+            isMinimal ? 'text-[var(--font-size-base)] mt-2' : 'text-[var(--font-size-lg)] mt-3',
+          ]}
+          style="font-family: var(--font-body); --reveal-delay: 160ms"
+          data-reveal
         >
           {description}
         </p>
+
         {(primaryCta || secondaryCta) && (
           <div
             class:list={[
               'flex flex-col gap-3 sm:flex-row sm:gap-4',
-              isMinimal && 'mt-4',
-              !isMinimal && 'mt-6',
+              isMinimal ? 'mt-4' : 'mt-6',
             ]}
+            data-reveal
+            style="--reveal-delay: 240ms"
           >
             {primaryCta && (
               <a
                 href={primaryCta.href}
-                class="focus-modern inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-full)] bg-[var(--color-primary)] px-7 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)]"
+                class:list={[
+                  'focus-modern inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-[var(--radius-full)] px-7 py-3 text-[var(--font-size-base)] font-semibold shadow-[var(--shadow-sm)] transition-all',
+                  isCinematic
+                    ? 'btn-gradient'
+                    : 'bg-[var(--color-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-primary-hover)]',
+                ]}
                 style="font-family: var(--font-body)"
               >
                 {primaryCta.text}
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="hero-cta-arrow" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
               </a>
             )}
             {secondaryCta && (
@@ -107,19 +149,92 @@ const heroSrcset = backgroundImage ? buildSrcset(backgroundImage) : undefined;
           </div>
         )}
       </div>
-      {isSplit && backgroundImage && (
+
+      {/* Split layout image panel */}
+      {isSplit && (
         <div class="flex-1 max-w-md md:max-w-lg shrink-0">
+          {backgroundImage ? (
+            <div class="hero-split-img-wrap">
+              <img
+                src={backgroundImage}
+                srcset={heroSrcset}
+                sizes="(max-width: 768px) 100vw, min(512px, 50vw)"
+                alt=""
+                class="w-full h-auto rounded-[var(--radius-card)] border border-[var(--color-border)] object-cover aspect-square"
+                loading="eager"
+                fetchpriority="high"
+              />
+            </div>
+          ) : (
+            <div class="hero-split-placeholder rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] aspect-square bg-[var(--color-neutral-50)]"></div>
+          )}
+        </div>
+      )}
+
+      {/* Cinematic layout image */}
+      {isCinematic && backgroundImage && (
+        <div class="mt-10 md:mt-0 md:absolute md:inset-y-0 md:right-0 md:w-1/2 md:opacity-20 pointer-events-none" aria-hidden="true">
           <img
             src={backgroundImage}
             srcset={heroSrcset}
-            sizes="(max-width: 768px) 100vw, min(512px, 50vw)"
+            sizes="50vw"
             alt=""
-            class="w-full h-auto rounded-[var(--radius-card)] border border-[var(--color-border)] shadow-[var(--shadow-card)] object-cover"
+            class="h-full w-full object-cover"
             loading="eager"
-            fetchpriority="high"
           />
         </div>
       )}
     </div>
   </div>
 </header>
+
+<style>
+/* Hero CTA arrow hover animation */
+.hero-cta-arrow {
+  transition: transform 220ms var(--motion-ease-emphasis, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+a:hover .hero-cta-arrow {
+  transform: translateX(4px);
+}
+
+/* Cinematic decorative blobs */
+.hero-blob {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 0;
+}
+.hero-blob--a {
+  width: clamp(280px, 40vw, 560px);
+  height: clamp(280px, 40vw, 560px);
+  top: -20%;
+  right: -10%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 70%);
+  animation: float 7s ease-in-out infinite;
+}
+.hero-blob--b {
+  width: clamp(180px, 25vw, 360px);
+  height: clamp(180px, 25vw, 360px);
+  bottom: -10%;
+  left: 5%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 70%);
+  animation: float 9s ease-in-out infinite reverse;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-blob { animation: none; }
+}
+
+/* Split image subtle shadow frame */
+.hero-split-img-wrap {
+  position: relative;
+}
+.hero-split-img-wrap::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: calc(var(--radius-card) + 4px);
+  background: var(--gradient-brand);
+  z-index: -1;
+  opacity: 0.15;
+}
+</style>

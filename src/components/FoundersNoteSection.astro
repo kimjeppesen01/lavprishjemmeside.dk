@@ -11,6 +11,7 @@ interface Props {
   role?: string;
   photo?: string;
   cta?: { text: string; href: string };
+  variant?: 'split' | 'centered';
   instanceId?: string | number;
 }
 
@@ -20,38 +21,46 @@ const {
   role,
   photo,
   cta,
+  variant = 'split',
   instanceId = 'default',
 } = Astro.props;
+
+const isCentered = variant === 'centered';
 ---
 
 <section
-  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  class="modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
   aria-label="Bemærkning fra grundlægger"
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
-    <blockquote class="flex flex-col items-center text-center md:flex-row md:items-start md:text-left md:gap-10">
-      {photo && (
-        <div class="shrink-0">
-          <img
-            src={photo}
-            srcset={buildSrcset(photo, [160, 256, 320])}
-            sizes="160px"
-            alt={`Portræt af ${author}`}
-            class="mx-auto h-32 w-32 rounded-[var(--radius-full)] object-cover shadow-[var(--shadow-md)] md:mx-0"
-            loading="lazy"
-          />
-        </div>
-      )}
-      <div class="flex-1">
+    {isCentered ? (
+      /* Centered variant: large photo centered above quote */
+      <blockquote class="flex flex-col items-center text-center" data-reveal>
+        {photo && (
+          <div class="founders-photo-wrap relative mb-8 w-fit">
+            <img
+              src={photo}
+              srcset={buildSrcset(photo, [160, 256, 320])}
+              sizes="160px"
+              alt={`Portræt af ${author}`}
+              class="h-40 w-40 rounded-full object-cover shadow-[var(--shadow-md)]"
+              loading="lazy"
+            />
+            {/* Gradient ring */}
+            <div class="founders-ring" aria-hidden="true"></div>
+          </div>
+        )}
+        {/* Large decorative quote mark */}
+        <span class="founders-deco-quote" aria-hidden="true">&ldquo;</span>
         <p
-          class="text-[var(--font-size-xl)] font-medium leading-[var(--line-height-relaxed)] text-[var(--color-text-primary)] md:text-[var(--font-size-2xl)]"
+          class="max-w-2xl text-[clamp(1.2rem,2.5vw,1.6rem)] font-medium leading-[1.6] text-[var(--color-text-primary)]"
           style="font-family: var(--font-body)"
         >
-          &ldquo;{quote}&rdquo;
+          {quote}
         </p>
         <footer class="mt-6">
           <cite
-            class="text-[var(--font-size-base)] font-semibold text-[var(--color-text-primary)] not-italic"
+            class="text-[var(--font-size-base)] font-bold text-[var(--color-text-primary)] not-italic"
             style="font-family: var(--font-heading)"
           >
             {author}
@@ -66,17 +75,103 @@ const {
           )}
         </footer>
         {cta && (
-          <div class="mt-6">
-            <a
-              href={cta.href}
-              class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-medium text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
-              style="font-family: var(--font-body)"
-            >
-              {cta.text}
-            </a>
+          <a
+            href={cta.href}
+            class="focus-modern mt-6 inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-full btn-gradient px-6 py-3 text-[var(--font-size-base)] font-semibold text-[var(--color-text-on-primary)] transition-all"
+            style="font-family: var(--font-body)"
+          >
+            {cta.text}
+          </a>
+        )}
+      </blockquote>
+    ) : (
+      /* Split variant: photo left, quote right */
+      <blockquote class="relative flex flex-col items-center text-center md:flex-row md:items-start md:text-left md:gap-10" data-reveal>
+        {/* Decorative large quote mark (background) */}
+        <span class="founders-deco-quote founders-deco-quote--split" aria-hidden="true">&ldquo;</span>
+
+        {photo && (
+          <div class="founders-photo-wrap relative mb-8 shrink-0 md:mb-0">
+            <img
+              src={photo}
+              srcset={buildSrcset(photo, [160, 256, 320])}
+              sizes="160px"
+              alt={`Portræt af ${author}`}
+              class="mx-auto h-32 w-32 rounded-full object-cover shadow-[var(--shadow-md)] md:mx-0"
+              loading="lazy"
+            />
+            <div class="founders-ring" aria-hidden="true"></div>
           </div>
         )}
-      </div>
-    </blockquote>
+        <div class="flex-1">
+          <p
+            class="text-[var(--font-size-xl)] font-medium leading-[var(--line-height-relaxed)] text-[var(--color-text-primary)] md:text-[var(--font-size-2xl)]"
+            style="font-family: var(--font-body)"
+          >
+            &ldquo;{quote}&rdquo;
+          </p>
+          <footer class="mt-6">
+            <cite
+              class="text-[var(--font-size-base)] font-semibold text-[var(--color-text-primary)] not-italic"
+              style="font-family: var(--font-heading)"
+            >
+              {author}
+            </cite>
+            {role && (
+              <p
+                class="mt-1 text-[var(--font-size-sm)] text-[var(--color-text-secondary)]"
+                style="font-family: var(--font-body)"
+              >
+                {role}
+              </p>
+            )}
+          </footer>
+          {cta && (
+            <div class="mt-6">
+              <a
+                href={cta.href}
+                class="focus-modern inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] px-6 py-3 text-[var(--font-size-base)] font-semibold text-[var(--color-text-on-primary)] transition-colors hover:bg-[var(--color-primary-hover)]"
+                style="font-family: var(--font-body)"
+              >
+                {cta.text}
+              </a>
+            </div>
+          )}
+        </div>
+      </blockquote>
+    )}
   </div>
 </section>
+
+<style>
+/* Gradient ring around photo */
+.founders-photo-wrap { display: inline-block; }
+.founders-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  background: var(--gradient-brand, var(--color-primary));
+  z-index: -1;
+  opacity: 0.2;
+}
+
+/* Decorative large quote mark */
+.founders-deco-quote {
+  display: block;
+  font-size: clamp(4rem, 10vw, 8rem);
+  line-height: 0.8;
+  color: var(--color-primary);
+  opacity: 0.08;
+  font-family: Georgia, serif;
+  margin-bottom: -1rem;
+  user-select: none;
+  pointer-events: none;
+}
+.founders-deco-quote--split {
+  position: absolute;
+  top: -1rem;
+  left: -1rem;
+  margin-bottom: 0;
+  font-size: clamp(5rem, 12vw, 10rem);
+}
+</style>

@@ -8,7 +8,7 @@ interface Props {
   instanceId?: string | number;
 }
 
-const { videoUrl = '', title, description, provider, instanceId = 'default' } = Astro.props;
+const { videoUrl = '', title, description, thumbnail, provider, instanceId = 'default' } = Astro.props;
 
 function extractVideoId(url: string, prov?: string): string | null {
   if (prov === 'youtube' || url.includes('youtube.com') || url.includes('youtu.be')) {
@@ -27,34 +27,67 @@ const isYoutube = provider === 'youtube' || videoUrl.includes('youtube') || vide
 
 const embedUrl = videoId
   ? isYoutube
-    ? `https://www.youtube-nocookie.com/embed/${videoId}`
+    ? `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`
     : `https://player.vimeo.com/video/${videoId}`
   : null;
+
+// Auto-generate YouTube thumbnail if not provided
+const autoThumb = !thumbnail && videoId && isYoutube
+  ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+  : thumbnail;
 ---
 
 <section
-  class="py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
-  aria-labelledby={title ? 'video-heading' : undefined}
+  class="modern-shell py-[var(--section-padding-y)] px-[var(--container-padding-x)]"
+  aria-labelledby={title ? `video-heading-${instanceId}` : undefined}
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
     {title && (
       <h2
         id={`video-heading-${instanceId}`}
-        class="mb-4 text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)]"
+        class="heading-fluid mb-6 font-bold text-[var(--color-text-primary)]"
         style="font-family: var(--font-heading)"
+        data-reveal
       >
         {title}
       </h2>
     )}
     {embedUrl ? (
-      <div class="relative aspect-video overflow-hidden rounded-[var(--radius-lg)]">
-        <iframe
-          src={embedUrl}
-          title={title || 'Video'}
-          class="absolute inset-0 h-full w-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-        ></iframe>
+      <div
+        class="video-wrap relative aspect-video overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] shadow-[var(--shadow-md)]"
+        data-reveal
+        style="--reveal-delay: 80ms"
+      >
+        {/* Lazy-load poster + custom play button */}
+        <div
+          class="video-poster absolute inset-0 cursor-pointer"
+          data-embed-url={embedUrl}
+          data-embed-title={title || 'Video'}
+          tabindex="0"
+          role="button"
+          aria-label={`Afspil video: ${title || 'Video'}`}
+        >
+          {autoThumb && (
+            <img
+              src={autoThumb}
+              alt=""
+              class="h-full w-full object-cover"
+              loading="lazy"
+              aria-hidden="true"
+            />
+          )}
+          {!autoThumb && (
+            <div class="h-full w-full bg-[var(--color-neutral-900)]"></div>
+          )}
+          {/* Dark overlay */}
+          <div class="absolute inset-0 bg-black/30" aria-hidden="true"></div>
+          {/* Play button */}
+          <div class="video-play-btn absolute inset-0 flex items-center justify-center" aria-hidden="true">
+            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:scale-110">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="var(--color-primary, #000)" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+          </div>
+        </div>
       </div>
     ) : (
       <div class="flex aspect-video items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
@@ -64,10 +97,51 @@ const embedUrl = videoId
     {description && (
       <p
         class="mt-4 text-[var(--font-size-base)] text-[var(--color-text-secondary)]"
-        style="font-family: var(--font-body)"
+        style="font-family: var(--font-body); --reveal-delay: 120ms"
+        data-reveal
       >
         {description}
       </p>
     )}
   </div>
 </section>
+
+<style>
+.video-poster:hover .video-play-btn > div,
+.video-poster:focus .video-play-btn > div {
+  transform: scale(1.1);
+}
+.video-poster:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .video-play-btn > div { transition: none; }
+}
+</style>
+
+{embedUrl && (
+  <script is:inline>
+    document.querySelectorAll('.video-poster').forEach(function(poster) {
+      function loadVideo() {
+        var url = poster.getAttribute('data-embed-url');
+        var title = poster.getAttribute('data-embed-title');
+        if (!url) return;
+        var iframe = document.createElement('iframe');
+        iframe.src = url + (url.includes('?') ? '&' : '?') + 'autoplay=1';
+        iframe.title = title || 'Video';
+        iframe.className = 'absolute inset-0 h-full w-full';
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.allowFullscreen = true;
+        var wrap = poster.closest('.video-wrap');
+        if (wrap) {
+          poster.replaceWith(iframe);
+        }
+      }
+      poster.addEventListener('click', loadVideo);
+      poster.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); loadVideo(); }
+      });
+    });
+  </script>
+)}

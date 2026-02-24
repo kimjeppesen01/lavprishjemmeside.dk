@@ -3,7 +3,7 @@ interface Props {
   headline: string;
   description?: string;
   ctaButton?: { text: string; href: string };
-  backgroundColor?: 'default' | 'primary' | 'alt';
+  backgroundColor?: 'default' | 'primary' | 'alt' | 'gradient';
   layout?: 'centered' | 'split';
   version?: 'default' | 'minimal';
   instanceId?: string | number;
@@ -19,79 +19,125 @@ const {
   instanceId = 'default',
 } = Astro.props;
 
-const isMinimal = version === 'minimal';
+const isMinimal  = version === 'minimal';
+const isGradient = backgroundColor === 'gradient';
+const isPrimary  = backgroundColor === 'primary';
 
 const bgClass =
-  backgroundColor === 'primary'
-    ? 'bg-[var(--color-primary)]'
-    : backgroundColor === 'alt'
-      ? 'bg-[var(--color-bg-section-alt)]'
-      : 'bg-[var(--color-bg-page)]';
+  isGradient
+    ? 'cta-gradient-bg'
+    : isPrimary
+      ? 'bg-[var(--color-primary)]'
+      : backgroundColor === 'alt'
+        ? 'bg-[var(--color-bg-section-alt)]'
+        : 'bg-[var(--color-bg-page)]';
 
-const textClass =
-  backgroundColor === 'primary'
-    ? 'text-[var(--color-text-on-primary)]'
-    : 'text-[var(--color-text-primary)]';
+const onDark = isGradient || isPrimary;
 
-const descClass =
-  backgroundColor === 'primary'
-    ? 'text-[var(--color-text-on-primary)]/90'
-    : 'text-[var(--color-text-secondary)]';
-
-const buttonClass =
-  backgroundColor === 'primary'
-    ? 'bg-[var(--color-text-on-primary)] text-[var(--color-primary)] hover:bg-[var(--color-neutral-100)]'
-    : 'bg-[var(--color-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-primary-hover)]';
+const textClass  = onDark ? 'text-[var(--color-text-on-primary)]'      : 'text-[var(--color-text-primary)]';
+const descClass  = onDark ? 'text-[var(--color-text-on-primary)]/80'   : 'text-[var(--color-text-secondary)]';
+const buttonClass = onDark
+  ? 'bg-white text-[var(--color-primary)] hover:bg-[var(--color-neutral-100)] font-semibold shadow-lg'
+  : 'btn-gradient text-[var(--color-text-on-primary)] font-semibold';
 ---
 
 <section
-  class={`px-[var(--container-padding-x)] ${bgClass} ${isMinimal ? 'py-8 md:py-10' : 'py-[var(--section-padding-y)]'}`}
+  class:list={[
+    'cta-section relative overflow-hidden px-[var(--container-padding-x)]',
+    bgClass,
+    isMinimal ? 'py-8 md:py-10' : 'py-[var(--section-padding-y)]',
+  ]}
   aria-labelledby={`cta-heading-${instanceId}`}
 >
-  <div class="mx-auto max-w-[var(--container-max-width)]">
+  {/* Decorative shape for split layout */}
+  {layout === 'split' && (
+    <div class="cta-deco-shape" aria-hidden="true"></div>
+  )}
+
+  <div class="relative z-10 mx-auto max-w-[var(--container-max-width)]">
     <div
       class:list={[
-        layout === 'centered' && 'flex flex-col items-center text-center',
-        layout === 'split' &&
-          'flex flex-col gap-6 md:flex-row md:items-center md:justify-between',
-        isMinimal && layout === 'centered' && 'gap-4',
-        isMinimal && layout === 'split' && 'gap-4 md:gap-6',
+        layout === 'centered' && 'flex flex-col items-center text-center gap-4',
+        layout === 'split' && 'flex flex-col gap-6 md:flex-row md:items-center md:justify-between',
+        !isMinimal && layout === 'split' && 'md:gap-12',
       ]}
     >
-      <div class={layout === 'split' ? 'flex-1' : ''}>
+      <div
+        class:list={[layout === 'split' ? 'flex-1' : 'max-w-2xl']}
+        data-reveal
+      >
         <h2
           id={`cta-heading-${instanceId}`}
-          class={`font-bold ${textClass} ${isMinimal ? 'text-[var(--font-size-xl)] md:text-[var(--font-size-2xl)]' : 'text-[var(--font-size-2xl)] md:text-[var(--font-size-3xl)]'}`}
+          class:list={[
+            'font-bold',
+            textClass,
+            isMinimal
+              ? 'text-[var(--font-size-xl)] md:text-[var(--font-size-2xl)]'
+              : 'text-[clamp(1.5rem,3vw,2.25rem)] leading-tight',
+          ]}
           style="font-family: var(--font-heading)"
         >
           {headline}
         </h2>
         {description && !isMinimal && (
           <p
-            class={`mt-2 text-[var(--font-size-base)] ${descClass}`}
+            class={`mt-3 text-[var(--font-size-base)] leading-relaxed ${descClass}`}
             style="font-family: var(--font-body)"
           >
             {description}
           </p>
         )}
       </div>
+
       {ctaButton && (
         <div
           class:list={[
-            layout === 'centered' && !isMinimal && 'mt-6',
-            layout === 'centered' && isMinimal && 'mt-2',
-            layout === 'split' && 'md:ml-8 md:shrink-0',
+            layout === 'centered' && !isMinimal && 'mt-2',
+            layout === 'split' && 'md:shrink-0',
           ]}
+          data-reveal
+          style="--reveal-delay: 100ms"
         >
           <a
             href={ctaButton.href}
-            class={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-button)] px-6 py-3 text-[var(--font-size-base)] font-medium shadow-[var(--shadow-sm)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 ${buttonClass}`}
+            class:list={[
+              'cta-btn inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-[var(--radius-button)] px-7 py-3 text-[var(--font-size-base)] transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)]',
+              buttonClass,
+            ]}
             style="font-family: var(--font-body)"
           >
             {ctaButton.text}
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="cta-btn-arrow" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </a>
         </div>
       )}
     </div>
   </div>
 </section>
+
+<style>
+/* Gradient background CTA */
+.cta-gradient-bg {
+  background: var(--gradient-cta, var(--gradient-brand, var(--color-primary)));
+}
+
+/* Decorative abstract shape for split layout (clip-path, no image needed) */
+.cta-deco-shape {
+  position: absolute;
+  right: -5%;
+  top: -30%;
+  width: 45%;
+  height: 200%;
+  background: color-mix(in srgb, white 8%, transparent);
+  clip-path: polygon(30% 0%, 100% 0%, 100% 100%, 0% 100%);
+  pointer-events: none;
+}
+
+/* CTA button arrow pulse on hover */
+.cta-btn-arrow {
+  transition: transform 220ms var(--motion-ease-emphasis, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+.cta-btn:hover .cta-btn-arrow {
+  transform: translateX(4px);
+}
+</style>

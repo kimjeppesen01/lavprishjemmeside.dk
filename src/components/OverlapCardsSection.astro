@@ -26,6 +26,13 @@ const {
 
 const offset = Math.min(Math.max(overlapOffset || 0, 0), 80);
 const headingId = headline ? `overlap-cards-heading-${instanceId}` : undefined;
+
+/* Subtle tints per card index (0→primary, 1→neutral, 2→accent) */
+const cardTints = [
+  'overlap-card--primary',
+  '',
+  'overlap-card--accent',
+];
 ---
 
 <section
@@ -36,30 +43,29 @@ const headingId = headline ? `overlap-cards-heading-${instanceId}` : undefined;
     {headline && (
       <h2
         id={headingId}
-        class="mb-10 text-center text-[var(--font-size-2xl)] font-bold text-[var(--color-text-primary)] md:text-[var(--font-size-3xl)]"
+        class="heading-fluid mb-10 text-center font-bold text-[var(--color-text-primary)]"
         style="font-family: var(--font-heading)"
+        data-reveal
       >
         {headline}
       </h2>
     )}
     {cards.length > 0 && (
-      <div class="flex flex-col gap-6 md:flex-row md:flex-wrap md:justify-center">
+      <div class="flex flex-col gap-6 md:flex-row md:flex-wrap md:justify-center md:items-start">
         {cards.slice(0, 3).map((card, i) => (
           <div
-            class="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-lg)] md:max-w-[340px]"
-            style={`
-              z-index: ${cards.length - i};
-              ${i > 0 && offset > 0 ? `margin-left: -${offset}px;` : ''}
-            `}
+            class={`overlap-card card-modern relative flex min-w-0 flex-1 flex-col overflow-hidden md:max-w-[340px] ${cardTints[i] || ''}`}
+            style={`z-index: ${cards.length - i}; ${i > 0 && offset > 0 ? `margin-left: -${offset}px;` : ''} --reveal-delay: ${i * 80}ms`}
+            data-reveal
           >
             {card.imageUrl && (
-              <div class="relative h-40 overflow-hidden">
+              <div class="relative aspect-video overflow-hidden">
                 <img
                   src={card.imageUrl}
                   srcset={buildSrcset(card.imageUrl, [320, 480, 640])}
                   sizes="320px"
                   alt={card.imageAlt || card.title}
-                  class="h-full w-full object-cover"
+                  class="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.03]"
                   loading="lazy"
                 />
               </div>
@@ -79,10 +85,11 @@ const headingId = headline ? `overlap-cards-heading-${instanceId}` : undefined;
               {card.cta && (
                 <a
                   href={card.cta.href}
-                  class="mt-4 inline-flex min-h-[44px] min-w-[44px] items-center text-[var(--font-size-base)] font-medium text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+                  class="overlap-card-cta mt-4 inline-flex min-h-[44px] min-w-[44px] items-center gap-1.5 text-[var(--font-size-base)] font-medium text-[var(--color-primary)] transition-all hover:text-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
                   style="font-family: var(--font-body)"
                 >
-                  {card.cta.text} →
+                  {card.cta.text}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="overlap-card-arrow"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                 </a>
               )}
             </div>
@@ -92,3 +99,27 @@ const headingId = headline ? `overlap-cards-heading-${instanceId}` : undefined;
     )}
   </div>
 </section>
+
+<style>
+/* Gradient tints per card */
+.overlap-card--primary {
+  background: color-mix(in srgb, var(--color-primary) 4%, var(--color-bg-page));
+}
+.overlap-card--accent {
+  background: color-mix(in srgb, var(--color-accent, var(--color-primary)) 4%, var(--color-bg-page));
+}
+
+/* Arrow hover slide */
+.overlap-card-cta:hover .overlap-card-arrow {
+  transform: translateX(4px);
+}
+.overlap-card-arrow {
+  transition: transform 200ms var(--motion-ease-standard, ease);
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlap-card-arrow { transition: none; }
+  .overlap-card img { transition: none; }
+}
+</style>

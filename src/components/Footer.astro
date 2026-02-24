@@ -6,6 +6,9 @@ const year = new Date().getFullYear();
 const columns = Array.isArray(headerFooter.footer_columns) ? headerFooter.footer_columns : [];
 const copyright = headerFooter.footer_copyright ?? null;
 const isModern = designFeatures.themeMode === 'modern';
+
+/* Optional social links from header-footer config */
+const socialLinks = Array.isArray((headerFooter as Record<string, unknown>).footer_social) ? (headerFooter as Record<string, unknown>).footer_social as Array<{ platform: string; href: string }> : [];
 ---
 
 <footer class:list={[
@@ -17,8 +20,8 @@ const isModern = designFeatures.themeMode === 'modern';
   <div class="mx-auto max-w-[var(--container-max-width)] px-[var(--container-padding-x)]">
     {columns.length > 0 && (
       <div class={`grid gap-8 ${columns.length === 1 ? 'grid-cols-1' : columns.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
-        {columns.map((col: { title?: string; text?: string; links?: { href: string; label: string }[] }) => (
-          <div>
+        {columns.map((col: { title?: string; text?: string; links?: { href: string; label: string }[] }, i: number) => (
+          <div data-reveal style={`--reveal-delay: ${i * 80}ms`}>
             <h4 class="mb-3 text-sm font-semibold uppercase tracking-[0.08em] text-[var(--color-neutral-100)]">{col.title || 'Kolonnetitel'}</h4>
             {col.text ? (
               <p class="text-sm leading-6 text-[var(--color-neutral-300)]">{col.text}</p>
@@ -35,8 +38,61 @@ const isModern = designFeatures.themeMode === 'modern';
         ))}
       </div>
     )}
-    <div class="mt-10 border-t border-[var(--color-neutral-700)] pt-8 text-center text-sm text-[var(--color-neutral-400)]">
+
+    {/* Social links row (if provided) */}
+    {socialLinks.length > 0 && (
+      <div class="mt-8 flex items-center gap-4" data-reveal>
+        {socialLinks.map((s) => (
+          <a
+            href={s.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="footer-social-link"
+            aria-label={s.platform}
+          >
+            {s.platform === 'LinkedIn' && (
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+            )}
+            {s.platform === 'Instagram' && (
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+            )}
+            {s.platform === 'Facebook' && (
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+            )}
+            {s.platform === 'X' && (
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            )}
+          </a>
+        ))}
+      </div>
+    )}
+
+    <div class="mt-10 border-t border-[var(--color-neutral-700)] pt-8 text-center text-sm text-[var(--color-neutral-400)]" data-reveal>
       {copyright || `© ${year}. Alle rettigheder forbeholdes.`}
     </div>
   </div>
 </footer>
+
+<style>
+/* Social link icon buttons */
+.footer-social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--color-neutral-700, #374151) 80%, transparent);
+  color: var(--color-neutral-400, #9ca3af);
+  transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
+}
+.footer-social-link:hover {
+  color: var(--color-neutral-50, #f9fafb);
+  border-color: var(--color-neutral-500, #6b7280);
+  background: color-mix(in srgb, var(--color-neutral-700, #374151) 40%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .footer-social-link { transition: none; }
+}
+</style>

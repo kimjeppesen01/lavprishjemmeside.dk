@@ -1,47 +1,59 @@
 ---
 interface Props {
   items: Array<{ label: string; href: string }>;
-  separator?: string;
   instanceId?: string | number;
 }
 
-const { items = [], separator = '>', instanceId = 'default' } = Astro.props;
+const { items = [], instanceId = 'default' } = Astro.props;
 ---
 
 <nav
-  class="py-4 px-[var(--container-padding-x)]"
+  class="py-3 px-[var(--container-padding-x)]"
   aria-label="Brødkrummesti"
 >
   <div class="mx-auto max-w-[var(--container-max-width)]">
     <ol
-      class="flex flex-wrap items-center gap-2 text-[var(--font-size-base)]"
+      class="inline-flex flex-wrap items-center gap-1 rounded-full bg-[var(--color-bg-section-alt)] px-4 py-2 text-[var(--font-size-sm)]"
       style="font-family: var(--font-body)"
     >
       {items.map((item, index) => {
         const isLast = index === items.length - 1;
         const hasHref = item.href && item.href !== '';
         return (
-          <li class="flex items-center gap-2">
+          <li class="flex items-center gap-1">
             {index > 0 && (
-              <span
-                class="text-[var(--color-text-secondary)]"
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="text-[var(--color-text-secondary)] mx-0.5"
                 aria-hidden="true"
               >
-                {separator}
-              </span>
+                <path d="m9 18 6-6-6-6"/>
+              </svg>
             )}
-            {hasHref ? (
+            {isLast ? (
+              <span
+                class="font-semibold text-[var(--color-text-primary)]"
+                aria-current="page"
+              >
+                {item.label}
+              </span>
+            ) : hasHref ? (
               <a
                 href={item.href}
-                class="text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+                class="text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 rounded"
               >
                 {item.label}
               </a>
             ) : (
-              <span
-                class="text-[var(--color-text-secondary)]"
-                aria-current="page"
-              >
+              <span class="text-[var(--color-text-secondary)]">
                 {item.label}
               </span>
             )}
