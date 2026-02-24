@@ -15,11 +15,21 @@ Flow per message:
 """
 from __future__ import annotations
 
+import json
 import logging
 import re
-import json
-from typing import Any, Callable
+import time
 from pathlib import Path
+from typing import Any, Callable
+
+# #region agent log
+def _dbg(loc: str, msg: str, data: dict, hyp: str) -> None:
+    try:
+        with open("/Users/samlino/lavprishjemmeside.dk/.cursor/debug-c616c9.log", "a") as f:
+            f.write(json.dumps({"sessionId": "c616c9", "location": loc, "message": msg, "data": data, "hypothesisId": hyp, "timestamp": int(time.time() * 1000)}) + "\n")
+    except Exception:
+        pass
+# #endregion
 
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -130,6 +140,7 @@ def _run_with_tools(
     extra_system_context: str | None,
     allowed_tools: frozenset[str] | None,
     audit: AuditLogger | None = None,
+    max_rounds: int | None = None,
 ) -> tuple[str, Any]:
     """
     Run the Claude tool-use loop until end_turn or max rounds.
@@ -137,7 +148,8 @@ def _run_with_tools(
     Returns (final_text_reply, last_usage). If max rounds reached,
     usage is None and reply is an error message.
     """
-    for _ in range(MAX_TOOL_ROUNDS):
+    limit = max_rounds if max_rounds is not None else MAX_TOOL_ROUNDS
+    for _ in range(limit):
         response = claude.chat(
             messages=messages,
             model=model,
@@ -229,6 +241,11 @@ def make_handler(
         monthly_warn_pct=cfg.budget.monthly_warn_pct,
     )
     project_router = ProjectRouter(repo_root / "projects")
+    _domain_map = cfg.slack.channel_domain_map  # channel_id → domain name
+
+    def _task_domain(channel: str) -> str:
+        """Resolve Slack channel to task domain folder name."""
+        return _domain_map.get(channel, "cms")
 
     # Tool registry
     registry = ToolRegistry()
@@ -345,7 +362,29 @@ def make_handler(
                 handoff_target=handoff_target,
                 priority="medium",
             )
+        else:
+            if intent == IntentType.PLAN_DESIGN and (not cfg.kanban.enabled or not cfg.kanban.api_key):
+                logger.warning("kanban.sync_skipped plan not pushed — set KANBAN_API_KEY and KANBAN_SYNC_ENABLED=true in .env")
         return ticket.ticket_id, linked_plan_files
+
+    def _helpful_clarification_reply(intent: IntentType) -> str:
+        """User-facing message to help define the request instead of a raw policy/error."""
+        if intent == IntentType.NEEDS_CLARIFICATION:
+            return (
+                "I’m not sure what you need. You can:\n"
+                "• Ask a **question** (e.g. how something works, status, FAQ)\n"
+                "• Start an **idea**: `!brainstorm` then describe your idea\n"
+                "• Ask for a **plan**: `!plan` then describe what you want built\n"
+                "• Or describe in one sentence what you’re trying to do, and I’ll suggest the right path."
+            )
+        if intent == IntentType.OUT_OF_SCOPE:
+            return (
+                "I didn’t quite get that. To get the best help:\n"
+                "• Use `!brainstorm` to refine an idea, or `!plan` for an implementation plan\n"
+                "• Ask a specific question (e.g. status, how-to, pricing)\n"
+                "• Or rephrase in a short sentence what you want — no ticket is created for unclear requests."
+            )
+        return "Please rephrase what you need in a short sentence."
 
     def _policy_reply(
         intent: IntentType,
@@ -353,19 +392,10 @@ def make_handler(
         ticket_id: str | None = None,
         linked_plan_files: list[str] | None = None,
     ) -> str:
+        """Policy/internal reply (used for DEV_HANDOFF; clarification/out-of-scope use _helpful_clarification_reply)."""
         confidence_str = f"{confidence:.2f}"
         linked_plan_files = linked_plan_files or []
         plans_line = ", ".join(f"`{p}`" for p in linked_plan_files) if linked_plan_files else "`none found`"
-        if intent == IntentType.NEEDS_CLARIFICATION:
-            return (
-                "*NEEDS_CLARIFICATION*\n"
-                f"- intent: `{intent.value}`\n"
-                f"- confidence: `{confidence_str}`\n"
-                "- sources_used: `none`\n"
-                "- action_taken: awaiting clarification\n"
-                "- next_step: Please clarify whether this is a FAQ, status lookup, runbook guidance, triage, or a request to capture."
-            )
-
         if intent == IntentType.DEV_HANDOFF:
             return (
                 "*DEV_HANDOFF_TO_CLAUDE_CODE*\n"
@@ -377,16 +407,7 @@ def make_handler(
                 "- action_taken: development task execution blocked in IAN\n"
                 "- next_step: Route this to Claude Code with relevant `tasks/**/*.md` plan context."
             )
-
-        return (
-            "*OUT_OF_SCOPE_BACKLOG_CREATED*\n"
-            f"- intent: `{intent.value}`\n"
-            f"- confidence: `{confidence_str}`\n"
-            "- sources_used: `request text`\n"
-            f"- ticket_id: `{ticket_id or 'N/A'}`\n"
-            "- action_taken: request marked out-of-scope for IAN fixed environment and backlog ticket created\n"
-            "- next_step: Triage ticket and assign owner (SLA: within 1 business day)."
-        )
+        return _helpful_clarification_reply(intent)
 
     planner_loader = PlannerContextLoader(repo_root)
 
@@ -500,17 +521,19 @@ def make_handler(
             meta["ticket_id"] = ticket_id
             logger.info("brainstormer.ticket_created id=%s", ticket_id)
 
-            # Write task MD file to repo tasks/pending/
+            # Write task MD file to domain-based tasks folder
             slug = slugify(ticket_fields["title"])
-            task_md_path = repo_root / "tasks" / "pending" / f"TASK_{slug}.md"
+            domain = _task_domain(channel)
+            task_md_path = repo_root / "tasks" / domain / "ideas" / f"TASK_{slug}.md"
             try:
                 task_md_path.parent.mkdir(parents=True, exist_ok=True)
                 task_md_path.write_text(
-                    build_task_md(ticket_fields, session_id, datetime.now().isoformat()),
+                    build_task_md(ticket_fields, session_id, datetime.now().isoformat(),
+                                  synthesis_text=synthesis_text),
                     encoding="utf-8",
                 )
                 logger.info("brainstormer.task_md_written path=%s", task_md_path)
-                md_note = f"📄 `tasks/pending/TASK_{slug}.md`"
+                md_note = f"📄 `tasks/{domain}/ideas/TASK_{slug}.md`"
             except OSError as e:
                 logger.warning("brainstormer.task_md_write_failed: %s", e)
                 md_note = "(file save failed — check logs)"
@@ -547,12 +570,10 @@ def make_handler(
                 thread_ts,
             )
             plan_prompt = (
-                "Create a full implementation plan for this approved task.\n"
-                f"Title: {ticket_fields.get('title', raw_idea)}\n"
-                f"Problem: {ticket_fields.get('summary', '')}\n"
-                f"Solution: {ticket_fields.get('impact', '')}\n"
-                f"Success criteria: {ticket_fields.get('requested_outcome', '')}\n"
-                f"Task file: tasks/pending/TASK_{slug}.md\n"
+                "Create a full implementation plan for this approved task.\n\n"
+                f"Title: {ticket_fields.get('title', raw_idea)}\n\n"
+                f"=== FULL BRAINSTORMER TASK DEFINITION ===\n{synthesis_text}\n\n"
+                f"Task file: tasks/{domain}/ideas/TASK_{slug}.md\n"
                 "Return full planner output including development cost estimate."
             )
             try:
@@ -608,8 +629,9 @@ def make_handler(
 
         _post(haiku_client, channel, "_Planner loading full project context..._", thread_ts)
 
-        # Load all docs for Planner context
-        planner_ctx = planner_loader.load_all()
+        # Load all docs for Planner context (domain = channel's task domain for brand vision)
+        domain = _task_domain(channel)
+        planner_ctx = planner_loader.load_all(domain=domain)
         planner_instruction = (
             "\n\n=== PLANNER PERSONA ===\n"
             "You are the Planner. Your sole purpose is to design a comprehensive, "
@@ -628,6 +650,8 @@ def make_handler(
             "SEPARATE APPLICATION RULE: If complexity is Very High or requires new "
             "infrastructure (new domain, new server), specify it as a standalone application "
             "at api.[domain] with a full build specification.\n\n"
+            "PLAN FILE: Do NOT use filesystem_write to save the plan. The system automatically "
+            "saves your reply to tasks/{domain}/plans/ when you output [PLAN:READY].\n\n"
             "COST ESTIMATE (required last section):\n"
             "## Cost Estimate\n"
             "- Estimated input tokens for implementation run: ~{N}\n"
@@ -651,12 +675,23 @@ def make_handler(
                 extra_system_context=extra_ctx,
                 allowed_tools=frozenset({"filesystem_read", "filesystem_list"}),
                 audit=audit,
+                max_rounds=24,  # Planner may read many files; allow more rounds than default (8)
             )
-        except Exception:
+        except Exception as e:
             logger.exception("Planner Claude API error")
             if runtime_control is not None:
                 runtime_control.mark_idle(agent_type="planner")
-            _post(haiku_client, channel, ":red_circle: Planner error. Try again.", thread_ts)
+            err_msg = str(e).lower()
+            if "credit balance" in err_msg or "too low" in err_msg or "purchase credits" in err_msg:
+                _post(
+                    haiku_client,
+                    channel,
+                    ":red_circle: Planner couldn’t run — *Anthropic credit balance too low*. "
+                    "Add credits at https://console.anthropic.com (Plans & Billing), then try again.",
+                    thread_ts,
+                )
+            else:
+                _post(haiku_client, channel, ":red_circle: Planner error. Try again.", thread_ts)
             return
 
         if usage is None:
@@ -665,19 +700,42 @@ def make_handler(
             _post(haiku_client, channel, reply, thread_ts)
             return
 
-        # If plan is ready, create a Kanban ticket in "plans" column
+        # If plan is ready, create a Kanban ticket in "plans" column and write plan to domain folder
+        # Always do this when [PLAN:READY] so every plan run pushes to Kanban (not only the first in session)
         if "[PLAN:READY]" in reply:
-            if meta.get("planner_state") != "PLAN_CREATED":
-                title_hint = meta.get("task_title_hint") or _clean_request_headline(meta.get("task_description", text))
-                ticket_id, _ = _create_backlog_ticket(
-                    message=message,
-                    intent=IntentType.PLAN_DESIGN,
-                    handoff_target="human",
-                    title_prefix=f"Plan: {title_hint}",
-                )
-                meta["planner_state"] = "PLAN_CREATED"
-                meta["ticket_id"] = ticket_id
-                logger.info("planner.plan_created id=%s", ticket_id)
+            title_hint = meta.get("task_title_hint") or _clean_request_headline(meta.get("task_description", text))
+            ticket_id, _ = _create_backlog_ticket(
+                message=message,
+                intent=IntentType.PLAN_DESIGN,
+                handoff_target="human",
+                title_prefix=f"Plan: {title_hint}",
+            )
+            meta["planner_state"] = "PLAN_CREATED"
+            meta["ticket_id"] = ticket_id
+            logger.info("planner.plan_created id=%s", ticket_id)
+
+            # Write plan content to tasks/{domain}/plans/PLAN_{slug}.md (domain folder from the start)
+            domain = _task_domain(channel)
+            plan_slug = slugify(title_hint)
+            plan_content = reply.replace("[PLAN:READY]", "").strip()
+            plans_dir = repo_root / "tasks" / domain / "plans"
+            plans_dir.mkdir(parents=True, exist_ok=True)
+            plan_path = plans_dir / f"PLAN_{plan_slug}.md"
+            try:
+                plan_path.write_text(plan_content, encoding="utf-8")
+                meta["plan_file_path"] = str(plan_path.relative_to(repo_root))
+                logger.info("planner.plan_written path=%s", plan_path)
+            except OSError as e:
+                logger.warning("planner.plan_write_failed: %s", e)
+
+            # Auto-move source task file from ideas → plans (only if it exists)
+            task_hint = meta.get("task_title_hint", "")
+            if task_hint:
+                task_slug = slugify(task_hint)
+                src = repo_root / "tasks" / domain / "ideas" / f"TASK_{task_slug}.md"
+                if src.exists():
+                    src.rename(plans_dir / src.name)
+                    logger.info("planner.task_moved ideas→plans %s/%s", domain, src.name)
 
         history.set_session_metadata(session_id, meta)
 
@@ -786,9 +844,22 @@ def make_handler(
         # Conversational path
         # ----------------------------------------------------------------
         session_id = history.get_or_create_session(channel)
+        session_meta_pre = history.get_session_metadata(session_id)
+        # Do not rotate session while Planner/Brainstormer flow is active (preserves persona so "option 2" etc. still route correctly)
         if summarizer.should_summarize(session_id):
-            _post(haiku_client, channel, "_Compressing conversation history..._", thread_ts)
-            session_id = summarizer.summarize_and_rotate(session_id, channel)
+            persona_val = session_meta_pre.get("persona")
+            planner_state = session_meta_pre.get("planner_state", "")
+            brainstorm_state = session_meta_pre.get("brainstorm_state", "")
+            if (persona_val in (Persona.PLANNER, Persona.PLANNER.value) and planner_state != "PLAN_CREATED") or (
+                persona_val in (Persona.BRAINSTORMER, Persona.BRAINSTORMER.value) and brainstorm_state != "TICKET_CREATED"
+            ):
+                # #region agent log
+                _dbg("handlers.py:summarizer_skip", "skip summarization to preserve persona", {"persona": str(persona_val), "planner_state": planner_state, "brainstorm_state": brainstorm_state}, "fix")
+                # #endregion
+                pass  # skip summarization this turn to keep persona continuity
+            else:
+                _post(haiku_client, channel, "_Compressing conversation history..._", thread_ts)
+                session_id = summarizer.summarize_and_rotate(session_id, channel)
 
         # Budget gate
         bstatus = budget.check()
@@ -800,7 +871,13 @@ def make_handler(
 
         # ---- Persona routing (v1.1) — Brainstormer / Planner / General ----
         session_meta = history.get_session_metadata(session_id)
+        # #region agent log
+        _dbg("handlers.py:persona_routing", "session_meta before select_persona", {"session_id": session_id, "text_preview": (text or "")[:80], "meta_keys": list((session_meta or {}).keys()), "meta_persona": str((session_meta or {}).get("persona")), "meta_planner_state": (session_meta or {}).get("planner_state")}, "H1_H2_H4_H5")
+        # #endregion
         persona, persona_reason = select_persona(text, session_meta)
+        # #region agent log
+        _dbg("handlers.py:persona_result", "select_persona result", {"persona": persona.value if persona else "", "reason": persona_reason}, "H1_H4")
+        # #endregion
         logger.info("persona=%s reason=%s", persona, persona_reason)
 
         if persona == Persona.BRAINSTORMER:
@@ -808,6 +885,38 @@ def make_handler(
             return
 
         if persona == Persona.PLANNER:
+            _handle_planner(message, session_id, text, channel, thread_ts)
+            return
+
+        # Handler fallback: short approval/choice must not hit intent gate (would become OUT_OF_SCOPE)
+        _norm = re.sub(r"\s+", " ", text.strip().lower()).strip()
+        _looks_like_approval = (
+            len(_norm) <= 50
+            and (
+                _norm in {"option 1", "option 2", "1", "2", "yes", "no", "first", "second", "approve"}
+                or re.match(r"^option\s*[12]\.?\s*$", _norm)
+                or ("option" in _norm and ("1" in _norm or "2" in _norm))
+                or "approve" in _norm  # "approve", "i approve", "approved", "please approve" → Planner
+            )
+        )
+        # If first check missed (e.g. "approve." or session rotated), check if last assistant asked to approve move/write
+        if not _looks_like_approval and len(_norm) <= 80 and ("approve" in _norm or _norm in {"yes", "ok", "go ahead", "do it", "yep", "sure"}):
+            try:
+                msgs = history.get_messages(session_id)
+                if msgs and msgs[-1].get("role") == "assistant":
+                    last_content = (msgs[-1].get("content") or "")
+                    if isinstance(last_content, list):
+                        last_content = " ".join(
+                            b.get("text", "") for b in last_content if isinstance(b, dict) and b.get("type") == "text"
+                        )
+                    last_lower = last_content.lower()
+                    if "approve" in last_lower and ("move" in last_lower or "domain folder" in last_lower or "write" in last_lower):
+                        _looks_like_approval = True
+                        logger.info("approval fallback: last message asked approve move/write → Planner")
+            except Exception:
+                pass
+        if _looks_like_approval:
+            logger.info("short approval/choice → routing to Planner (handler fallback) text=%r", _norm[:50])
             _handle_planner(message, session_id, text, channel, thread_ts)
             return
 
@@ -826,17 +935,15 @@ def make_handler(
             IntentType.OUT_OF_SCOPE,
             IntentType.DEV_HANDOFF,
         }:
+            # #region agent log
+            _dbg("handlers.py:intent_gate", "taking policy_blocked path", {"intent": decision.intent.value, "confidence": decision.confidence, "reason": decision.reason}, "H3")
+            # #endregion
             ticket_id = None
             linked_plan_files: list[str] = []
             policy_action = "policy_blocked"
             if decision.intent == IntentType.OUT_OF_SCOPE:
-                ticket_id, linked_plan_files = _create_backlog_ticket(
-                    message=message,
-                    intent=decision.intent,
-                    handoff_target="backlog_triage",
-                    title_prefix="Out-of-scope request",
-                )
-                policy_action = "out_of_scope_backlog_created"
+                # Do not create a ticket for out-of-scope; help user rephrase instead
+                policy_action = "out_of_scope_guided"
             elif decision.intent == IntentType.DEV_HANDOFF:
                 ticket_id, linked_plan_files = _create_backlog_ticket(
                     message=message,
@@ -854,12 +961,12 @@ def make_handler(
                     model_used="none_policy_gate",
                     reason=decision.reason,
                 )
-            _post(
-                haiku_client,
-                channel,
-                _policy_reply(decision.intent, decision.confidence, ticket_id, linked_plan_files),
-                thread_ts,
-            )
+            # Use helpful guidance for clarification/out-of-scope; policy reply only for DEV_HANDOFF
+            if decision.intent in (IntentType.NEEDS_CLARIFICATION, IntentType.OUT_OF_SCOPE):
+                reply_text = _helpful_clarification_reply(decision.intent)
+            else:
+                reply_text = _policy_reply(decision.intent, decision.confidence, ticket_id, linked_plan_files)
+            _post(haiku_client, channel, reply_text, thread_ts)
             return
 
         if decision.intent == IntentType.REQUEST_CAPTURE:
@@ -882,7 +989,7 @@ def make_handler(
                 haiku_client,
                 channel,
                 (
-                    "*OUT_OF_SCOPE_BACKLOG_CREATED*\n"
+                    "*REQUEST_CAPTURED*\n"
                     f"- intent: `{decision.intent.value}`\n"
                     f"- confidence: `{decision.confidence:.2f}`\n"
                     "- sources_used: `request text`\n"

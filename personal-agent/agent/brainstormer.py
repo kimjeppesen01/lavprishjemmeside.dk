@@ -193,21 +193,26 @@ def build_ticket_fields(raw_idea: str, refined_idea: str, synthesis_text: str) -
     Parses the new TASK DEFINITION format with plain-language field names.
     """
     # New TASK DEFINITION format fields
-    title = (
-        _extract_field(synthesis_text, "Title")
-        or raw_idea[:80]
+    title = _extract_field(synthesis_text, "Title") or raw_idea[:80]
+    summary = _extract_field(synthesis_text, "The Problem") or refined_idea[:200]
+    outcome = _extract_field(synthesis_text, "What Success Looks Like") or ""
+    impact = _extract_field(synthesis_text, "The Solution") or ""
+
+    title = _normalize_field(title, fallback="Approved idea from Brainstormer", max_chars=120)
+    summary = _normalize_field(
+        summary,
+        fallback="Problem statement was incomplete in chat input. Planner must clarify concrete pain points.",
+        max_chars=500,
     )
-    summary = (
-        _extract_field(synthesis_text, "The Problem")
-        or refined_idea[:200]
+    impact = _normalize_field(
+        impact,
+        fallback="Proposed solution needs detailing in Planner phase before implementation.",
+        max_chars=700,
     )
-    outcome = (
-        _extract_field(synthesis_text, "What Success Looks Like")
-        or ""
-    )
-    impact = (
-        _extract_field(synthesis_text, "The Solution")
-        or ""
+    outcome = _normalize_field(
+        outcome,
+        fallback="A complete implementation plan with acceptance criteria and measurable launch outcomes.",
+        max_chars=500,
     )
 
     return {
@@ -227,31 +232,66 @@ def slugify(text: str) -> str:
     return slug[:50].upper()
 
 
-def build_task_md(fields: dict, session_id: str, created_at: str) -> str:
+def build_task_md(
+    fields: dict, session_id: str, created_at: str,
+    synthesis_text: str = "",
+) -> str:
     """
     Build a formatted Markdown task file from brainstorm ticket fields.
-    Saved to tasks/pending/TASK_{SLUG}.md in the project repo.
+    Saved to tasks/{domain}/ideas/TASK_{SLUG}.md in the project repo.
     """
-    return (
+    md = (
         f"# TASK: {fields['title']}\n\n"
-        f"**Status**: Pending — Awaiting Planner\n"
+        f"**Status**: Ideas — Awaiting Planner\n"
         f"**Created**: {created_at}\n"
         f"**Session**: {session_id}\n\n"
         f"---\n\n"
         f"## The Problem\n{fields['summary']}\n\n"
         f"## The Solution\n{fields['impact']}\n\n"
         f"## What Success Looks Like\n{fields['requested_outcome']}\n\n"
+    )
+    if synthesis_text:
+        md += (
+            f"---\n\n"
+            f"## Full Brainstormer Output\n\n{synthesis_text}\n\n"
+        )
+    md += (
         f"---\n\n"
         f"*Created by IAN Brainstormer (v1.1) — awaiting Planner implementation design.*\n"
         f"*To design the implementation plan, say `!plan` in Slack.*\n"
     )
+    return md
+
+
+def validate_task_md(task_md: str) -> tuple[bool, list[str]]:
+    """Return (is_valid, missing_sections) for generated TASK markdown."""
+    required_sections = (
+        "## The Problem",
+        "## The Solution",
+        "## What Success Looks Like",
+    )
+    missing = [section for section in required_sections if section not in task_md]
+    return (len(missing) == 0, missing)
 
 
 def _extract_field(text: str, field_name: str) -> str:
-    """Extract a field value from the synthesis brief text."""
+    """Extract a field value from synthesis text, capturing multi-line content."""
     marker = f"**{field_name}**:"
     if marker not in text:
         return ""
     start = text.index(marker) + len(marker)
-    end = text.find("\n", start)
-    return text[start:end].strip() if end != -1 else text[start:].strip()
+    remaining = text[start:]
+    # Find the next bold field marker (e.g. **Title**:, **The Problem**:)
+    next_marker = re.search(r'\n\*\*[A-Z][^*]+\*\*:', remaining)
+    if next_marker:
+        end = start + next_marker.start()
+    else:
+        end = len(text)
+    return text[start:end].strip()
+
+
+def _normalize_field(value: str, *, fallback: str, max_chars: int) -> str:
+    cleaned = re.sub(r"\s+", " ", (value or "")).strip()
+    if not cleaned or cleaned in {"-", "N/A", "n/a", "..."}:
+        cleaned = fallback
+    return cleaned[:max_chars]

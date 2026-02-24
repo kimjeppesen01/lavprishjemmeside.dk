@@ -34,8 +34,8 @@ and Kanban integration. Rename Kanban stages to match the new workflow.
 | `personal-agent/docs/IAN_OPERATING_STANDARD.md` | Added intents 6+7, Persona Routing section |
 | `personal-agent/docs/BRAINSTORMER_WORKFLOW.md` | NEW — Brainstormer spec |
 | `personal-agent/docs/PLANNER_WORKFLOW.md` | NEW — Planner spec |
-| `BRAND_VISION.md` | NEW — per-client brand vision template |
-| `BRAND_VISION_EXAMPLE.md` | NEW — completed example |
+| `tasks/{domain}/BRAND_VISION.md` | Per-domain brand vision (e.g. `tasks/cms/BRAND_VISION.md`) |
+| `BRAND_VISION_EXAMPLE.md` | Completed example (repo root) |
 
 ### Database & UI
 
@@ -70,7 +70,7 @@ IDEATION → REFINEMENT → SYNTHESIS → APPROVED → TICKET_CREATED
 
 ## Planner Context Load Order
 
-1. `BRAND_VISION.md` (root)
+1. `tasks/{domain}/BRAND_VISION.md` (per domain)
 2. `PROJECT_CONTEXT.md` (root)
 3. `docs/*.md` (all reference docs)
 4. `personal-agent/docs/*.md` (IAN operating docs)
@@ -94,5 +94,6 @@ IDEATION → REFINEMENT → SYNTHESIS → APPROVED → TICKET_CREATED
 - `personal-agent/docs/BRAINSTORMER_WORKFLOW.md`
 - `personal-agent/docs/PLANNER_WORKFLOW.md`
 - `personal-agent/docs/IAN_OPERATING_STANDARD.md`
-- `BRAND_VISION.md` + `BRAND_VISION_EXAMPLE.md`
-- `docs/IAN_PLAN.md`
+- `personal-agent/docs/IAN.md` (plan, map, session start)
+- `tasks/cms/BRAND_VISION.md` + `BRAND_VISION_EXAMPLE.md` (root)
+- `docs/IAN_PLAN.md` (pointer to personal-agent/docs/IAN.md)

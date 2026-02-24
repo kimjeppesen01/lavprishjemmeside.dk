@@ -5,15 +5,12 @@ The Planner (Sonnet) must read all project documentation before designing
 an implementation plan. This module loads and combines those files.
 
 Load order:
-  1. BRAND_VISION.md (repo root — per-client brand context, skip if missing)
+  1. tasks/{domain}/BRAND_VISION.md (per-domain brand context; not a CMS file)
   2. PROJECT_CONTEXT.md (repo root — CMS architecture + admin routes)
   3. docs/*.md (all reference docs, sorted)
   4. personal-agent/docs/*.md (IAN operating docs, sorted)
 
-The combined context is returned as a single string with section headers.
-Cache-control markers are added for Anthropic prompt caching — the first
-Planner call within a 5-minute window caches this context; subsequent
-calls read from cache at ~10% of the input token cost.
+Each domain (e.g. cms, lavprishjemmeside.dk) has its own brand vision file.
 """
 from __future__ import annotations
 
@@ -35,22 +32,24 @@ class PlannerContextLoader:
     def __init__(self, project_root: Path) -> None:
         self._root = project_root
 
-    def load_all(self) -> str:
+    def load_all(self, domain: str = "cms") -> str:
         """
         Return combined context string from all mandatory Planner docs.
+        domain: task domain (from channel map); brand vision is loaded from tasks/{domain}/BRAND_VISION.md.
         Returns empty string if no docs found (graceful degradation).
         """
         parts: list[str] = []
 
-        # 1. BRAND_VISION.md (per-client, may not exist)
-        brand_vision = self._root / "BRAND_VISION.md"
+        # 1. tasks/{domain}/BRAND_VISION.md (per-domain; not a CMS/systems file)
+        brand_vision = self._root / "tasks" / domain / "BRAND_VISION.md"
         if brand_vision.exists():
             parts.append(self._section("BRAND VISION", brand_vision.read_text(encoding="utf-8")))
         else:
-            logger.info("planner_context: BRAND_VISION.md not found — skipping")
+            logger.info("planner_context: tasks/%s/BRAND_VISION.md not found — skipping", domain)
             parts.append(
                 "=== BRAND VISION ===\n"
-                "No BRAND_VISION.md found. Suggest client completes this via Brainstormer "
+                f"No BRAND_VISION.md found for domain '{domain}'. "
+                "Suggest client completes this via Brainstormer "
                 "before the Planner can fully tailor the plan to the brand.\n"
             )
 

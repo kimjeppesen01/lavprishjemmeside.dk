@@ -91,27 +91,20 @@ GITHUB_REPO=owner/app.client.dk
 
 ## 6. Run database schema and seed
 
-From the repo root on the server (or from `api/` as needed), run the SQL files in order. Use phpMyAdmin (Import) or MySQL CLI.
+From the **repository root** on the server, one command runs all schemas and seeds automatically (no manual SQL):
 
-**Order:**
-
-1. `api/src/schema.sql`
-2. `api/src/schema_password_reset.sql`
-3. `api/src/schema_phase6.sql`
-4. `api/src/schema_header_footer.sql`
-5. `api/src/schema_media.sql`
-6. `api/src/schema_page_meta.sql`
-7. `api/src/schema_ai_prompt_settings.sql`
-8. `api/src/schema_indexes.sql`
-9. `api/src/seed_components_v2.sql`
-
-Then set the admin user (from `schema.sql` the default may be `admin@lavprishjemmeside.dk`):
-
-```sql
-UPDATE users SET email = 'admin@app.client.dk', password_hash = '<bcrypt_hash>' WHERE role = 'admin' LIMIT 1;
+```bash
+export PATH=/opt/alt/alt-nodejs22/root/usr/bin:$PATH
+node api/run-schema.cjs
 ```
 
-Generate the bcrypt hash locally (Node: `require('bcrypt').hashSync('your_password', 10)`).
+This is idempotent — safe to re-run. Duplicate table/column/index errors are silently skipped. Requires `api/.env` with valid DB credentials. Full schema order: [docs/SCHEMA_OVERVIEW.md](SCHEMA_OVERVIEW.md).
+
+Then create the admin user:
+
+```bash
+ADMIN_EMAIL=admin@client.dk ADMIN_PASSWORD=YourChosenPassword node api/set-admin.cjs
+```
 
 ---
 

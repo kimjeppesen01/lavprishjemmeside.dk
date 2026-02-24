@@ -208,9 +208,9 @@ src/layouts/          # Layout.astro (public), AdminLayout.astro (admin sidebar,
 ### Planned modules
 
 - **Shopping:** [docs/SHOPPING_MODULE_PLAN.md](docs/SHOPPING_MODULE_PLAN.md) — e-commerce, Quickpay, cart, checkout.
-- **IAN:** [docs/IAN_PLAN.md](docs/IAN_PLAN.md) — Slack-based client support AI (personal-agent/).
-- **Phase 7:** [docs/PHASE_7_AI_GENERATOR_SPEC_v2.md](docs/PHASE_7_AI_GENERATOR_SPEC_v2.md) — AI visual page builder (`/admin/byggeklodser`).
-- **Future:** [docs/Future_implementations.md](docs/Future_implementations.md) — CWV, testing, PWA, i18n, etc.
+- **IAN:** [docs/IAN_PLAN.md](docs/IAN_PLAN.md) → [personal-agent/docs/IAN.md](personal-agent/docs/IAN.md) — Slack-based client support AI (plan, map, session start in one doc).
+- **Visual Page Builder:** [docs/VISUAL_PAGE_BUILDER_SPEC.md](docs/VISUAL_PAGE_BUILDER_SPEC.md) — AI visual page builder (`/admin/byggeklodser`).
+- **Future:** [docs/FUTURE_IMPLEMENTATIONS.md](docs/FUTURE_IMPLEMENTATIONS.md) — CWV, testing, PWA, i18n, etc.
 
 ### Document map
 

@@ -163,7 +163,7 @@ async function generateTheme() {
 
   // Write public/.htaccess with CSP connect-src using API_URL (multi-domain)
   const htaccessPath = path.join(__dirname, '../public/.htaccess');
-  const htaccessContent = `# Security headers (Future_implementations.md)
+  const htaccessContent = `# Security headers (FUTURE_IMPLEMENTATIONS.md)
 # Requires mod_headers (enabled on cPanel/LiteSpeed by default)
 
 <IfModule mod_headers.c>

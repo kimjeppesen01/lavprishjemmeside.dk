@@ -360,6 +360,8 @@ Without `ANTHROPIC_API_KEY`, the AI Assemble feature will fail. Without `GITHUB_
 
 **Terminal:** **Server only** — same SSH (or cPanel Terminal) session as B.4. Repo root at `~/repositories/client.dk`.
 
+**Schema:** One command runs all required schemas and seeds (no manual SQL). Full order: [docs/SCHEMA_OVERVIEW.md](docs/SCHEMA_OVERVIEW.md).
+
 **Important — Node.js version:** The default `node` on the server PATH may be very old (v10). Always prefix with the Node 22 path or the schema and npm install will fail:
 
 ```bash
@@ -371,7 +373,7 @@ node api/run-schema.cjs
 ADMIN_EMAIL=admin@client.dk ADMIN_PASSWORD=YourChosenPassword node api/set-admin.cjs
 ```
 
-(Replace `admin@client.dk` and `YourChosenPassword` with the admin email and password for this site. If the schema runner fails, use cPanel → phpMyAdmin; see [DEPLOY_NEW_DOMAIN.md](docs/DEPLOY_NEW_DOMAIN.md#6-run-database-schema-and-seed) for SQL order.)
+(Replace `admin@client.dk` and `YourChosenPassword` with the admin email and password for this site. The schema runner is idempotent — safe to re-run. If it fails, check that `api/.env` exists with correct DB credentials and that Node 22 is on PATH.)
 
 **Note:** `set-admin.cjs` prints nothing on success (no output = OK). Verify with: `mysql -u DB_USER -p'DB_PASS' -h 127.0.0.1 DB_NAME -e "SELECT email, role FROM users;"`
 

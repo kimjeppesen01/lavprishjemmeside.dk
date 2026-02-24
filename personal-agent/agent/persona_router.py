@@ -81,14 +81,23 @@ def select_persona(text: str, session_metadata: dict | None = None) -> tuple[Per
     lower = stripped.lower()
 
     # Session continuity — maintain active persona until terminal state
+    # Normalize: JSON round-trip may give persona as string "planner" / "brainstormer"
     active_persona = meta.get("persona")
-    if active_persona == Persona.BRAINSTORMER:
+    if active_persona in (Persona.BRAINSTORMER, Persona.BRAINSTORMER.value):
         state = meta.get("brainstorm_state", "IDEATION")
         if state not in _BRAINSTORMER_TERMINAL_STATES:
             return Persona.BRAINSTORMER, f"session continuity (state={state})"
 
-    if active_persona == Persona.PLANNER:
+    if active_persona in (Persona.PLANNER, Persona.PLANNER.value):
         state = meta.get("planner_state", "PLANNING")
+        # #region agent log
+        try:
+            import json, time
+            with open("/Users/samlino/lavprishjemmeside.dk/.cursor/debug-c616c9.log", "a") as _f:
+                _f.write(json.dumps({"sessionId": "c616c9", "location": "persona_router.py:planner_continuity", "message": "planner continuity check", "data": {"state": state, "terminal_states": list(_PLANNER_TERMINAL_STATES), "returning_planner": state not in _PLANNER_TERMINAL_STATES}, "hypothesisId": "H4", "timestamp": int(time.time() * 1000)}) + "\n")
+        except Exception:
+            pass
+        # #endregion
         if state not in _PLANNER_TERMINAL_STATES:
             return Persona.PLANNER, f"session continuity (state={state})"
 
@@ -106,5 +115,17 @@ def select_persona(text: str, session_metadata: dict | None = None) -> tuple[Per
     for kw in _PLANNER_KEYWORDS:
         if kw in lower:
             return Persona.PLANNER, f"planner keyword: '{kw}'"
+
+    # Fallback: short approval/choice reply → route to PLANNER so we don't hit intent gate
+    # Handles empty session_meta so "option 2" / "approve" after Planner still goes to Planner
+    import re as _re
+    _normalized = _re.sub(r"\s+", " ", lower.strip())
+    _short_approval = frozenset({"option 1", "option 2", "1", "2", "yes", "no", "first", "second", "approve"})
+    if len(_normalized) <= 50 and (
+        _normalized in _short_approval
+        or _re.match(r"^option\s*[12]\s*$", _normalized)
+        or "approve" in _normalized  # "i approve", "approved", "please approve"
+    ):
+        return Persona.PLANNER, "short approval/choice reply → Planner (avoids OUT_OF_SCOPE on empty meta)"
 
     return Persona.GENERAL, "no persona match — general handler"

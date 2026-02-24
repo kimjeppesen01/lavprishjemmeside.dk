@@ -28,7 +28,7 @@ IAN operates through two specialized workflow personas alongside the general han
 
 ### Planner (Sonnet model)
 - Triggered by plan/blueprint/spec keywords or `!plan` prefix
-- Loads full project context: BRAND_VISION.md + PROJECT_CONTEXT.md + all docs
+- Loads full project context: tasks/{domain}/BRAND_VISION.md + PROJECT_CONTEXT.md + all docs
 - Produces comprehensive 10-section implementation plans
 - Includes token cost estimate (API cost + ×20 user-facing rate)
 - If complexity is Very High → plans as separate application

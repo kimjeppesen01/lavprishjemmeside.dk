@@ -218,6 +218,8 @@ lavprishjemmeside.dk/
 │   ├── .env.example                 # Template for .env
 │   ├── package.json                 # "type": "commonjs"
 │   ├── package-lock.json
+│   ├── run-schema.cjs               # Runs all schemas + seeds in order (no manual SQL). See docs/SCHEMA_OVERVIEW.md
+│   ├── set-admin.cjs                # Creates/updates admin user
 │   ├── server.cjs                   # Express entry point (MUST be .cjs, not .js)
 │   ├── src/
 │   │   ├── db.js                    # MySQL2 connection pool
@@ -235,8 +237,8 @@ lavprishjemmeside.dk/
 │   │   │   └── email.js             # Nodemailer + Resend SMTP transporter, sendEmail() helper
 │   │   ├── templates/
 │   │   │   └── passwordReset.js     # Danish HTML/text email template for password reset
-│   │   ├── schema.sql               # Base schema; schema_phase6.sql (components), schema_password_reset.sql
-│   │   ├── seed_components_v2.sql   # Full component seed (run after schema_phase6)
+│   │   ├── schema.sql               # Base tables — see docs/SCHEMA_OVERVIEW.md
+│   │   ├── seed_components_v2.sql   # Component library seed (run by run-schema.cjs)
 │   │   ├── seed_components_incremental.sql # Incremental updates when DB already seeded
 │   │   └── schema_indexes.sql       # Production indexes
 │   └── tmp/
@@ -559,7 +561,7 @@ npm install express mysql2 bcrypt jsonwebtoken cors dotenv helmet
    - Node version: 22+
 6. **SSH .env**: Create `.env` on server at `~/repositories/client-domain.dk/api/.env`
    - Use `DB_HOST=127.0.0.1` (NOT `localhost`)
-7. **Run schema**: phpMyAdmin → SQL tab → paste schema.sql
+7. **Run schema**: `node api/run-schema.cjs` (runs all schemas + seeds automatically; see [docs/SCHEMA_OVERVIEW.md](docs/SCHEMA_OVERVIEW.md))
 
 ### 4. GitHub Actions Secrets
 Set these in the repo settings:
@@ -836,9 +838,10 @@ Database-driven content + static generation:
 | `src/pages/[...slug].astro` | Dynamic static page renderer — reads `page_components` from DB at build time |
 | `api/src/routes/components.js` | `GET /components` — returns component library (note: `schema_fields` aliased as `default_props`) |
 | `api/src/routes/page-components.js` | CRUD for page component instances + publish endpoint |
-| `api/src/seed_components_v2.sql` | **Authoritative seed** for all 27 components — run in phpMyAdmin after `schema_phase6.sql` |
-| `api/src/seed_components_incremental.sql` | **Here-and-now incremental** — run when DB already seeded; applies latest component updates (overlap module, zigzag removal) |
-| `api/src/schema_phase6.sql` | Defines all Phase 6 tables |
+| `api/run-schema.cjs` | **Single entry point:** runs all required schemas + seed in order. No manual SQL. See [docs/SCHEMA_OVERVIEW.md](docs/SCHEMA_OVERVIEW.md). |
+| `api/src/seed_components_v2.sql` | **Authoritative seed** for 27 components (run by run-schema.cjs). Seed never overwrites `source = 'custom'` rows. |
+| `api/src/seed_components_incremental.sql` | **Incremental** — run when DB already seeded; applies latest component updates. |
+| `api/src/schema_phase6.sql` | Defines components, page_components, design_settings, etc. |
 | `src/components/custom/` | **User-generated components** — not overwritten by seed or deploy; slugs `custom/<kebab-name>`. See [docs/CLAUDE_CODE_INTEGRATION.md](docs/CLAUDE_CODE_INTEGRATION.md). |
 
 **Custom components in the dashboard:** They appear under **Egne komponenter** (`/admin/components/custom/`). In the DB they are stored in `components` with `source = 'custom'`. Seed and incremental seed scripts **never overwrite** custom rows (ON DUPLICATE KEY UPDATE only updates when `source = 'library'`). AI-assemble receives custom components in context and can suggest them when generating pages.

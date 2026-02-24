@@ -29,13 +29,13 @@ rsync -a \
   --exclude='api/.DS_Store' \
   --exclude='tasks' \
   --exclude='uploads' \
-  --exclude='Future_implementations.md' \
+  --exclude='FUTURE_IMPLEMENTATIONS.md' \
   --exclude='HANDOVER.md' \
-  --exclude='STAGE6_INSTRUCTIONS.md' \
+  --exclude='ADMIN_DASHBOARD_UI_IMPLEMENTATION_GUIDE.md' \
   --exclude='TODO_COMPONENT_HARDENING.md' \
   --exclude='TODO_SEO_HANDOVER.md' \
-  --exclude='PHASE_6_Component-Library-&-Styling-Dashboard_v2.md' \
-  --exclude='PHASE_7_AI_GENERATOR_SPEC_v2.md' \
+  --exclude='COMPONENT_LIBRARY_AND_DESIGN_SYSTEM_SPEC.md' \
+  --exclude='VISUAL_PAGE_BUILDER_SPEC.md' \
   . "$TMP/lavpris-cms/"
 (cd "$TMP" && zip -rq "../$OUT" lavpris-cms)
 rm -rf "$TMP"

@@ -205,6 +205,14 @@ def classify_intent(text: str, min_confidence: float = MIN_CONFIDENCE_DEFAULT) -
     second_score = scored[1][1] if len(scored) > 1 else 0
 
     if best_score <= 0:
+        # #region agent log
+        try:
+            import json, time
+            with open("/Users/samlino/lavprishjemmeside.dk/.cursor/debug-c616c9.log", "a") as _f:
+                _f.write(json.dumps({"sessionId": "c616c9", "location": "intent_router.py:out_of_scope", "message": "classify_intent returning OUT_OF_SCOPE", "data": {"text_preview": (text or "")[:80], "best_score": best_score, "reason": "no intent keyword match"}, "hypothesisId": "H3", "timestamp": int(time.time() * 1000)}) + "\n")
+        except Exception:
+            pass
+        # #endregion
         return IntentDecision(
             intent=IntentType.OUT_OF_SCOPE,
             confidence=0.25,

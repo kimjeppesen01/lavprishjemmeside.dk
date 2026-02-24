@@ -1,18 +1,18 @@
 /* ===== DESIGN TOKENS ===== */
 /* Generated at build time from database */
 /* Source: https://api.lavprishjemmeside.dk/design-settings/public */
-/* Last updated: 2026-02-22T13:46:35.522Z */
+/* Last updated: 2026-02-24T23:14:37.268Z */
 
 :root {
   /* --- Brand Colors --- */
-  --color-primary: #2563EB;
-  --color-primary-hover: #1D4ED8;
-  --color-primary-light: #DBEAFE;
-  --color-secondary: #7C3AED;
-  --color-secondary-hover: #6D28D9;
-  --color-secondary-light: #EDE9FE;
-  --color-accent: #F59E0B;
-  --color-accent-hover: #D97706;
+  --color-primary: #111827;
+  --color-primary-hover: #030712;
+  --color-primary-light: #F3F4F6;
+  --color-secondary: #6B7280;
+  --color-secondary-hover: #4B5563;
+  --color-secondary-light: #F9FAFB;
+  --color-accent: #2563EB;
+  --color-accent-hover: #1D4ED8;
 
   /* --- Neutral Scale --- */
   --color-neutral-50: #F9FAFB;
@@ -29,7 +29,7 @@
   --color-text-secondary: var(--color-neutral-600);
   --color-text-on-primary: #FFFFFF;
   --color-text-on-secondary: #FFFFFF;
-  --color-text-on-accent: #111827;
+  --color-text-on-accent: #FFFFFF;
   --color-bg-page: #FFFFFF;
   --color-bg-section-alt: var(--color-neutral-50);
   --color-border: var(--color-neutral-200);
@@ -47,21 +47,21 @@
   --line-height-tight: 1.15;
   --line-height-normal: 1.6;
 
-  /* --- Shapes (border radius: medium) --- */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  /* --- Shapes (border radius: large) --- */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
   --radius-full: 9999px;
-  --radius-button: 0.5rem;
-  --radius-card: 0.75rem;
-  --radius-input: 0.5rem;
+  --radius-button: 0.75rem;
+  --radius-card: 1rem;
+  --radius-input: 0.75rem;
 
-  /* --- Shadows (style: subtle) --- */
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
-  --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.1);
+  /* --- Shadows (style: none) --- */
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-card: none;
 
   /* --- Spacing (consistent section padding) --- */
   --section-padding-y: 4rem;

@@ -50,6 +50,24 @@ def _float(key: str, default: float = 0.0) -> float:
         return default
 
 
+def _parse_channel_domain_map(raw: str, control_channel_id: str) -> dict[str, str]:
+    """Parse SLACK_CHANNEL_DOMAIN_MAP env var.
+
+    Format: "C_CHAN_ID=domain.dk,C_CHAN_ID2=other.dk"
+    The control channel is always mapped to "cms".
+    """
+    mapping: dict[str, str] = {control_channel_id: "cms"}
+    for pair in raw.split(","):
+        pair = pair.strip()
+        if "=" not in pair:
+            continue
+        chan_id, domain = pair.split("=", 1)
+        chan_id, domain = chan_id.strip(), domain.strip()
+        if chan_id and domain:
+            mapping[chan_id] = domain
+    return mapping
+
+
 @dataclass(frozen=True)
 class AnthropicConfig:
     api_key: str
@@ -70,6 +88,7 @@ class SlackConfig:
     control_channel_id: str
     poll_interval_seconds: int  # How often to check for new messages
     client_channels: list[str]
+    channel_domain_map: dict[str, str]  # channel_id → domain name (e.g. "lavprishjemmeside.dk")
 
 
 @dataclass(frozen=True)
@@ -230,6 +249,10 @@ def load() -> Config:
                 for ch in _optional("SLACK_CLIENT_CHANNELS", "").split(",")
                 if ch.strip()
             ],
+            channel_domain_map=_parse_channel_domain_map(
+                _optional("SLACK_CHANNEL_DOMAIN_MAP", ""),
+                _require("SLACK_CONTROL_CHANNEL_ID"),
+            ),
         ),
         agent=AgentConfig(
             name=_optional("AGENT_NAME", "Sam"),

@@ -1,7 +1,7 @@
 # Brand Vision — Example
 
 > This is a completed example to show what a good brand vision looks like.
-> Use it as inspiration when filling out your own [BRAND_VISION.md](BRAND_VISION.md).
+> Use it as inspiration when filling out your own brand vision. Each **domain** has its own file: `tasks/{domain}/BRAND_VISION.md` (e.g. [tasks/cms/BRAND_VISION.md](tasks/cms/BRAND_VISION.md)). Copy this structure there.
 > This example is for a fictional brand: **Nordic Bloom Candles**.
 
 ---
@@ -81,5 +81,4 @@ We also ship within 48 hours and offer handwritten notes with every order.
 
 ---
 
-> Ready to create your own? Open [BRAND_VISION.md](BRAND_VISION.md) and fill it in,
-> or ask the Brainstormer in Slack: "Help me fill out my brand vision."
+> Ready to create your own? Add or edit `tasks/{domain}/BRAND_VISION.md` for the relevant domain (e.g. `tasks/cms/BRAND_VISION.md`), or ask the Brainstormer in Slack: "Help me fill out my brand vision."

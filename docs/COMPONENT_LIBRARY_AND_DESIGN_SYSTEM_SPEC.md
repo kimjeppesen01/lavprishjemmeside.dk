@@ -1433,7 +1433,7 @@ This Phase 6 implementation is designed to work seamlessly with Phase 7 (Visual 
 - Phase 7 AI instructed to generate HTML with CSS variables
 - Design token changes apply globally without regeneration
 
-See [PHASE_7_AI_GENERATOR_SPEC_v2.md](docs/PHASE_7_AI_GENERATOR_SPEC_v2.md) for the integrated Phase 7 specification.
+See [VISUAL_PAGE_BUILDER_SPEC.md](docs/VISUAL_PAGE_BUILDER_SPEC.md) for the integrated Visual Page Builder specification.
 
 ---
 

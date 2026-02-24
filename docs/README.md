@@ -2,6 +2,8 @@
 
 This folder is the canonical knowledge base for architecture, operations, and product design.
 
+**Naming:** Doc filenames use `UPPERCASE_WITH_UNDERSCORES.md`; no phase/stage numbers; feature-based names only.
+
 ## Must Read (new AI session)
 
 1. [docs/MUST_READ.md](docs/MUST_READ.md)
@@ -23,11 +25,14 @@ This folder is the canonical knowledge base for architecture, operations, and pr
 
 ## Product / Feature Specs
 
-- [docs/PHASE_7_AI_GENERATOR_SPEC_v2.md](docs/PHASE_7_AI_GENERATOR_SPEC_v2.md)
+- [docs/VISUAL_PAGE_BUILDER_SPEC.md](docs/VISUAL_PAGE_BUILDER_SPEC.md) — AI visual page builder (`/admin/byggeklodser`)
+- [docs/COMPONENT_LIBRARY_AND_DESIGN_SYSTEM_SPEC.md](docs/COMPONENT_LIBRARY_AND_DESIGN_SYSTEM_SPEC.md) — Component library, design tokens, AI assembly (COMPLETED)
+- [docs/ADMIN_DASHBOARD_UI_IMPLEMENTATION_GUIDE.md](docs/ADMIN_DASHBOARD_UI_IMPLEMENTATION_GUIDE.md) — Admin UI implementation (styling, components, pages, ai-assemble)
 - [docs/SHOPPING_MODULE_PLAN.md](docs/SHOPPING_MODULE_PLAN.md)
 - [docs/IAN_PLAN.md](docs/IAN_PLAN.md)
 - [docs/PEXELS_AUTOMATION_PLAN.md](docs/PEXELS_AUTOMATION_PLAN.md)
 - [docs/COMPONENT_EDITOR.md](docs/COMPONENT_EDITOR.md)
+- [docs/FUTURE_IMPLEMENTATIONS.md](docs/FUTURE_IMPLEMENTATIONS.md) — Nice-to-have backlog
 
 ## Task Execution Rule
 

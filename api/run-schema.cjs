@@ -11,6 +11,7 @@ const SCHEMA_ORDER = [
   'schema.sql',
   'schema_password_reset.sql',
   'schema_phase6.sql',
+  'schema_components_source.sql',
   'schema_header_footer.sql',
   'schema_media.sql',
   'schema_page_meta.sql',
@@ -31,7 +32,7 @@ async function runSql(conn, filePath) {
   try {
     await conn.query(sql);
   } catch (err) {
-    if (err.code === 'ER_TABLE_EXISTS_ERROR' || err.code === 'ER_DUP_FIELDNAME' || err.message.includes('Duplicate') || err.message.includes('already exists')) {
+    if (err.code === 'ER_TABLE_EXISTS_ERROR' || err.code === 'ER_DUP_FIELDNAME' || err.code === 'ER_DUP_KEYNAME' || err.message.includes('Duplicate') || err.message.includes('already exists')) {
       return;
     }
     throw err;

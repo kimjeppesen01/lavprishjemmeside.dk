@@ -141,7 +141,7 @@ Some components support multiple **visual versions** — different layouts or st
 
 ### Migration
 
-Run `api/src/schema_component_versions.sql` in phpMyAdmin to add the `version` field to existing component schemas without overwriting other schema changes.
+Run `node api/run-schema.cjs` to apply all schemas (including component versions). If you only need this specific migration: `mysql -u DB_USER -p'DB_PASS' -h 127.0.0.1 DB_NAME < api/src/schema_component_versions.sql`.
 
 ---
 
@@ -261,7 +261,7 @@ When you create a new Astro component and want it to appear in the editor:
    - `schema_fields` JSON (every editable prop, with correct types and `"format":"image"` on image fields)
    - `default_content` JSON (realistic example values)
    - `category` ENUM: `opener | trust | conversion | content | structure`
-4. **Run the SQL** in phpMyAdmin
+4. **Run the schema**: `node api/run-schema.cjs` (or for seed only: `mysql -u DB_USER -p'DB_PASS' -h 127.0.0.1 DB_NAME < api/src/seed_components_v2.sql`)
 5. **Test the editor** by adding the component to a page and opening the edit modal — verify every field generates the correct control
 6. **(Optional) Add version variants** — if the component has multiple distinct layouts (e.g. cards vs inline), add a `version` enum to `schema_fields` and implement conditional rendering in the Astro component. See *Component Versions* above.
 

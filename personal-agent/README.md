@@ -45,8 +45,9 @@ Copy `.env.example` to `.env` and fill:
 
 ## Documentation
 
-- `docs/RUNBOOK.md`
-- `docs/IAN_OPERATING_STANDARD.md`
-- `docs/BRAINSTORMER_WORKFLOW.md`
-- `docs/PLANNER_WORKFLOW.md`
-- `../docs/IAN_PLAN.md`
+- **`docs/IAN.md`** — Single IAN doc: plan, context map, agent definitions, guardrails, session-start order (replaces former IAN_PLAN, IAN_MAP, IAN_SESSION_START).
+- `docs/RUNBOOK.md` — Server setup, ianctl, env, verification.
+- `docs/IAN_OPERATING_STANDARD.md` — Fixed task types, dev boundary, response contracts.
+- `docs/BRAINSTORMER_WORKFLOW.md` — Brainstormer state machine and format.
+- `docs/PLANNER_WORKFLOW.md` — Planner context order and 10-section output.
+- `../docs/IAN_PLAN.md` — Short pointer to personal-agent/docs/IAN.md (main repo).
