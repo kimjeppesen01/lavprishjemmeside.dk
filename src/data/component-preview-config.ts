@@ -41,9 +41,21 @@ export type ComponentSlug = (typeof COMPONENT_SLUGS)[number];
 
 /** Version options per component — only for components with multiple variants */
 export const VERSION_OPTIONS: Partial<Record<ComponentSlug, string[]>> = {
-  'hero-section': ['default', 'minimal', 'split'],
-  'stats-banner': ['cards', 'inline'],
-  'cta-section': ['default', 'minimal'],
+  'hero-section':           ['default', 'minimal', 'split'],
+  'stats-banner':           ['cards', 'inline'],
+  'cta-section':            ['default', 'minimal'],
+  'logo-cloud':             ['grid', 'animated'],
+  'integrations-section':   ['grid', 'marquee'],
+  'trust-badges-section':   ['strip', 'cards'],
+  'gallery-grid':           ['grid', 'masonry'],
+  'founders-note-section':  ['split', 'centered'],
+  'timeline':               ['vertical', 'horizontal'],
+  'how-it-works-section':   ['horizontal', 'vertical'],
+  'tabs-section':           ['horizontal', 'vertical'],
+  'newsletter-signup':      ['inline', 'card'],
+  'team-grid':              ['grid', 'compact'],
+  'icon-cards':             ['default', 'bordered', 'minimal'],
+  'faq-accordion':          ['default', 'categories'],
 };
 
 /** Default preview props per component (base content, version overridden per render) */
@@ -59,10 +71,11 @@ export const PREVIEW_PROPS: Record<ComponentSlug, Record<string, unknown>> = {
   'problem-section': {
     headline: 'Kender du disse udfordringer?',
     description: 'Mange virksomheder står over for de samme udfordringer. Vi kan hjælpe.',
+    showSolutions: true,
     problems: [
-      { icon: '⏱️', title: 'For lange leveringstider', description: 'Ubegrænset ventetid og utydelige frister.' },
-      { icon: '💰', title: 'Uforudsigelige priser', description: 'Skjulte gebyrer du ikke regnede med.' },
-      { icon: '📞', title: 'Svært at få svar', description: 'Support der ikke svarer eller forstår.' },
+      { icon: '⏱️', title: 'For lange leveringstider', description: 'Ubegrænset ventetid og utydelige frister.', solution: 'Garanteret levering inden for 3 uger.' },
+      { icon: '💰', title: 'Uforudsigelige priser', description: 'Skjulte gebyrer du ikke regnede med.', solution: 'Fast pris — ingen overraskelser.' },
+      { icon: '📞', title: 'Svært at få svar', description: 'Support der ikke svarer eller forstår.', solution: 'Dedikeret kontaktperson hele forløbet.' },
     ],
   },
   'how-it-works-section': {
@@ -110,6 +123,9 @@ export const PREVIEW_PROPS: Record<ComponentSlug, Record<string, unknown>> = {
       { name: 'Mailchimp', logoUrl: 'https://placehold.co/96x32/f3f4f6/6b7280?text=Mailchimp', link: 'https://mailchimp.com' },
       { name: 'Stripe', logoUrl: 'https://placehold.co/96x32/f3f4f6/6b7280?text=Stripe', description: 'Betalingshåndtering' },
       { name: 'Zapier', logoUrl: 'https://placehold.co/96x32/f3f4f6/6b7280?text=Zapier' },
+      { name: 'Slack', logoUrl: 'https://placehold.co/96x32/f3f4f6/6b7280?text=Slack' },
+      { name: 'HubSpot', logoUrl: 'https://placehold.co/96x32/f3f4f6/6b7280?text=HubSpot' },
+      { name: 'Google', logoUrl: 'https://placehold.co/96x32/f3f4f6/6b7280?text=Google' },
     ],
     columns: 4,
   },
@@ -136,11 +152,12 @@ export const PREVIEW_PROPS: Record<ComponentSlug, Record<string, unknown>> = {
   },
   'bento-grid-section': {
     headline: 'Vores løsninger',
+    description: 'Alt hvad din virksomhed har brug for på ét sted.',
     items: [
-      { title: 'Hjemmesider', description: 'Moderne, responsive hjemmesider til alle platforme.', size: 'large' },
-      { title: 'SEO', description: 'Bliv fundet på Google.', size: 'small' },
-      { title: 'Hosting', description: 'Hurtig og sikker hosting.', size: 'medium' },
-      { title: 'Support', size: 'small' },
+      { title: 'Hjemmesider', description: 'Moderne, responsive hjemmesider til alle platforme.', size: 'large', icon: '🌐', accentColor: 'primary' },
+      { title: 'SEO', description: 'Bliv fundet på Google.', size: 'small', icon: '📈', accentColor: 'accent' },
+      { title: 'Hosting', description: 'Hurtig og sikker hosting.', size: 'medium', icon: '⚡' },
+      { title: 'Support', description: 'Vi er altid klar til at hjælpe.', size: 'small', icon: '💬' },
     ],
   },
   'overlap-cards-section': {
@@ -218,11 +235,13 @@ export const PREVIEW_PROPS: Record<ComponentSlug, Record<string, unknown>> = {
   },
   'icon-cards': {
     headline: 'Vores ydelser',
+    description: 'Alt hvad din virksomhed har brug for fra én leverandør.',
     cards: [
       { icon: '🌐', title: 'Hjemmesider', description: 'Moderne, responsive hjemmesider.', link: { text: 'Læs mere', href: '/ydelser' } },
       { icon: '📈', title: 'SEO', description: 'Bliv fundet på Google.', link: { text: 'Læs mere', href: '/seo' } },
+      { icon: '⚡', title: 'Hosting', description: 'Hurtig og sikker hosting.', link: { text: 'Læs mere', href: '/hosting' } },
     ],
-    columns: 2,
+    columns: 3,
   },
   'stats-banner': {
     headline: 'Ongoing Innovation: Stay Ahead',
@@ -259,14 +278,19 @@ export const PREVIEW_PROPS: Record<ComponentSlug, Record<string, unknown>> = {
   },
   'faq-accordion': {
     headline: 'Ofte stillede spørgsmål',
+    description: 'Find svar på de mest almindelige spørgsmål om vores tjenester.',
     faqs: [
       { question: 'Hvor lang tid tager det?', answer: 'Typisk 2-4 uger afhængigt af størrelse.' },
       { question: 'Hvad koster det?', answer: 'Vores priser starter ved 5.000 kr.' },
+      { question: 'Inkluderer det hosting?', answer: 'Ja, alle pakker inkluderer sikker cloud-hosting.' },
+      { question: 'Kan jeg opdatere selv?', answer: 'Ja, vi giver dig et let admin-panel.' },
     ],
     defaultOpen: 0,
   },
   'comparison-table': {
     headline: 'Sammenlign planerne',
+    description: 'Find den løsning der passer til din virksomhed.',
+    highlightColumn: 1,
     products: ['Basis', 'Professionel'],
     features: ['Antal sider', 'SEO', 'Support'],
     data: [
@@ -277,8 +301,10 @@ export const PREVIEW_PROPS: Record<ComponentSlug, Record<string, unknown>> = {
   },
   'team-grid': {
     headline: 'Mød teamet',
+    description: 'Vi er en dedikeret gruppe af eksperter klar til at hjælpe dig.',
     members: [
       { name: 'Lars Jensen', role: 'Grundlægger', photo: 'https://placehold.co/128x128/f3f4f6/6b7280?text=LJ', bio: '15 års erfaring.' },
+      { name: 'Mette Nielsen', role: 'Designer', photo: 'https://placehold.co/128x128/f3f4f6/6b7280?text=MN', bio: 'Specialist i UX design.' },
     ],
   },
   'video-embed': {
@@ -306,6 +332,7 @@ export const PREVIEW_PROPS: Record<ComponentSlug, Record<string, unknown>> = {
   },
   'timeline': {
     headline: 'Vores historie',
+    description: 'Fra lille startup til Danmarks foretrukne webbureau.',
     events: [
       { year: '2010', title: 'Grundlagt', description: 'Vi startede med små projekter.' },
       { year: '2020', title: '100 kunder', description: 'Vi nåede 100 tilfredse kunder.' },
@@ -317,13 +344,18 @@ export const PREVIEW_PROPS: Record<ComponentSlug, Record<string, unknown>> = {
     logos: [
       { imageUrl: 'https://placehold.co/120x48/f3f4f6/6b7280?text=Logo1', alt: 'Kunde 1', link: '' },
       { imageUrl: 'https://placehold.co/120x48/f3f4f6/6b7280?text=Logo2', alt: 'Kunde 2', link: '' },
+      { imageUrl: 'https://placehold.co/120x48/f3f4f6/6b7280?text=Logo3', alt: 'Kunde 3', link: '' },
+      { imageUrl: 'https://placehold.co/120x48/f3f4f6/6b7280?text=Logo4', alt: 'Kunde 4', link: '' },
     ],
     grayscale: true,
   },
   'gallery-grid': {
+    headline: 'Vores arbejde',
     images: [
       { url: 'https://placehold.co/400x300/f3f4f6/6b7280?text=1', alt: 'Billede 1', caption: 'Forside' },
       { url: 'https://placehold.co/400x300/f3f4f6/6b7280?text=2', alt: 'Billede 2', caption: 'Ydelser' },
+      { url: 'https://placehold.co/400x300/f3f4f6/6b7280?text=3', alt: 'Billede 3', caption: 'Om os' },
+      { url: 'https://placehold.co/400x300/f3f4f6/6b7280?text=4', alt: 'Billede 4', caption: 'Kontakt' },
     ],
     columns: 2,
     lightbox: true,

@@ -17,6 +17,14 @@ const { title } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
     <title>{title} — Admin</title>
+    <style>
+      /* Admin context: bypass scroll-reveal — all content visible immediately */
+      [data-reveal] {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+      }
+    </style>
   </head>
   <body class="min-h-screen bg-gray-50 text-gray-900 antialiased">
     <!-- Auth guard: redirect if no token (runs before anything renders) -->
