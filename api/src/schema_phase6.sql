@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS page_components (
 CREATE TABLE IF NOT EXISTS ai_usage (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
-  operation ENUM('page_assembly', 'visual_generation') NOT NULL,
+  operation ENUM('page_assembly', 'page_assembly_advanced', 'visual_generation') NOT NULL,
   model VARCHAR(50) NOT NULL,
   prompt_tokens INT,
   completion_tokens INT,

@@ -11,6 +11,7 @@ const SCHEMA_ORDER = [
   'schema.sql',
   'schema_password_reset.sql',
   'schema_phase6.sql',
+  'schema_ai_usage_operation.sql',
   'schema_components_source.sql',
   'schema_header_footer.sql',
   'schema_media.sql',

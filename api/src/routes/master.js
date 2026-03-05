@@ -347,7 +347,7 @@ router.get('/sites', requireAuth, requireMaster, async (req, res) => {
           const [[comps]] = await conn.query('SELECT COUNT(*) AS n FROM page_components');
           const [[med]] = await conn.query('SELECT COUNT(*) AS n FROM media');
           const [[ai]] = await conn.query(
-            "SELECT COALESCE(SUM(tokens_used),0) AS t, COALESCE(SUM(cost_usd),0) AS c FROM ai_usage WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
+            "SELECT COALESCE(SUM(COALESCE(total_tokens, prompt_tokens + completion_tokens, 0)),0) AS t, COALESCE(SUM(cost_usd),0) AS c FROM ai_usage WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
           );
           const [[dbSize]] = await conn.query(
             "SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS mb FROM information_schema.TABLES WHERE table_schema = ?",
@@ -844,7 +844,7 @@ router.get('/ai-usage', requireAuth, requireMaster, async (req, res) => {
         const [rows] = await conn.query(
           `SELECT
             DATE(created_at) AS day,
-            SUM(tokens_used) AS tokens,
+            SUM(COALESCE(total_tokens, prompt_tokens + completion_tokens, 0)) AS tokens,
             SUM(cost_usd) AS cost_usd,
             COUNT(*) AS requests
            FROM ai_usage
