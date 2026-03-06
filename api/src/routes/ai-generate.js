@@ -178,13 +178,42 @@ router.post('/page-advanced', requireAuth, aiRateLimiter, async (req, res) => {
       );
     } catch (advancedErr) {
       console.warn('Advanced generation failed, falling back to standard flow:', advancedErr.message);
-      generated = await generatePageContent(
-        `Transformér dette indhold til en side i komponentbiblioteket:
+      try {
+        generated = await generatePageContent(
+          `Transformér dette indhold til en side i komponentbiblioteket:
 
 ${String(content_markdown).trim()}`,
-        context,
-        req.user.id
-      );
+          context,
+          req.user.id
+        );
+      } catch (fallbackErr) {
+        console.warn('Standard fallback failed, using deterministic template:', fallbackErr.message);
+        generated = {
+          components: [
+            {
+              component_slug: 'hero-section',
+              props_data: {
+                headline: 'Siden er oprettet',
+                description: 'AI-output kunne ikke parses. Rediger indholdet manuelt i editoren.',
+                primaryCta: { text: 'Kontakt os', href: '/kontakt' },
+              },
+              sort_order: 1,
+            },
+          ],
+          seo: {
+            meta_title: 'Siden er oprettet | Lavprishjemmeside.dk',
+            meta_description: 'Midlertidig fallback-side oprettet efter AI parse-fejl.',
+            schema_type: 'WebPage',
+          },
+          usage: {
+            input_tokens: 0,
+            output_tokens: 0,
+            model: 'deterministic-fallback',
+            tool_calls: 0,
+            tools_used: [],
+          },
+        };
+      }
     }
     const { components, seo, usage } = generated;
     console.log(`✓ Advanced: Generated ${components.length} components`);
