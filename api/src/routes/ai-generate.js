@@ -169,11 +169,24 @@ router.post('/page-advanced', requireAuth, aiRateLimiter, async (req, res) => {
     const context = await buildAiContext();
 
     console.log('Generating page with Advanced (transformation) model...');
-    const { components, seo, usage } = await generatePageContentAdvanced(
-      String(content_markdown).trim(),
-      context,
-      req.user.id
-    );
+    let generated;
+    try {
+      generated = await generatePageContentAdvanced(
+        String(content_markdown).trim(),
+        context,
+        req.user.id
+      );
+    } catch (advancedErr) {
+      console.warn('Advanced generation failed, falling back to standard flow:', advancedErr.message);
+      generated = await generatePageContent(
+        `Transformér dette indhold til en side i komponentbiblioteket:
+
+${String(content_markdown).trim()}`,
+        context,
+        req.user.id
+      );
+    }
+    const { components, seo, usage } = generated;
     console.log(`✓ Advanced: Generated ${components.length} components`);
 
     // Delete existing components for this page (overwrite)
