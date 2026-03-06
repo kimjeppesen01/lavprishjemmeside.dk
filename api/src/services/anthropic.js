@@ -46,6 +46,7 @@ async function generatePageContent(userPrompt, context, uploadedBy = null) {
   let totalOutputTokens = 0;
   let toolCallCount = 0;
   const toolCallsUsed = [];
+  let jsonRepairAttempts = 0;
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -67,18 +68,29 @@ async function generatePageContent(userPrompt, context, uploadedBy = null) {
 
     if (message.stop_reason === 'end_turn' && toolUseBlocks.length === 0) {
       const response = textBlocks.map((b) => b.text).join('\n') || '';
-      const parsed = parseComponentsFromResponse(response);
-      return {
-        components: parsed.components,
-        seo: parsed.seo,
-        usage: {
-          input_tokens: totalInputTokens,
-          output_tokens: totalOutputTokens,
-          model: 'claude-sonnet-4-20250514',
-          tool_calls: toolCallCount,
-          tools_used: toolCallsUsed,
-        },
-      };
+      try {
+        const parsed = parseComponentsFromResponse(response);
+        return {
+          components: parsed.components,
+          seo: parsed.seo,
+          usage: {
+            input_tokens: totalInputTokens,
+            output_tokens: totalOutputTokens,
+            model: 'claude-sonnet-4-20250514',
+            tool_calls: toolCallCount,
+            tools_used: toolCallsUsed,
+          },
+        };
+      } catch (parseErr) {
+        if (jsonRepairAttempts >= 2) throw parseErr;
+        jsonRepairAttempts += 1;
+        messages.push({ role: 'assistant', content: message.content });
+        messages.push({
+          role: 'user',
+          content: 'Din sidste output var ikke gyldig JSON. Returner KUN gyldig JSON i præcis den krævede struktur. Ingen markdown.',
+        });
+        continue;
+      }
     }
 
     if (toolUseBlocks.length === 0) break;
@@ -389,6 +401,7 @@ async function generatePageContentAdvanced(contentMarkdown, context, uploadedBy 
   let totalOutputTokens = 0;
   let toolCallCount = 0;
   const toolCallsUsed = [];
+  let jsonRepairAttempts = 0;
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -410,18 +423,29 @@ async function generatePageContentAdvanced(contentMarkdown, context, uploadedBy 
 
     if (message.stop_reason === 'end_turn' && toolUseBlocks.length === 0) {
       const response = textBlocks.map((b) => b.text).join('\n') || '';
-      const parsed = parseComponentsFromResponse(response);
-      return {
-        components: parsed.components,
-        seo: parsed.seo,
-        usage: {
-          input_tokens: totalInputTokens,
-          output_tokens: totalOutputTokens,
-          model: 'claude-sonnet-4-20250514',
-          tool_calls: toolCallCount,
-          tools_used: toolCallsUsed,
-        },
-      };
+      try {
+        const parsed = parseComponentsFromResponse(response);
+        return {
+          components: parsed.components,
+          seo: parsed.seo,
+          usage: {
+            input_tokens: totalInputTokens,
+            output_tokens: totalOutputTokens,
+            model: 'claude-sonnet-4-20250514',
+            tool_calls: toolCallCount,
+            tools_used: toolCallsUsed,
+          },
+        };
+      } catch (parseErr) {
+        if (jsonRepairAttempts >= 2) throw parseErr;
+        jsonRepairAttempts += 1;
+        messages.push({ role: 'assistant', content: message.content });
+        messages.push({
+          role: 'user',
+          content: 'Din sidste output var ikke gyldig JSON. Returner KUN gyldig JSON i præcis den krævede struktur. Ingen markdown.',
+        });
+        continue;
+      }
     }
 
     if (toolUseBlocks.length === 0) break;
