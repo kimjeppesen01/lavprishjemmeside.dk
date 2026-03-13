@@ -7,6 +7,13 @@ A Danish business website offering affordable web development services. Built as
 **API URL**: https://api.lavprishjemmeside.dk
 **GitHub**: https://github.com/kimjeppesen01/lavprishjemmeside.dk (public)
 
+## Deployment Override
+
+- On 2026-03-13, the legacy GitHub Actions deploy workflow was archived out of `.github/workflows` because GitHub still runs renamed YAML files there.
+- The old workflow was causing churn by re-committing generated `dist/` output after source-side commits removed it.
+- `scripts/generate-theme.mjs` generates `public/.htaccess`, and Astro copies that file to `dist/.htaccess` at build time.
+- Treat Agent Enterprise SSH-first rollout as the canonical deployment path until this document is fully rewritten around that model.
+
 ---
 
 ## Tech Stack

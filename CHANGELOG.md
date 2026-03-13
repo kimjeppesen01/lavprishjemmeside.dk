@@ -15,6 +15,11 @@ Versions follow [Semantic Versioning](https://semver.org): `MAJOR.MINOR.PATCH`.
 
 > Features developed on `main` but not yet tagged. Will become the next release.
 
+### Changed
+- Archived the legacy GitHub Actions deploy workflow out of `.github/workflows` because GitHub still executed the renamed YAML and kept re-committing `dist/`.
+- Clarified that `dist/` is generated build output, while SSH-first deployment is the canonical release path.
+- Documented that `.htaccess` churn comes from build generation: `scripts/generate-theme.mjs` writes `public/.htaccess`, which Astro copies into `dist/.htaccess`.
+
 ---
 
 ## [1.0.0] - 2026-02-19
