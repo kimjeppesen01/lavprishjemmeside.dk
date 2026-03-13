@@ -1,0 +1,527 @@
+<!DOCTYPE html><html lang="da" data-astro-cid-2kanml4j> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Design Token Editor — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.CroNnjzx.css">
+<style>[data-astro-cid-2kanml4j][data-reveal]{opacity:1!important;transform:none!important;transition:none!important}
+</style></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased" data-astro-cid-2kanml4j> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+    (function() {
+      var token = localStorage.getItem('admin_token');
+      var path = window.location.pathname.replace(/\/$/, '') || '/admin';
+      var isLoginPage = path === '/admin';
+      if (!token && !isLoginPage) {
+        window.location.href = '/admin/';
+        return;
+      }
+      if (token && isLoginPage) {
+        window.location.href = '/admin/dashboard/';
+        return;
+      }
+    })();
+    </script> <div class="flex min-h-screen" data-astro-cid-2kanml4j> <!-- Sidebar --> <aside id="admin-sidebar" class="hidden w-64 bg-gray-900 text-gray-100 min-h-screen flex-col" data-astro-cid-2kanml4j> <div class="p-4 border-b border-gray-700" data-astro-cid-2kanml4j> <a href="/admin/dashboard/" class="text-lg font-bold text-white" data-astro-cid-2kanml4j>LPH Admin</a> </div> <nav class="flex-1 p-4 space-y-1" data-astro-cid-2kanml4j> <a href="/admin/master/" id="master-hub-link" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm font-medium" data-astro-cid-2kanml4j>
+Master Hub
+</a> <div class="border-t border-gray-700 my-1" data-astro-cid-2kanml4j></div> <a href="/admin/dashboard/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+Oversigt
+</a> <a href="/admin/traffic/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+📈 Trafik
+</a> <div class="pt-2 mt-2 border-t border-gray-700" data-astro-cid-2kanml4j> <p class="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider" data-astro-cid-2kanml4j>Webstedskonfig</p> <a href="/admin/pages/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+Sider
+</a> <a href="/admin/styling/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+Design &amp; styling
+</a> <a href="/admin/themes/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+Temaer
+</a> <a href="/admin/header-footer/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+Header &amp; Footer
+</a> <a href="/admin/components/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+Komponenter
+</a> <a href="/admin/components/custom/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+Egne komponenter
+</a> <a href="/admin/ai-assemble/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+AI-assembler
+</a> </div> </nav> <div class="p-4 border-t border-gray-700" data-astro-cid-2kanml4j> <button id="logout-btn" class="w-full text-left text-sm text-gray-400 hover:text-white" data-astro-cid-2kanml4j>
+Log ud
+</button> </div> </aside> <!-- Main content --> <div class="flex-1 flex flex-col" data-astro-cid-2kanml4j> <!-- Top bar --> <header id="admin-header" class="hidden bg-white border-b border-gray-200 px-6 py-3 items-center justify-between" data-astro-cid-2kanml4j> <button id="mobile-menu-btn" class="lg:hidden text-gray-600 text-sm" data-astro-cid-2kanml4j>
+&#9776; Menu
+</button> <div class="flex-1" data-astro-cid-2kanml4j></div> <span id="admin-email" class="text-sm text-gray-500" data-astro-cid-2kanml4j></span> </header> <!-- Page content --> <main class="flex-1 p-6" data-astro-cid-2kanml4j>  <div class="max-w-7xl mx-auto"> <!-- Header --> <div class="mb-8"> <h1 class="text-3xl font-bold text-gray-900">Design System Editor</h1> <p class="text-gray-600 mt-2">Rediger farver, typografi og former</p> </div> <!-- Loading state --> <div id="loading" class="text-center py-12 text-gray-500">Henter indstillinger...</div> <!-- Error state --> <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6"> <p class="text-red-700 mb-2" id="error-text"></p> <button onclick="window.location.reload()" class="text-red-600 underline text-sm">Prøv igen</button> </div> <!-- Main content --> <div id="content" class="hidden"> <div class="grid grid-cols-1 lg:grid-cols-3 gap-6"> <!-- Settings Form (Left) --> <div class="lg:col-span-1"> <form id="styling-form" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"> <!-- Colors Section --> <div class="mb-8"> <h2 class="text-lg font-semibold mb-4 text-gray-900">Farver</h2> <!-- Primary Colors --> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Primærfarve</label> <div class="flex gap-2"> <input type="color" id="color_primary" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_primary_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Primærfarve - Hover</label> <div class="flex gap-2"> <input type="color" id="color_primary_hover" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_primary_hover_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Primærfarve - Lys</label> <div class="flex gap-2"> <input type="color" id="color_primary_light" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_primary_light_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <!-- Secondary Colors --> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Sekundærfarve</label> <div class="flex gap-2"> <input type="color" id="color_secondary" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_secondary_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Sekundærfarve - Hover</label> <div class="flex gap-2"> <input type="color" id="color_secondary_hover" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_secondary_hover_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Sekundærfarve - Lys</label> <div class="flex gap-2"> <input type="color" id="color_secondary_light" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_secondary_light_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <!-- Accent Colors --> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Accentfarve</label> <div class="flex gap-2"> <input type="color" id="color_accent" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_accent_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Accentfarve - Hover</label> <div class="flex gap-2"> <input type="color" id="color_accent_hover" class="w-12 h-10 border border-gray-300 rounded cursor-pointer"> <input type="text" id="color_accent_hover_hex" class="flex-1 border border-gray-300 rounded px-3 py-2 font-mono text-sm" placeholder="#000000"> </div> </div> <!-- Neutral Colors --> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-4">Neutrale farver (50-900)</label> <div class="space-y-3"> <div id="neutral-colors-container"></div> </div> </div> </div> <!-- Typography Section --> <div class="mb-8 border-t border-gray-200 pt-8"> <h2 class="text-lg font-semibold mb-4 text-gray-900">Typografi</h2> <div class="mb-4"> <label class="block text-sm font-medium text-gray-700 mb-2">Font for overskrifter</label> <input type="text" id="font_heading" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="e.g., 'Inter', sans-serif"> </div> <div class="mb-4"> <label class="block text-sm font-medium text-gray-700 mb-2">Font for brødtekst</label> <input type="text" id="font_body" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="e.g., 'Inter', sans-serif"> </div> <div class="mb-4"> <label class="block text-sm font-medium text-gray-700 mb-2">Grundlæggende skriftstørrelse</label> <select id="font_size_base" class="w-full border border-gray-300 rounded px-3 py-2"> <option value="0.875rem">0.875rem (14px)</option> <option value="1rem">1rem (16px)</option> <option value="1.125rem">1.125rem (18px)</option> </select> </div> </div> <!-- Feature Toggles --> <div class="mb-8 border-t border-gray-200 pt-8"> <h2 class="text-lg font-semibold mb-4 text-gray-900">Funktionsindstillinger</h2> <p class="text-sm text-gray-600 mb-4">Slå visse styling-funktioner til eller fra.</p> <div class="space-y-3 mb-4"> <label class="flex items-center gap-3 cursor-pointer"> <input type="checkbox" id="feature_smooth_scroll" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"> <span class="text-sm text-gray-700">Smooth scroll</span> </label> <label class="flex items-center gap-3 cursor-pointer"> <input type="checkbox" id="feature_grain_overlay" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"> <span class="text-sm text-gray-700">Korn-overlay</span> </label> <label class="flex items-center gap-3 cursor-pointer"> <input type="checkbox" id="feature_page_loader" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"> <span class="text-sm text-gray-700">Sideloader</span> </label> <!-- Page loader options (when enabled) --> <div id="page-loader-options" class="ml-6 pl-4 border-l-2 border-gray-200 space-y-3 mt-2"> <div> <label class="block text-xs font-medium text-gray-600 mb-1">Tekst</label> <input type="text" id="page_loader_text" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" placeholder="Indlæser..." maxlength="100"> </div> <label class="flex items-center gap-2 cursor-pointer"> <input type="checkbox" id="page_loader_show_logo" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"> <span class="text-sm text-gray-700">Vis logo</span> </label> <div> <label class="block text-xs font-medium text-gray-600 mb-1">Varighed (sek.): <span id="page_loader_duration_val">2.5</span></label> <input type="range" id="page_loader_duration" min="0.5" max="3" step="0.5" value="2.5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"> </div> </div> <label class="flex items-center gap-3 cursor-pointer"> <input type="checkbox" id="feature_sticky_header" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"> <span class="text-sm text-gray-700">Klæbende header</span> </label> </div> </div> <!-- Shapes Section --> <div class="mb-8 border-t border-gray-200 pt-8"> <h2 class="text-lg font-semibold mb-4 text-gray-900">Former</h2> <div class="mb-4"> <label class="block text-sm font-medium text-gray-700 mb-2">Kantradius</label> <select id="border_radius" class="w-full border border-gray-300 rounded px-3 py-2"> <option value="none">Ingen</option> <option value="small">Lille</option> <option value="medium">Medium</option> <option value="large">Stor</option> <option value="full">Fuld</option> </select> </div> <div class="mb-6"> <label class="block text-sm font-medium text-gray-700 mb-2">Skygge</label> <select id="shadow_style" class="w-full border border-gray-300 rounded px-3 py-2"> <option value="none">Ingen</option> <option value="subtle">Subtil</option> <option value="medium">Medium</option> <option value="dramatic">Dramatisk</option> </select> </div> </div> <!-- Save Button --> <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-3 rounded-lg transition-colors">
+Gem indstillinger
+</button> <!-- Publish to live --> <div class="mt-6 p-4 rounded-xl border-2 border-amber-200 bg-amber-50/50"> <p class="text-sm text-gray-700 mb-3">Ændringer kræver publicering for at vises på sitet.</p> <button type="button" id="publish-btn" class="w-full px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition-colors text-sm">
+Publicer til live (~90 sek)
+</button> </div> </form> <!-- Success/Error Message --> <div id="success-message" class="hidden mt-4 bg-green-50 border border-green-200 rounded-lg p-4"> <p class="text-green-700 text-sm">✓ Indstillinger gemt</p> </div> <div id="save-error-message" class="hidden mt-4 bg-red-50 border border-red-200 rounded-lg p-4"> <p class="text-red-700 text-sm" id="save-error-text"></p> </div> </div> <!-- Live Preview (Right) --> <div class="lg:col-span-2"> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-6"> <h2 class="text-lg font-semibold mb-6 text-gray-900">Live forhåndsvisning</h2> <style id="preview-styles">
+              :root {
+                --color-primary: #3b82f6;
+                --color-primary-hover: #2563eb;
+                --color-primary-light: #dbeafe;
+                --color-secondary: #10b981;
+                --color-secondary-hover: #059669;
+                --color-secondary-light: #d1fae5;
+                --color-accent: #f59e0b;
+                --color-accent-hover: #d97706;
+                --color-neutral-50: #f9fafb;
+                --color-neutral-100: #f3f4f6;
+                --color-neutral-200: #e5e7eb;
+                --color-neutral-300: #d1d5db;
+                --color-neutral-400: #9ca3af;
+                --color-neutral-500: #6b7280;
+                --color-neutral-600: #4b5563;
+                --color-neutral-700: #374151;
+                --color-neutral-800: #1f2937;
+                --color-neutral-900: #111827;
+                --font-heading: 'Inter', sans-serif;
+                --font-body: 'Inter', sans-serif;
+                --base-font-size: 1rem;
+                --border-radius: 0.5rem;
+                --shadow-style: 0 4px 6px rgba(0,0,0,0.1);
+              }
+            </style> <div class="space-y-6"> <!-- Primary Button --> <div> <p class="text-xs text-gray-500 uppercase tracking-wider mb-2">Primær knap</p> <button class="px-6 py-3 rounded text-white font-medium transition-colors" style="background-color: var(--color-primary); border-radius: var(--border-radius);" onmouseover="this.style.backgroundColor = 'var(--color-primary-hover)'" onmouseout="this.style.backgroundColor = 'var(--color-primary)'">
+Primær handling
+</button> </div> <!-- Secondary Button --> <div> <p class="text-xs text-gray-500 uppercase tracking-wider mb-2">Sekundær knap</p> <button class="px-6 py-3 rounded text-white font-medium transition-colors" style="background-color: var(--color-secondary); border-radius: var(--border-radius);" onmouseover="this.style.backgroundColor = 'var(--color-secondary-hover)'" onmouseout="this.style.backgroundColor = 'var(--color-secondary)'">
+Sekundær handling
+</button> </div> <!-- Accent Button --> <div> <p class="text-xs text-gray-500 uppercase tracking-wider mb-2">Accent knap</p> <button class="px-6 py-3 rounded text-white font-medium transition-colors" style="background-color: var(--color-accent); border-radius: var(--border-radius);" onmouseover="this.style.backgroundColor = 'var(--color-accent-hover)'" onmouseout="this.style.backgroundColor = 'var(--color-accent)'">
+Accent handling
+</button> </div> <!-- Card Example --> <div class="border-t border-gray-200 pt-6"> <p class="text-xs text-gray-500 uppercase tracking-wider mb-2">Kort eksempel</p> <div class="rounded p-4" style="background-color: var(--color-primary-light); border-radius: var(--border-radius); box-shadow: var(--shadow-style);"> <h3 class="font-semibold mb-2" style="font-family: var(--font-heading); color: var(--color-primary);">Kort titel</h3> <p class="text-sm" style="font-family: var(--font-body); color: var(--color-neutral-600);">
+Dette er et eksempel på et kort med den nuværende design-stil.
+</p> </div> </div> <!-- Typography Example --> <div class="border-t border-gray-200 pt-6"> <p class="text-xs text-gray-500 uppercase tracking-wider mb-2">Typografi</p> <h1 class="text-3xl font-bold mb-2" style="font-family: var(--font-heading); color: var(--color-neutral-900);">Overskrift H1</h1> <h2 class="text-xl font-semibold mb-2" style="font-family: var(--font-heading); color: var(--color-neutral-800);">Overskrift H2</h2> <p style="font-family: var(--font-body); color: var(--color-neutral-700);">
+Dette er en tekstprøve med den aktuelle brødtekstfont. Farven kan ændres ved hjælp af designtokenerne.
+</p> </div> </div> </div> </div> </div> </div> </div> <script>(function(){const apiUrl = "https://api.lavprishjemmeside.dk";
+
+  (function() {
+    const API = apiUrl;
+    const token = localStorage.getItem('admin_token');
+
+    if (!token) {
+      window.location.href = '/admin/';
+      return;
+    }
+
+    let currentSettings = {};
+
+    // Diagnostic: verify required DOM elements exist before we use them
+    function diagnoseDOM() {
+      const ids = ['loading', 'error', 'error-text', 'content', 'neutral-colors-container', 'preview-styles', 'styling-form'];
+      const missing = ids.filter(id => !document.getElementById(id));
+      if (missing.length > 0) {
+        console.warn('[styling] Missing DOM elements:', missing);
+        return false;
+      }
+      return true;
+    }
+
+    // Create neutral color inputs
+    function createNeutralInputs() {
+      const neutralShades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+      const container = document.getElementById('neutral-colors-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      neutralShades.forEach(shade => {
+        const key = `color_neutral_${shade}`;
+        const div = document.createElement('div');
+        div.className = 'flex gap-2 items-center';
+        div.innerHTML = `
+          <label class="text-xs text-gray-600 w-12">N${shade}</label>
+          <input type="color" id="${key}" class="w-10 h-8 border border-gray-300 rounded cursor-pointer">
+          <input type="text" id="${key}_hex" class="flex-1 border border-gray-300 rounded px-2 py-1 font-mono text-xs" placeholder="#000000">
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    createNeutralInputs();
+
+    // Sync color inputs with hex inputs
+    function setupColorSync(colorId) {
+      const colorInput = document.getElementById(colorId);
+      const hexInput = document.getElementById(colorId + '_hex');
+
+      if (!colorInput || !hexInput) return;
+
+      colorInput.addEventListener('change', function() {
+        hexInput.value = this.value.toUpperCase();
+        updatePreview();
+      });
+
+      hexInput.addEventListener('change', function() {
+        if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+          colorInput.value = this.value;
+          updatePreview();
+        }
+      });
+
+      colorInput.addEventListener('input', function() {
+        hexInput.value = this.value.toUpperCase();
+        updatePreview();
+      });
+    }
+
+    // Fetch current settings
+    async function loadSettings() {
+      try {
+        const res = await fetch(API + '/design-settings/', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (!res.ok) throw new Error('Failed to load settings');
+
+        currentSettings = await res.json();
+        populateForm();
+      } catch (err) {
+        console.error('[styling] loadSettings error:', err.message, err.stack);
+        const missing = diagnoseDOM() ? 'none' : ' (some DOM elements missing - check console)';
+        document.getElementById('loading')?.classList.add('hidden');
+        const errEl = document.getElementById('error-text');
+        const errBox = document.getElementById('error');
+        if (errEl) errEl.textContent = 'Fejl ved indlæsning: ' + err.message + (missing === 'none' ? '' : missing);
+        if (errBox) errBox.classList.remove('hidden');
+      }
+    }
+
+    // Populate form with current values
+    function populateForm() {
+      const colorFields = [
+        'color_primary', 'color_primary_hover', 'color_primary_light',
+        'color_secondary', 'color_secondary_hover', 'color_secondary_light',
+        'color_accent', 'color_accent_hover'
+      ];
+
+      colorFields.forEach(field => {
+        const value = currentSettings[field];
+        if (value) {
+          const colorInput = document.getElementById(field);
+          const hexInput = document.getElementById(field + '_hex');
+          if (colorInput) colorInput.value = value;
+          if (hexInput) hexInput.value = value.toUpperCase();
+          setupColorSync(field);
+        }
+      });
+
+      // Neutral colors
+      const neutralShades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+      neutralShades.forEach(shade => {
+        const field = `color_neutral_${shade}`;
+        const value = currentSettings[field];
+        const colorInput = document.getElementById(field);
+        const hexInput = document.getElementById(field + '_hex');
+        if (colorInput && hexInput) {
+          if (value) {
+            colorInput.value = value;
+            hexInput.value = value.toUpperCase();
+          }
+          setupColorSync(field);
+        }
+      });
+
+      // Typography
+      const typographyFields = ['font_heading', 'font_body', 'font_size_base'];
+      typographyFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input && currentSettings[field]) {
+          input.value = currentSettings[field];
+          input.addEventListener('change', updatePreview);
+        }
+      });
+
+      // Shapes
+      const shapeFields = ['border_radius', 'shadow_style'];
+      shapeFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input && currentSettings[field]) {
+          input.value = currentSettings[field];
+          input.addEventListener('change', updatePreview);
+        }
+      });
+
+      // Feature toggles (1 = checked, 0 = unchecked; default to 1 if missing)
+      const featureFields = ['feature_smooth_scroll', 'feature_grain_overlay', 'feature_page_loader', 'feature_sticky_header'];
+      featureFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input) {
+          input.checked = currentSettings[field] !== 0 && currentSettings[field] !== false && currentSettings[field] !== '0';
+        }
+      });
+
+      // Page loader options
+      const loaderText = document.getElementById('page_loader_text');
+      const loaderLogo = document.getElementById('page_loader_show_logo');
+      const loaderDuration = document.getElementById('page_loader_duration');
+      const loaderDurationVal = document.getElementById('page_loader_duration_val');
+      if (loaderText) loaderText.value = currentSettings.page_loader_text || 'Indlæser...';
+      if (loaderLogo) loaderLogo.checked = (currentSettings.page_loader_show_logo ?? 1) !== 0;
+      if (loaderDuration) {
+        const d = parseFloat(currentSettings.page_loader_duration) || 2.5;
+        loaderDuration.value = Math.min(3, Math.max(0.5, d));
+        if (loaderDurationVal) loaderDurationVal.textContent = loaderDuration.value;
+        loaderDuration.addEventListener('input', function() {
+          if (loaderDurationVal) loaderDurationVal.textContent = this.value;
+        });
+      }
+
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('content').classList.remove('hidden');
+      updatePreview();
+    }
+
+    // Form field names use underscore (color_secondary); CSS vars use hyphen (--color-secondary)
+    function toCssVar(field) {
+      return field.replace(/_/g, '-');
+    }
+
+    // Update live preview
+    function updatePreview() {
+      const style = document.getElementById('preview-styles');
+      if (!style) return;
+
+      let css = style.textContent;
+
+      // Update colors (form: color_secondary → CSS: --color-secondary)
+      const colorFields = [
+        'color_primary', 'color_primary_hover', 'color_primary_light',
+        'color_secondary', 'color_secondary_hover', 'color_secondary_light',
+        'color_accent', 'color_accent_hover'
+      ];
+
+      colorFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input && input.value) {
+          const cssName = toCssVar(field);
+          css = css.replace(new RegExp(`--${cssName}: [^;]+;`), `--${cssName}: ${input.value};`);
+        }
+      });
+
+      // Neutral colors
+      const neutralShades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+      neutralShades.forEach(shade => {
+        const field = `color_neutral_${shade}`;
+        const input = document.getElementById(field);
+        if (input && input.value) {
+          const cssName = toCssVar(field);
+          css = css.replace(new RegExp(`--${cssName}: [^;]+;`), `--${cssName}: ${input.value};`);
+        }
+      });
+
+      // Typography
+      const fontHeading = document.getElementById('font_heading');
+      const fontBody = document.getElementById('font_body');
+      const baseFontSize = document.getElementById('font_size_base');
+
+      if (fontHeading && fontHeading.value) {
+        css = css.replace(/--font-heading: [^;]+;/, `--font-heading: '${fontHeading.value}', sans-serif;`);
+      }
+      if (fontBody && fontBody.value) {
+        css = css.replace(/--font-body: [^;]+;/, `--font-body: '${fontBody.value}', sans-serif;`);
+      }
+      if (baseFontSize && baseFontSize.value) {
+        css = css.replace(/--base-font-size: [^;]+;/, `--base-font-size: ${baseFontSize.value};`);
+      }
+
+      // Shapes: map enum to CSS value (preview uses simple rem/shadow)
+      const borderRadius = document.getElementById('border_radius');
+      const shadowStyle = document.getElementById('shadow_style');
+      const radiusMap = { none: '0', small: '0.25rem', medium: '0.5rem', large: '0.75rem', full: '9999px' };
+      const shadowMap = {
+        none: 'none',
+        subtle: '0 4px 6px rgba(0,0,0,0.1)',
+        medium: '0 8px 12px -2px rgba(0,0,0,0.15)',
+        dramatic: '0 12px 20px -4px rgba(0,0,0,0.25)'
+      };
+
+      if (borderRadius && borderRadius.value) {
+        css = css.replace(/--border-radius: [^;]+;/, `--border-radius: ${radiusMap[borderRadius.value] ?? '0.5rem'};`);
+      }
+      if (shadowStyle && shadowStyle.value) {
+        css = css.replace(/--shadow-style: [^;]+;/, `--shadow-style: ${shadowMap[shadowStyle.value] ?? shadowMap.subtle};`);
+      }
+
+      style.textContent = css;
+    }
+
+    // Save settings
+    const form = document.getElementById('styling-form');
+    if (form) {
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const btn = this.querySelector('button[type="submit"]');
+        if (btn) { btn.disabled = true; btn.textContent = 'Gemmer...'; }
+        document.getElementById('save-error-message')?.classList.add('hidden');
+
+      const formData = {};
+
+      // Collect colors
+      const colorFields = [
+        'color_primary', 'color_primary_hover', 'color_primary_light',
+        'color_secondary', 'color_secondary_hover', 'color_secondary_light',
+        'color_accent', 'color_accent_hover'
+      ];
+
+      colorFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input) formData[field] = input.value;
+      });
+
+      // Neutral colors
+      const neutralShades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+      neutralShades.forEach(shade => {
+        const field = `color_neutral_${shade}`;
+        const input = document.getElementById(field);
+        if (input) formData[field] = input.value;
+      });
+
+      // Typography
+      const fontHeading = document.getElementById('font_heading');
+      const fontBody = document.getElementById('font_body');
+      const baseFontSize = document.getElementById('font_size_base');
+
+      if (fontHeading) formData.font_heading = fontHeading.value;
+      if (fontBody) formData.font_body = fontBody.value;
+      if (baseFontSize) formData.font_size_base = baseFontSize.value;
+
+      // Shapes
+      const borderRadius = document.getElementById('border_radius');
+      const shadowStyle = document.getElementById('shadow_style');
+
+      if (borderRadius) formData.border_radius = borderRadius.value;
+      if (shadowStyle) formData.shadow_style = shadowStyle.value;
+
+      // Feature toggles
+      const featureFields = ['feature_smooth_scroll', 'feature_grain_overlay', 'feature_page_loader', 'feature_sticky_header'];
+      featureFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input) formData[field] = input.checked ? 1 : 0;
+      });
+
+      // Page loader options
+      const loaderText = document.getElementById('page_loader_text');
+      const loaderLogo = document.getElementById('page_loader_show_logo');
+      const loaderDuration = document.getElementById('page_loader_duration');
+      if (loaderText) formData.page_loader_text = loaderText.value || 'Indlæser...';
+      if (loaderLogo) formData.page_loader_show_logo = loaderLogo.checked ? 1 : 0;
+      if (loaderDuration) formData.page_loader_duration = parseFloat(loaderDuration.value) || 2.5;
+
+      try {
+        const res = await fetch(API + '/design-settings/update', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            localStorage.removeItem('admin_token');
+            window.location.href = '/admin/';
+            return;
+          }
+          let msg = 'Fejl ved gemning';
+          try {
+            const data = await res.json();
+            if (data && data.error) msg = data.error;
+          } catch (_) { /* use fallback */ }
+          throw new Error(msg);
+        }
+
+        document.getElementById('save-error-message')?.classList.add('hidden');
+        document.getElementById('success-message')?.classList.remove('hidden');
+        const successEl = document.querySelector('#success-message p');
+        if (successEl) successEl.textContent = '✓ Indstillinger gemt. Klik "Publicer til live" for at vise på sitet.';
+        setTimeout(() => {
+          document.getElementById('success-message')?.classList.add('hidden');
+          if (successEl) successEl.textContent = '✓ Indstillinger gemt';
+        }, 5000);
+      } catch (err) {
+        const errBox = document.getElementById('save-error-message');
+        const errText = document.getElementById('save-error-text');
+        if (errText) errText.textContent = err.message;
+        if (errBox) errBox.classList.remove('hidden');
+        document.getElementById('success-message')?.classList.add('hidden');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Gem indstillinger'; }
+      }
+    });
+    }
+
+    // Publish button
+    document.getElementById('publish-btn')?.addEventListener('click', async function() {
+      const btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Starter...';
+      try {
+        const res = await fetch(API + '/publish', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          btn.textContent = '✓ Udrulning startet';
+          btn.classList.remove('bg-amber-600', 'hover:bg-amber-700');
+          btn.classList.add('bg-green-600');
+        } else {
+          throw new Error(data.error || res.status);
+        }
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+        btn.textContent = 'Publicer til live (~90 sek)';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // Load settings on page load
+    loadSettings();
+  })();
+  })();</script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
+    (function() {
+      var path = window.location.pathname.replace(/\/$/, '') || '/admin';
+      if (path === '/admin') return;
+
+      // Show sidebar and header on dashboard pages
+      var sidebar = document.getElementById('admin-sidebar');
+      var header = document.getElementById('admin-header');
+      if (sidebar) { sidebar.classList.remove('hidden'); sidebar.classList.add('lg:flex'); }
+      if (header) { header.classList.remove('hidden'); header.classList.add('flex'); }
+
+      // Show admin email from JWT; hide Master Hub for non-master
+      try {
+        var token = localStorage.getItem('admin_token');
+        if (token) {
+          var payload = JSON.parse(atob(token.split('.')[1]));
+          var emailEl = document.getElementById('admin-email');
+          if (emailEl) emailEl.textContent = payload.email || '';
+          var masterLink = document.getElementById('master-hub-link');
+          if (masterLink && payload.role !== 'master') {
+            masterLink.style.display = 'none';
+          }
+        }
+      } catch(e) {}
+
+      // Logout
+      var logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+          localStorage.removeItem('admin_token');
+          window.location.href = '/admin/';
+        });
+      }
+
+      // Mobile menu toggle
+      var menuBtn = document.getElementById('mobile-menu-btn');
+      if (menuBtn && sidebar) {
+        menuBtn.addEventListener('click', function() {
+          sidebar.classList.toggle('hidden');
+          sidebar.classList.toggle('fixed');
+          sidebar.classList.toggle('z-50');
+          sidebar.classList.toggle('inset-0');
+          sidebar.classList.toggle('flex');
+        });
+      }
+
+      // Highlight active nav item
+      var normalizedPath = path.replace(/\/$/, '') || '/admin';
+      var links = sidebar ? sidebar.querySelectorAll('nav a[href]') : [];
+      links.forEach(function(a) {
+        var href = a.getAttribute('href') || '';
+        var linkPath = href.replace(/\/$/, '') || '/admin';
+        if (normalizedPath === linkPath) {
+          a.classList.add('bg-gray-800', 'text-white');
+          a.classList.remove('hover:bg-gray-800');
+        }
+      });
+    })();
+    </script> </body> </html>
