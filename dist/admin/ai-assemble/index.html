@@ -1,0 +1,367 @@
+<!DOCTYPE html><html lang="da" data-astro-cid-2kanml4j> <head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>AI Indholdsudvikler — Admin</title><link rel="stylesheet" href="/_astro/ai-assemble.CroNnjzx.css">
+<style>[data-astro-cid-2kanml4j][data-reveal]{opacity:1!important;transform:none!important;transition:none!important}
+</style></head> <body class="min-h-screen bg-gray-50 text-gray-900 antialiased" data-astro-cid-2kanml4j> <!-- Auth guard: redirect if no token (runs before anything renders) --> <script>
+    (function() {
+      var token = localStorage.getItem('admin_token');
+      var path = window.location.pathname.replace(/\/$/, '') || '/admin';
+      var isLoginPage = path === '/admin';
+      if (!token && !isLoginPage) {
+        window.location.href = '/admin/';
+        return;
+      }
+      if (token && isLoginPage) {
+        window.location.href = '/admin/dashboard/';
+        return;
+      }
+    })();
+    </script> <div class="flex min-h-screen" data-astro-cid-2kanml4j> <!-- Sidebar --> <aside id="admin-sidebar" class="hidden w-64 bg-gray-900 text-gray-100 min-h-screen flex-col" data-astro-cid-2kanml4j> <div class="p-4 border-b border-gray-700" data-astro-cid-2kanml4j> <a href="/admin/dashboard/" class="text-lg font-bold text-white" data-astro-cid-2kanml4j>LPH Admin</a> </div> <nav class="flex-1 p-4 space-y-1" data-astro-cid-2kanml4j> <a href="/admin/master/" id="master-hub-link" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm font-medium" data-astro-cid-2kanml4j>
+Master Hub
+</a> <div class="border-t border-gray-700 my-1" data-astro-cid-2kanml4j></div> <a href="/admin/dashboard/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+Oversigt
+</a> <a href="/admin/traffic/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+📈 Trafik
+</a> <div class="pt-2 mt-2 border-t border-gray-700" data-astro-cid-2kanml4j> <p class="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider" data-astro-cid-2kanml4j>Webstedskonfig</p> <a href="/admin/pages/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+Sider
+</a> <a href="/admin/styling/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+Design &amp; styling
+</a> <a href="/admin/themes/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+Temaer
+</a> <a href="/admin/header-footer/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+Header &amp; Footer
+</a> <a href="/admin/components/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+Komponenter
+</a> <a href="/admin/components/custom/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+Egne komponenter
+</a> <a href="/admin/ai-assemble/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 text-sm" data-astro-cid-2kanml4j>
+AI-assembler
+</a> </div> </nav> <div class="p-4 border-t border-gray-700" data-astro-cid-2kanml4j> <button id="logout-btn" class="w-full text-left text-sm text-gray-400 hover:text-white" data-astro-cid-2kanml4j>
+Log ud
+</button> </div> </aside> <!-- Main content --> <div class="flex-1 flex flex-col" data-astro-cid-2kanml4j> <!-- Top bar --> <header id="admin-header" class="hidden bg-white border-b border-gray-200 px-6 py-3 items-center justify-between" data-astro-cid-2kanml4j> <button id="mobile-menu-btn" class="lg:hidden text-gray-600 text-sm" data-astro-cid-2kanml4j>
+&#9776; Menu
+</button> <div class="flex-1" data-astro-cid-2kanml4j></div> <span id="admin-email" class="text-sm text-gray-500" data-astro-cid-2kanml4j></span> </header> <!-- Page content --> <main class="flex-1 p-6" data-astro-cid-2kanml4j>  <div class="max-w-4xl mx-auto"> <!-- Header --> <div class="mb-8"> <h1 class="text-3xl font-bold text-gray-900">AI Indholdsudvikler</h1> <p class="text-gray-600 mt-2">Vælg model og generer sideindhold</p> </div> <!-- Model selector --> <div class="mb-6 flex gap-2"> <button type="button" id="mode-standard" class="mode-btn flex-1 px-6 py-4 rounded-xl border-2 font-medium transition-colors bg-white border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-800"> <span class="block text-lg">⚡ Standard</span> <span class="block text-sm font-normal text-gray-500 mt-1">AI skriver alt — hurtig oprettelse for mange brugere</span> </button> <button type="button" id="mode-advanced" class="mode-btn flex-1 px-6 py-4 rounded-xl border-2 font-medium transition-colors bg-white border-gray-200 hover:border-amber-400 hover:bg-amber-50 text-gray-800"> <span class="block text-lg">🏆 Advanced <span class="inline-block px-1.5 py-0.5 text-xs font-bold bg-amber-200 text-amber-800 rounded">PRO</span></span> <span class="block text-sm font-normal text-gray-500 mt-1">Du skriver indholdet — AI sammensætter til perfekt side</span> </button> </div> <!-- Loading state --> <div id="loading" class="text-center py-12 text-gray-500">Henter data...</div> <!-- Error state --> <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6"> <p class="text-red-700 mb-2" id="error-text"></p> <button onclick="window.location.reload()" class="text-red-600 underline text-sm">Prøv igen</button> </div> <!-- Main content --> <div id="content" class="hidden"> <!-- Prompt settings (collapsible) - Standard mode only --> <details id="prompt-settings-section" class="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"> <summary class="px-6 py-4 cursor-pointer hover:bg-gray-50 font-medium text-gray-900 flex items-center gap-2"> <span>⚙️</span> Prompt-indstillinger (Standard model) — Emne, kundesegment, personlighed, intention, format
+</summary> <div class="px-6 pb-6 pt-2 border-t border-gray-100 space-y-4"> <p class="text-sm text-gray-600">Disse indstillinger påvirker AI'ens tone og stil for al genereret sideindhold. Gem før generering.</p> <div class="grid grid-cols-1 md:grid-cols-2 gap-4"> <div> <label for="prompt_emne" class="block text-sm font-medium text-gray-700 mb-1">Emne</label> <input type="text" id="prompt_emne" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Forretningsudvikling for kreative og tidsstyring" maxlength="500"> </div> <div> <label for="prompt_kundesegment" class="block text-sm font-medium text-gray-700 mb-1">Kundesegment</label> <input type="text" id="prompt_kundesegment" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Freelance grafiske designere, der kæmper med at finde kunder." maxlength="500"> </div> <div> <label for="prompt_personlighed" class="block text-sm font-medium text-gray-700 mb-1">Personlighed</label> <input type="text" id="prompt_personlighed" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Vittig, samtalende og let sarkastisk, som en troværdig mentor." maxlength="500"> </div> <div> <label for="prompt_intention" class="block text-sm font-medium text-gray-700 mb-1">Intention</label> <input type="text" id="prompt_intention" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Uddan læseren om vores software og få dem til at klikke på 'Book en demo'." maxlength="500"> </div> <div class="md:col-span-2"> <label for="prompt_format" class="block text-sm font-medium text-gray-700 mb-1">Format</label> <input type="text" id="prompt_format" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="F.eks. Et LinkedIn-opslag på 300 ord. Brug korte afsnit. Undgå AI-klichéer som 'dykke ned i', 'tapet', 'vidnesbyrd'." maxlength="500"> </div> </div> <button type="button" id="save-prompt-settings" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg text-sm">Gem prompt-indstillinger</button> <span id="prompt-saved-toast" class="ml-3 text-sm text-green-600 hidden">✓ Gemt</span> </div> </details> <!-- Avanceret personlighed (markdown) - Standard mode only --> <details id="avanceret-section" class="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"> <summary class="px-6 py-4 cursor-pointer hover:bg-gray-50 font-medium text-gray-900 flex items-center gap-2"> <span>📄</span> Avanceret personlighed (Standard model) — regler for tone og språgbrug
+</summary> <div class="px-6 pb-6 pt-2 border-t border-gray-100 space-y-4"> <p class="text-sm text-gray-600">Tilføj detaljerede regler i Markdown. AI'en læser indholdet som bindende instruktioner for tone og språgbrug. Brug overskrifter (##), bullet-lister og fed for at strukturere reglerne.</p> <div class="flex gap-2 mb-2"> <button type="button" id="load-default-avanceret" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg">Indlæs fra standardfil</button> <label class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg cursor-pointer">
+Vælg .md-fil
+<input type="file" id="avanceret-file-input" accept=".md,text/markdown" class="hidden"> </label> </div> <textarea id="prompt_avanceret_personlighed" rows="16" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono" placeholder="Indsæt eller indlæs Markdown med regler for personlighed, forbudte ord, anbefalede formuleringer osv."></textarea> <button type="button" id="save-avanceret" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg text-sm">Gem avanceret personlighed</button> <span id="avanceret-saved-toast" class="ml-3 text-sm text-green-600 hidden">✓ Gemt</span> </div> </details> <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"> <!-- Input Form (Left) --> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"> <!-- Standard form --> <form id="generate-form-standard" class="standard-form" onsubmit="generateContentStandard(event)"> <div class="mb-6"> <label for="page_path" class="block text-sm font-medium text-gray-700 mb-2">Sidesti:</label> <input type="text" id="page_path" placeholder="Tom eller / = forside, f.eks. /priser" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"> <p class="text-xs text-gray-500 mt-1">Tom = forside (/). Ellers f.eks. /priser, /om-os</p> </div> <div class="mb-6"> <label for="prompt" class="block text-sm font-medium text-gray-700 mb-2">Beskrivelse (Dansk):</label> <textarea id="prompt" rows="8" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="Beskriv hvad siden skal indeholde. AI skriver alt: tekster, overskrifter, CTA'er." required></textarea> <p class="text-xs text-gray-500 mt-1">AI genererer indhold ud fra din beskrivelse</p> </div> <button type="submit" id="generate-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2"> <span>⚡ Generer side (Standard)</span> </button> </form> <!-- Advanced form --> <form id="generate-form-advanced" class="advanced-form hidden" onsubmit="generateContentAdvanced(event)"> <div class="mb-6"> <label for="page_path_adv" class="block text-sm font-medium text-gray-700 mb-2">Sidesti:</label> <input type="text" id="page_path_adv" placeholder="Tom eller / = forside, f.eks. /priser" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"> <p class="text-xs text-gray-500 mt-1">Tom = forside (/). Ellers f.eks. /priser, /om-os</p> </div> <div class="mb-6"> <label for="content_markdown" class="block text-sm font-medium text-gray-700 mb-2">
+Færdigt indhold (Markdown)
+<span class="text-amber-600 font-normal">— Du skriver, AI sammensætter</span> </label> <textarea id="content_markdown" rows="16" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 font-mono text-sm" placeholder="# Overskrift
+
+Intro-tekst...
+
+## Features
+- Punkt 1
+- Punkt 2
+
+## FAQ
+**Q:** Spørgsmål?
+**A:** Svar..."></textarea> <p class="text-xs text-gray-500 mt-1">Indsæt dit indhold i Markdown. AI omskriver teksten til komponentstrukturer, bruger mange komponenter for professionel UX, og vælger billeder.</p> <div class="mt-2 flex gap-2"> <label class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm rounded-lg cursor-pointer">
+Vælg .md-fil
+<input type="file" id="advanced-md-input" accept=".md,text/markdown" class="hidden"> </label> </div> </div> <button type="submit" id="generate-btn-advanced" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2"> <span>🏆 Transformér til side (Advanced PRO)</span> </button> </form> <!-- Info box --> <div id="info-standard" class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4"> <p class="text-sm text-blue-800"><strong>Standard:</strong> AI skriver indhold, meta, og vælger komponenter. Hurtig og nem.</p> </div> <div id="info-advanced" class="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4 hidden"> <p class="text-sm text-amber-800"><strong>Advanced PRO:</strong> Du leverer indhold i Markdown. AI omskriver teksten så den passer perfekt til vores komponenter, bruger 8–12 komponenter for varieret UX, og vælger billeder fra mediebiblioteket.</p> </div> </div> <!-- Result Panel (Right) --> <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"> <h2 class="text-lg font-semibold mb-6 text-gray-900">Resultat</h2> <!-- Loading spinner (hidden by default) --> <div id="result-loading" class="hidden text-center py-8"> <div class="inline-block"> <div class="w-8 h-8 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div> </div> <p class="text-gray-600 mt-4">Genererer indhold med AI...</p> </div> <!-- Result content (hidden by default) --> <div id="result-content" class="hidden space-y-6"> <div class="bg-green-50 border border-green-200 rounded-lg p-4"> <p class="text-green-700 font-medium mb-3" id="result-title">✓ Siden blev genereret</p> <div class="space-y-3 text-sm text-green-700"> <div class="flex justify-between"> <span>Komponenter genereret:</span> <span class="font-medium" id="result-count">0</span> </div> <div class="flex justify-between"> <span>API-tokens brugt:</span> <span class="font-mono" id="result-tokens">0</span> </div> <div class="flex justify-between"> <span>Estimeret omkostning:</span> <span class="font-mono" id="result-cost">$0.00</span> </div> </div> </div> <p class="text-sm text-green-700 mb-3">Siden er oprettet og publiceret. Udløs en udrulning for at gøre den synlig på sitet.</p> <div class="flex gap-3"> <button onclick="triggerDeploy()" id="deploy-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-3 rounded-lg transition-colors">
+Udløs udrulning nu
+</button> <button onclick="goToPageBuilder()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-3 rounded-lg transition-colors">
+Gå til Sidestyring
+</button> </div> </div> <!-- Error message (hidden by default) --> <div id="result-error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4"> <p class="text-red-700 font-medium mb-2">✗ Fejl under generering</p> <p class="text-red-600 text-sm" id="error-message"></p> </div> <!-- Empty state (shown by default) --> <div id="result-empty" class="text-center py-8 text-gray-500"> <p>Udfyld formularen og klik "Generer side med AI" for at starte</p> </div> </div> </div> </div> </div> <script>(function(){const apiUrl = "https://api.lavprishjemmeside.dk";
+
+  (function() {
+    const API = apiUrl;
+    const token = localStorage.getItem('admin_token');
+
+    if (!token) {
+      window.location.href = '/admin/';
+      return;
+    }
+
+    // Hide loading on page load
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('content').classList.remove('hidden');
+
+    // Load prompt settings
+    async function loadPromptSettings() {
+      try {
+        const res = await fetch(API + '/ai-prompt-settings', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('prompt_emne').value = data.prompt_emne || '';
+          document.getElementById('prompt_kundesegment').value = data.prompt_kundesegment || '';
+          document.getElementById('prompt_personlighed').value = data.prompt_personlighed || '';
+          document.getElementById('prompt_intention').value = data.prompt_intention || '';
+          document.getElementById('prompt_format').value = data.prompt_format || '';
+          document.getElementById('prompt_avanceret_personlighed').value = data.prompt_avanceret_personlighed || '';
+        }
+      } catch (e) { /* ignore */ }
+    }
+    loadPromptSettings();
+
+    // Load default avanceret from file
+    document.getElementById('load-default-avanceret').addEventListener('click', async function() {
+      try {
+        const res = await fetch(API + '/ai-prompt-settings/default-avanceret', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (res.ok) {
+          const { content } = await res.json();
+          document.getElementById('prompt_avanceret_personlighed').value = content || '';
+        }
+      } catch (e) { /* ignore */ }
+    });
+
+    // Load .md from file picker
+    document.getElementById('avanceret-file-input').addEventListener('change', function(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function() { document.getElementById('prompt_avanceret_personlighed').value = reader.result || ''; };
+      reader.readAsText(file, 'UTF-8');
+      e.target.value = '';
+    });
+
+    async function savePromptSettings(sourceBtn, toastId) {
+      const btn = sourceBtn;
+      const toast = document.getElementById(toastId);
+      btn.disabled = true;
+      toast.classList.add('hidden');
+      try {
+        const res = await fetch(API + '/ai-prompt-settings/update', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt_emne: document.getElementById('prompt_emne').value,
+            prompt_kundesegment: document.getElementById('prompt_kundesegment').value,
+            prompt_personlighed: document.getElementById('prompt_personlighed').value,
+            prompt_intention: document.getElementById('prompt_intention').value,
+            prompt_format: document.getElementById('prompt_format').value,
+            prompt_avanceret_personlighed: document.getElementById('prompt_avanceret_personlighed').value,
+          })
+        });
+        if (res.ok) {
+          toast.classList.remove('hidden');
+          setTimeout(() => toast.classList.add('hidden'), 2500);
+        } else {
+          alert('Kunne ikke gemme: ' + ((await res.json()).error || res.status));
+        }
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    document.getElementById('save-prompt-settings').addEventListener('click', function() {
+      savePromptSettings(this, 'prompt-saved-toast');
+    });
+    document.getElementById('save-avanceret').addEventListener('click', function() {
+      savePromptSettings(this, 'avanceret-saved-toast');
+    });
+
+    // Mode switching
+    let currentMode = 'standard';
+    document.getElementById('mode-standard').addEventListener('click', function() {
+      currentMode = 'standard';
+      document.querySelectorAll('.mode-btn').forEach(b => { b.classList.remove('border-blue-600', 'bg-blue-100', 'border-amber-600', 'bg-amber-100'); b.classList.add('border-gray-200'); });
+      this.classList.remove('border-gray-200'); this.classList.add('border-blue-600', 'bg-blue-100');
+      document.getElementById('generate-form-standard').classList.remove('hidden');
+      document.getElementById('generate-form-advanced').classList.add('hidden');
+      document.getElementById('prompt-settings-section').classList.remove('hidden');
+      document.getElementById('avanceret-section').classList.remove('hidden');
+      document.getElementById('info-standard').classList.remove('hidden');
+      document.getElementById('info-advanced').classList.add('hidden');
+    });
+    document.getElementById('mode-advanced').addEventListener('click', function() {
+      currentMode = 'advanced';
+      document.querySelectorAll('.mode-btn').forEach(b => { b.classList.remove('border-blue-600', 'bg-blue-100', 'border-amber-600', 'bg-amber-100'); b.classList.add('border-gray-200'); });
+      this.classList.remove('border-gray-200'); this.classList.add('border-amber-600', 'bg-amber-100');
+      document.getElementById('generate-form-standard').classList.add('hidden');
+      document.getElementById('generate-form-advanced').classList.remove('hidden');
+      document.getElementById('prompt-settings-section').classList.add('hidden');
+      document.getElementById('avanceret-section').classList.add('hidden');
+      document.getElementById('info-standard').classList.add('hidden');
+      document.getElementById('info-advanced').classList.remove('hidden');
+    });
+    document.getElementById('mode-standard').click();
+
+    document.getElementById('advanced-md-input').addEventListener('change', function(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function() { document.getElementById('content_markdown').value = reader.result || ''; };
+      reader.readAsText(file, 'UTF-8');
+      e.target.value = '';
+    });
+
+    window.generateContentStandard = async function(event) {
+      event.preventDefault();
+
+      const pagePath = (document.getElementById('page_path').value || '').trim() || '/';
+      const prompt = document.getElementById('prompt').value;
+      const btn = document.getElementById('generate-btn');
+
+      if (!prompt) {
+        alert('Udfyld beskrivelsen');
+        return;
+      }
+
+      // Show loading state
+      btn.disabled = true;
+      document.getElementById('result-empty').classList.add('hidden');
+      document.getElementById('result-content').classList.add('hidden');
+      document.getElementById('result-error').classList.add('hidden');
+      document.getElementById('result-loading').classList.remove('hidden');
+
+      try {
+        const res = await fetch(API + '/ai-generate/page', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_path: pagePath, prompt: prompt })
+        });
+        const data = await res.json();
+        document.getElementById('result-loading').classList.add('hidden');
+        if (!res.ok) {
+          document.getElementById('error-message').textContent = data.error || 'Ukendt fejl';
+          document.getElementById('result-error').classList.remove('hidden');
+        } else {
+          showResult(data);
+        }
+      } catch (err) {
+        document.getElementById('result-loading').classList.add('hidden');
+        document.getElementById('error-message').textContent = err.message;
+        document.getElementById('result-error').classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    function showResult(data) {
+      document.getElementById('result-count').textContent = data.count || 0;
+      document.getElementById('result-tokens').textContent = (data.usage?.tokens || 0).toLocaleString('da-DK');
+      document.getElementById('result-cost').textContent = '$' + ((data.usage?.cost_usd || 0).toFixed(4));
+      document.getElementById('result-content').classList.remove('hidden');
+    }
+
+    window.generateContentAdvanced = async function(event) {
+      event.preventDefault();
+      const pagePath = (document.getElementById('page_path_adv').value || '').trim() || '/';
+      const contentMarkdown = document.getElementById('content_markdown').value;
+      const btn = document.getElementById('generate-btn-advanced');
+
+      if (!contentMarkdown.trim()) {
+        alert('Udfyld indholdet');
+        return;
+      }
+
+      btn.disabled = true;
+      document.getElementById('result-empty').classList.add('hidden');
+      document.getElementById('result-content').classList.add('hidden');
+      document.getElementById('result-error').classList.add('hidden');
+      document.getElementById('result-loading').classList.remove('hidden');
+
+      try {
+        const res = await fetch(API + '/ai-generate/page-advanced', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_path: pagePath, content_markdown: contentMarkdown.trim() })
+        });
+        const data = await res.json();
+        document.getElementById('result-loading').classList.add('hidden');
+        if (!res.ok) {
+          document.getElementById('error-message').textContent = data.error || 'Ukendt fejl';
+          document.getElementById('result-error').classList.remove('hidden');
+        } else {
+          showResult(data);
+        }
+      } catch (err) {
+        document.getElementById('result-loading').classList.add('hidden');
+        document.getElementById('error-message').textContent = err.message;
+        document.getElementById('result-error').classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    window.goToPageBuilder = function() {
+      window.location.href = '/admin/pages/';
+    };
+
+    window.triggerDeploy = async function() {
+      const btn = document.getElementById('deploy-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Starter udrulning...';
+      }
+      try {
+        const res = await fetch(API + '/publish', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert('✓ Udrulning startet. Siden er klar om ca. 90 sekunder.');
+        } else {
+          alert('Fejl: ' + (data.error || res.status));
+        }
+      } catch (err) {
+        alert('Fejl: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Udløs udrulning nu';
+        }
+      }
+    };
+  })();
+  })();</script>  </main> </div> </div> <!-- Sidebar/header visibility + logout --> <script>
+    (function() {
+      var path = window.location.pathname.replace(/\/$/, '') || '/admin';
+      if (path === '/admin') return;
+
+      // Show sidebar and header on dashboard pages
+      var sidebar = document.getElementById('admin-sidebar');
+      var header = document.getElementById('admin-header');
+      if (sidebar) { sidebar.classList.remove('hidden'); sidebar.classList.add('lg:flex'); }
+      if (header) { header.classList.remove('hidden'); header.classList.add('flex'); }
+
+      // Show admin email from JWT; hide Master Hub for non-master
+      try {
+        var token = localStorage.getItem('admin_token');
+        if (token) {
+          var payload = JSON.parse(atob(token.split('.')[1]));
+          var emailEl = document.getElementById('admin-email');
+          if (emailEl) emailEl.textContent = payload.email || '';
+          var masterLink = document.getElementById('master-hub-link');
+          if (masterLink && payload.role !== 'master') {
+            masterLink.style.display = 'none';
+          }
+        }
+      } catch(e) {}
+
+      // Logout
+      var logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+          localStorage.removeItem('admin_token');
+          window.location.href = '/admin/';
+        });
+      }
+
+      // Mobile menu toggle
+      var menuBtn = document.getElementById('mobile-menu-btn');
+      if (menuBtn && sidebar) {
+        menuBtn.addEventListener('click', function() {
+          sidebar.classList.toggle('hidden');
+          sidebar.classList.toggle('fixed');
+          sidebar.classList.toggle('z-50');
+          sidebar.classList.toggle('inset-0');
+          sidebar.classList.toggle('flex');
+        });
+      }
+
+      // Highlight active nav item
+      var normalizedPath = path.replace(/\/$/, '') || '/admin';
+      var links = sidebar ? sidebar.querySelectorAll('nav a[href]') : [];
+      links.forEach(function(a) {
+        var href = a.getAttribute('href') || '';
+        var linkPath = href.replace(/\/$/, '') || '/admin';
+        if (normalizedPath === linkPath) {
+          a.classList.add('bg-gray-800', 'text-white');
+          a.classList.remove('hover:bg-gray-800');
+        }
+      });
+    })();
+    </script> </body> </html>
