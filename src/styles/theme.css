@@ -1,16 +1,16 @@
 /* ===== DESIGN TOKENS ===== */
 /* Generated at build time from database */
 /* Source: https://api.lavprishjemmeside.dk/design-settings/public */
-/* Last updated: 2026-02-24T23:14:37.268Z */
+/* Last updated: 2026-03-13T14:19:48.509Z */
 
 :root {
   /* --- Brand Colors --- */
-  --color-primary: #111827;
-  --color-primary-hover: #030712;
+  --color-primary: #3B63BA;
+  --color-primary-hover: #6BABDB;
   --color-primary-light: #F3F4F6;
-  --color-secondary: #6B7280;
-  --color-secondary-hover: #4B5563;
-  --color-secondary-light: #F9FAFB;
+  --color-secondary: #7645BF;
+  --color-secondary-hover: #815ADD;
+  --color-secondary-light: #0091C2;
   --color-accent: #2563EB;
   --color-accent-hover: #1D4ED8;
 
