@@ -1,0 +1,99 @@
+---
+import PriceDisplay from './PriceDisplay.astro';
+
+interface Props {
+  id: number;
+  name: string;
+  slug: string;
+  short_desc?: string;
+  price_ore: number;
+  compare_ore?: number;
+  primary_image?: string;
+  category_slug?: string;
+  is_featured?: boolean;
+  stock?: number;
+  track_stock?: boolean;
+}
+
+const {
+  id, name, slug, short_desc, price_ore, compare_ore,
+  primary_image, is_featured, stock, track_stock,
+} = Astro.props;
+
+const href = `/shop/produkt/${slug}/`;
+const isLow = track_stock && stock !== undefined && stock > 0 && stock <= 5;
+const isOut = track_stock && stock !== undefined && stock === 0;
+const imgSrc = primary_image || '/favicon.svg';
+---
+
+<article
+  class="product-card group relative flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-border)]
+         bg-[var(--color-bg-card,var(--color-bg-page))] overflow-hidden
+         shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] transition-shadow duration-200"
+  data-product-id={id}
+>
+  <!-- Image -->
+  <a href={href} class="block aspect-square overflow-hidden bg-[var(--color-neutral-100)]" tabindex="-1" aria-hidden="true">
+    <img
+      src={imgSrc}
+      alt={name}
+      width="400"
+      height="400"
+      loading="lazy"
+      decoding="async"
+      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+    />
+  </a>
+
+  <!-- Badges -->
+  <div class="absolute top-2 left-2 flex flex-col gap-1">
+    {is_featured && (
+      <span class="badge bg-[var(--color-primary)] text-[var(--color-text-on-primary)] text-[11px] font-semibold px-2 py-0.5 rounded-full">
+        Anbefalet
+      </span>
+    )}
+    {compare_ore && compare_ore > price_ore && (
+      <span class="badge bg-[var(--color-danger,#e53e3e)] text-white text-[11px] font-semibold px-2 py-0.5 rounded-full">
+        Tilbud
+      </span>
+    )}
+    {isOut && (
+      <span class="badge bg-gray-500 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full">
+        Udsolgt
+      </span>
+    )}
+    {isLow && !isOut && (
+      <span class="badge bg-orange-500 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full">
+        Få tilbage
+      </span>
+    )}
+  </div>
+
+  <!-- Content -->
+  <div class="flex flex-col gap-2 p-4 flex-1">
+    <a href={href} class="block">
+      <h3 class="font-semibold text-[var(--color-text-primary)] leading-snug line-clamp-2 group-hover:text-[var(--color-primary)] transition-colors">
+        {name}
+      </h3>
+    </a>
+    {short_desc && (
+      <p class="text-sm text-[var(--color-text-secondary)] line-clamp-2">{short_desc}</p>
+    )}
+    <div class="mt-auto pt-2 flex items-center justify-between gap-2">
+      <PriceDisplay ore={price_ore} compareOre={compare_ore} showVat={true} />
+      <button
+        type="button"
+        class="add-to-cart-btn shrink-0 rounded-[var(--radius-md)] bg-[var(--color-primary)] text-[var(--color-text-on-primary)]
+               px-3 py-1.5 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-40"
+        data-product-id={id}
+        data-product-name={name}
+        data-price-ore={price_ore}
+        data-slug={slug}
+        disabled={isOut}
+        aria-label={`Tilføj ${name} til kurv`}
+      >
+        {isOut ? 'Udsolgt' : 'Tilføj'}
+      </button>
+    </div>
+  </div>
+</article>

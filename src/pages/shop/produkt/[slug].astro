@@ -1,0 +1,95 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import ProductDetail from '../../../components/ProductDetail.astro';
+
+export async function getStaticPaths() {
+  const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+  try {
+    const res = await fetch(`${apiUrl}/shop/products?limit=500`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.products || []).map((p: any) => ({
+      params: { slug: p.slug },
+      props: { product: p },
+    }));
+  } catch {
+    return [];
+  }
+}
+
+const { product: staticProduct } = Astro.props;
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+
+// Fetch full product data (with variants + images) at build time
+let product = staticProduct;
+try {
+  const res = await fetch(`${apiUrl}/shop/products/${staticProduct.slug}`);
+  if (res.ok) product = await res.json();
+} catch {}
+
+const schemaMarkup = [{
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: product.name,
+  description: product.short_desc || product.name,
+  image: product.images?.[0]?.url,
+  sku: product.sku,
+  offers: {
+    '@type': 'Offer',
+    priceCurrency: 'DKK',
+    price: (product.price_ore / 100).toFixed(2),
+    availability: (product.track_stock && product.stock === 0)
+      ? 'https://schema.org/OutOfStock'
+      : 'https://schema.org/InStock',
+  }
+}];
+---
+
+<Layout
+  title={product.meta_title || `${product.name} — Shop — Lavprishjemmeside.dk`}
+  description={product.meta_desc || product.short_desc || product.name}
+  schemaMarkup={schemaMarkup}
+  ogImage={product.images?.[0]?.url}
+>
+  <main>
+    <ProductDetail {...product} apiUrl={apiUrl} />
+
+    <!-- Client-side stock refresh -->
+    <script define:vars={{ productId: product.id, variantIds: (product.variants || []).map((v: any) => v.id), apiUrl }}>
+      // Refresh stock from API after page load (SSG data may be stale)
+      (async function() {
+        try {
+          const res = await fetch(`${apiUrl}/shop/products/${window.location.pathname.split('/').filter(Boolean).pop()}`);
+          if (!res.ok) return;
+          const fresh = await res.json();
+          const stockEl = document.getElementById('stock-status');
+          if (!stockEl) return;
+
+          if (fresh.track_stock) {
+            if (fresh.stock === 0 && !fresh.variants?.length) {
+              stockEl.textContent = 'Udsolgt';
+              stockEl.className = 'text-sm font-medium text-red-600';
+              const addBtn = document.getElementById('add-to-cart-detail');
+              if (addBtn) { addBtn.disabled = true; addBtn.textContent = 'Udsolgt'; }
+            } else if (fresh.stock <= 5) {
+              stockEl.textContent = `Kun ${fresh.stock} tilbage på lager`;
+              stockEl.className = 'text-sm font-medium text-orange-500';
+            }
+          }
+
+          // Update variant stock in select
+          const sel = document.getElementById('variant-select');
+          if (sel && fresh.variants?.length) {
+            for (const opt of sel.options) {
+              const v = fresh.variants.find((fv) => String(fv.id) === opt.value);
+              if (v) {
+                opt.dataset.stock = String(v.stock);
+                if (v.stock === 0) { opt.disabled = true; opt.text = opt.text.replace(' (udsolgt)', '') + ' (udsolgt)'; }
+              }
+            }
+          }
+        } catch {}
+      })();
+    </script>
+  </main>
+</Layout>

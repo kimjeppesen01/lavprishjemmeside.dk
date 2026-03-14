@@ -1,0 +1,266 @@
+---
+import PriceDisplay from './PriceDisplay.astro';
+
+interface Variant {
+  id: number;
+  name: string;
+  price_ore: number | null;
+  stock: number;
+  is_active: boolean;
+}
+interface ProductImage {
+  id: number;
+  url: string;
+  alt?: string;
+  is_primary?: boolean;
+}
+
+interface Props {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  short_desc?: string;
+  price_ore: number;
+  compare_ore?: number;
+  variants?: Variant[];
+  images?: ProductImage[];
+  stock?: number;
+  track_stock?: boolean;
+  category_name?: string;
+  category_slug?: string;
+  weight_g?: number;
+  apiUrl: string;
+}
+
+const {
+  id, name, description, short_desc, price_ore, compare_ore,
+  variants = [], images = [], stock = 0, track_stock = true,
+  category_name, category_slug, apiUrl,
+} = Astro.props;
+
+const primaryImage = images.find(i => i.is_primary) || images[0];
+const hasVariants = variants.length > 0;
+const isOut = track_stock && !hasVariants && stock === 0;
+const stockStatusClass = isOut ? 'text-red-600' : 'text-green-600';
+const stockStatusText = isOut
+  ? 'Udsolgt'
+  : track_stock && stock && stock <= 5
+    ? `Kun ${stock} tilbage på lager`
+    : 'På lager';
+---
+
+<article class="product-detail mx-auto max-w-[var(--container-max-width)] px-[var(--container-padding-x)] py-12">
+  <!-- Breadcrumb -->
+  {category_name && (
+    <nav class="mb-6 text-sm text-[var(--color-text-secondary)]" aria-label="Brødkrumme">
+      <a href="/shop/" class="hover:text-[var(--color-primary)]">Shop</a>
+      <span class="mx-2">›</span>
+      {category_slug && (
+        <>
+          <a href={`/shop/${category_slug}/`} class="hover:text-[var(--color-primary)]">{category_name}</a>
+          <span class="mx-2">›</span>
+        </>
+      )}
+      <span class="text-[var(--color-text-primary)]">{name}</span>
+    </nav>
+  )}
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+    <!-- Images -->
+    <div class="product-images">
+      <!-- Main image -->
+      <div class="aspect-square overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-neutral-100)] mb-3">
+        <img
+          id="main-product-image"
+          src={primaryImage?.url || '/favicon.svg'}
+          alt={primaryImage?.alt || name}
+          width="600"
+          height="600"
+          loading="eager"
+          decoding="async"
+          class="w-full h-full object-cover"
+        />
+      </div>
+      <!-- Thumbnails -->
+      {images.length > 1 && (
+        <div class="flex gap-2 overflow-x-auto pb-1">
+          {images.map(img => (
+            <button
+              type="button"
+              class="product-thumb shrink-0 w-16 h-16 rounded-[var(--radius-md)] overflow-hidden
+                     border-2 border-transparent hover:border-[var(--color-primary)] transition-colors"
+              data-src={img.url}
+              data-alt={img.alt || name}
+              aria-label={`Vis billede: ${img.alt || name}`}
+            >
+              <img src={img.url} alt={img.alt || name} width="64" height="64" class="w-full h-full object-cover" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+
+    <!-- Product info -->
+    <div class="product-info flex flex-col gap-5">
+      <div>
+        <h1 class="text-3xl font-extrabold text-[var(--color-text-primary)]">{name}</h1>
+        {short_desc && <p class="mt-2 text-[var(--color-text-secondary)]">{short_desc}</p>}
+      </div>
+
+      <!-- Price -->
+      <div class="py-3 border-t border-b border-[var(--color-border)]">
+        <PriceDisplay ore={price_ore} compareOre={compare_ore} showVat={true} size="lg" id="detail-price" />
+      </div>
+
+      <!-- Stock status -->
+      <div id="stock-status" class="text-sm font-medium"
+           class:list={[stockStatusClass]}>
+        {stockStatusText}
+      </div>
+
+      <!-- Variants -->
+      {hasVariants && (
+        <div>
+          <label class="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">Vælg variant:</label>
+          <select
+            id="variant-select"
+            class="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-page)]
+                   px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+          >
+            <option value="">Vælg...</option>
+            {variants.filter(v => v.is_active).map(v => (
+              <option
+                value={v.id}
+                data-price={v.price_ore ?? price_ore}
+                data-stock={v.stock}
+                disabled={v.stock === 0}
+              >
+                {v.name}{v.stock === 0 ? ' (udsolgt)' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <!-- Quantity -->
+      <div class="flex items-center gap-3">
+        <label class="text-sm font-semibold text-[var(--color-text-primary)]" for="qty-input">Antal:</label>
+        <div class="flex items-center border border-[var(--color-border)] rounded-[var(--radius-md)] overflow-hidden">
+          <button type="button" id="qty-minus" class="px-3 py-2 hover:bg-[var(--color-neutral-100)] text-lg leading-none" aria-label="Minimer antal">−</button>
+          <input id="qty-input" type="number" value="1" min="1" max="99"
+                 class="w-14 text-center border-0 py-2 text-sm focus:outline-none bg-transparent" />
+          <button type="button" id="qty-plus" class="px-3 py-2 hover:bg-[var(--color-neutral-100)] text-lg leading-none" aria-label="Forøg antal">+</button>
+        </div>
+      </div>
+
+      <!-- Add to cart -->
+      <button
+        type="button"
+        id="add-to-cart-detail"
+        class="w-full rounded-[var(--radius-full)] btn-gradient px-6 py-4 text-base font-semibold
+               text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90
+               disabled:opacity-40"
+        disabled={isOut}
+        data-product-id={id}
+        data-product-name={name}
+        data-price-ore={price_ore}
+      >
+        {isOut ? 'Udsolgt' : 'Tilføj til kurv'}
+      </button>
+
+      <!-- Description -->
+      {description && (
+        <div class="pt-4 border-t border-[var(--color-border)]">
+          <h2 class="text-base font-semibold text-[var(--color-text-primary)] mb-2">Beskrivelse</h2>
+          <div class="prose prose-sm text-[var(--color-text-secondary)] max-w-none"
+               set:html={description} />
+        </div>
+      )}
+    </div>
+  </div>
+</article>
+
+<script>
+  import { addToCart } from '../scripts/cart.js';
+
+  const btn = document.getElementById('add-to-cart-detail') as HTMLButtonElement | null;
+  const variantSelect = document.getElementById('variant-select') as HTMLSelectElement | null;
+  const qtyInput = document.getElementById('qty-input') as HTMLInputElement | null;
+  const qtyMinus = document.getElementById('qty-minus');
+  const qtyPlus = document.getElementById('qty-plus');
+  const mainImg = document.getElementById('main-product-image') as HTMLImageElement | null;
+
+  // Thumbnail swap
+  document.querySelectorAll('.product-thumb').forEach(thumb => {
+    thumb.addEventListener('click', () => {
+      const src = (thumb as HTMLElement).dataset.src;
+      const alt = (thumb as HTMLElement).dataset.alt;
+      if (mainImg && src) { mainImg.src = src; mainImg.alt = alt || ''; }
+    });
+  });
+
+  // Qty buttons
+  qtyMinus?.addEventListener('click', () => {
+    if (!qtyInput) return;
+    const v = parseInt(qtyInput.value) || 1;
+    if (v > 1) qtyInput.value = String(v - 1);
+  });
+  qtyPlus?.addEventListener('click', () => {
+    if (!qtyInput) return;
+    const v = parseInt(qtyInput.value) || 1;
+    if (v < 99) qtyInput.value = String(v + 1);
+  });
+
+  // Variant select: update stock status + price
+  variantSelect?.addEventListener('change', () => {
+    const opt = variantSelect.selectedOptions[0];
+    const stockEl = document.getElementById('stock-status');
+    const variantStock = parseInt(opt?.dataset.stock || '99');
+
+    if (stockEl) {
+      if (!opt?.value) {
+        stockEl.textContent = '';
+      } else if (variantStock === 0) {
+        stockEl.textContent = 'Udsolgt';
+        stockEl.className = 'text-sm font-medium text-red-600';
+      } else if (variantStock <= 5) {
+        stockEl.textContent = `Kun ${variantStock} tilbage`;
+        stockEl.className = 'text-sm font-medium text-orange-500';
+      } else {
+        stockEl.textContent = 'På lager';
+        stockEl.className = 'text-sm font-medium text-green-600';
+      }
+    }
+
+    if (btn) btn.disabled = variantStock === 0 || !opt?.value;
+  });
+
+  // Add to cart
+  btn?.addEventListener('click', () => {
+    const productId = parseInt(btn.dataset.productId || '0');
+    const name = btn.dataset.productName || '';
+    let priceOre = parseInt(btn.dataset.priceOre || '0');
+    let variantId: number | null = null;
+    let variantName: string | null = null;
+
+    if (variantSelect?.value) {
+      variantId = parseInt(variantSelect.value);
+      variantName = variantSelect.selectedOptions[0]?.text.replace(' (udsolgt)', '') || null;
+      const variantPrice = parseInt(variantSelect.selectedOptions[0]?.dataset.price || '0');
+      if (variantPrice > 0) priceOre = variantPrice;
+    }
+
+    const qty = Math.max(1, parseInt(qtyInput?.value || '1'));
+
+    addToCart({ product_id: productId, variant_id: variantId, quantity: qty, name, variant_name: variantName, price_ore: priceOre });
+
+    const orig = btn.textContent;
+    btn.textContent = 'Tilføjet til kurv ✓';
+    btn.disabled = true;
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.disabled = false;
+    }, 1800);
+  });
+</script>

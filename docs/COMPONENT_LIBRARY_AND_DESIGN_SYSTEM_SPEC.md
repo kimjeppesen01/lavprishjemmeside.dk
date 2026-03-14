@@ -1,5 +1,10 @@
 # Phase 6: Component Library, Design System & AI Content Developer
 
+> Reference-only: legacy strategy/spec context. This file must not override the root handoff pack or the canonical in-folder trilogy: `requirements.md`, `design.md`, and `tasks.md`.
+
+
+> Current authority: the feature content below is still useful, but any deploy/runtime references to GitHub Actions, the old publish contract, `touch api/tmp/restart.txt`, or historical assistant architecture are superseded by `docs/SSH_FIRST_OPERATIONS.md`, `docs/UPSTREAM_UPDATES.md`, and `docs/CLIENT_ASSISTANT_ARCHITECTURE.md`.
+
 > **Project**: lavprishjemmeside.dk
 > **Vision**: Build a world-class, AI-powered website factory with curated components, design tokens, and AI-driven content assembly.
 > **Integration**: Works seamlessly with Phase 7 (Visual Page Builder) - shared context system, compatible data structures
@@ -31,11 +36,11 @@
                         │ saves to DB via API
                         ▼
  ┌──────────────────────────────────────────────────────────────┐
- │                   3. PUBLISH PIPELINE                        │
- │                                                              │
- │  Trigger: POST /publish (or human clicks "Publicer")         │
- │  Action:  GitHub Actions → Astro build → static deploy       │
- │  Result:  Live static page in ~90 seconds                    │
+│                   3. PUBLISH PIPELINE                        │
+│                                                              │
+│  Trigger: POST /publish (or human clicks "Publicer")         │
+│  Action:  Local server build + SSH-first sync of `dist/`     │
+│  Result:  Live static page after the documented rollout      │
  └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -68,7 +73,7 @@
 │  /ai/assemble         → AI: content brief → components      │
 │  /ai/generate         → AI: mockup image → components       │
 │  /ai/context          → Dynamic context for AI agents       │
-│  /publish             → Trigger GitHub Actions rebuild       │
+│  /publish             → Trigger local rebuild + deploy sync  │
 └───────────────────────┬─────────────────────────────────────┘
                         │
           ┌─────────────┴──────────────┐
@@ -94,7 +99,7 @@
 - [ ] Admin login/dashboard functional at `/admin/dashboard/`
 - [ ] API running at `api.lavprishjemmeside.dk` with JWT auth
 - [ ] MySQL database `theartis_lavpris` accessible
-- [ ] GitHub Actions CI/CD pipeline deploying correctly
+- [ ] SSH-first rollout pipeline working correctly on the target cPanel install
 - [ ] Tailwind CSS v4 with `@tailwindcss/vite` plugin working
 - [ ] Node 22, `.js` files with CommonJS, `DB_HOST=127.0.0.1`
 
@@ -472,7 +477,7 @@ Create these route files in `api/src/routes/`:
 
 | Method | Endpoint | Auth | Purpose |
 |--------|----------|------|---------|
-| `POST` | `/publish` | JWT | Trigger GitHub Actions workflow_dispatch |
+| `POST` | `/publish` | JWT | Trigger the current local rebuild + deploy-sync flow |
 | `GET` | `/publish/status` | JWT | Last publish timestamp |
 
 ### 1.5 — Testing Checkpoint
@@ -900,51 +905,23 @@ const components = await getPageComponents('/');
 </Layout>
 ```
 
-### 4.4 — GitHub Actions: Publish Trigger
+### 4.4 — Publish Trigger
 
-Update `.github/workflows/deploy.yml`:
-```yaml
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:  # ← allows API-triggered rebuilds
+Historical note: this section originally described a GitHub Actions `workflow_dispatch` flow. The live CMS now uses the SSH-first publish contract documented in `docs/SSH_FIRST_OPERATIONS.md`.
 
-# Add env var for build step:
-- name: Build Astro site
-  run: npm run build
-  env:
-    PUBLIC_API_URL: https://api.lavprishjemmeside.dk
-```
+Current expectation for `POST /publish`:
 
-Implement `POST /publish` endpoint:
-```javascript
-// Trigger GitHub Actions via workflow_dispatch
-const response = await fetch(
-  'https://api.github.com/repos/kimjeppesen01/lavprishjemmeside.dk/actions/workflows/deploy.yml/dispatches',
-  {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.GITHUB_PAT}`,
-      'Accept': 'application/vnd.github.v3+json'
-    },
-    body: JSON.stringify({ ref: 'main' })
-  }
-);
-```
-
-**CRITICAL**: `GITHUB_PAT` should be added to:
-- GitHub repository secrets (for Actions)
-- cPanel Node.js app environment variables (for API to trigger deploys)
-- **NEVER** commit to `.env` file
-
-Rate limit: max 1 publish per 2 minutes.
+- run the local Astro build on the server
+- sync the resulting `dist/` to the live docroot
+- record last publish timestamp or failure status
+- rate-limit repeated publish attempts so operators cannot spam rebuilds
 
 ### 4.5 — Testing Checkpoint
 
 - [ ] `npm run build` generates static pages with CMS content
 - [ ] Fallback works: if API is down, build still succeeds with defaults
 - [ ] `theme.css` is generated correctly from design_settings
-- [ ] `POST /publish` triggers GitHub Actions run
+- [ ] `POST /publish` triggers the current local rebuild + deploy-sync flow
 - [ ] Full cycle: change content in DB → publish → site reflects changes within ~90 seconds
 
 ---
@@ -1349,14 +1326,14 @@ src/
 
 ```
 api/server.cjs                  # Register 7 new route files
-api/.env.example                # Add ANTHROPIC_API_KEY, GITHUB_PAT
+api/.env.example                # Add ANTHROPIC_API_KEY and current publish/runtime env vars
 api/package.json                # Add @anthropic-ai/sdk dependency
 api/src/middleware/rateLimit.js # Add aiRateLimiter (shared)
 src/styles/global.css           # Import theme.css
 src/layouts/Layout.astro        # Load Google Fonts dynamically from design settings
 src/layouts/AdminLayout.astro   # Add 5 new sidebar nav items
 src/pages/index.astro           # Refactor to use CMS data via ComponentRenderer
-.github/workflows/deploy.yml    # Add workflow_dispatch + PUBLIC_API_URL env
+api/src/routes/publish.js       # Implement current local rebuild + deploy-sync behavior
 package.json                    # Add prebuild script
 PROJECT_CONTEXT.md              # Document Phase 6
 ```
@@ -1402,7 +1379,7 @@ Stage 1 → Stage 2 → Stage 3 → Stage 4 → Stage 5 → Stage 6 → Stage 7
 5. **All user-facing text in Danish**: Buttons, labels, error messages, toasts, placeholder content.
 6. **Build must never fail if API is down**: Always provide fallback values in `cms.ts` and `generate-theme.mjs`.
 7. **`.js` files for API, CommonJS, `DB_HOST=127.0.0.1`** — same patterns as all previous phases.
-8. **`git pull --rebase` before push** — GitHub Actions commits `dist/` back to `main`.
+8. **Follow the SSH-first rollout contract** — do not assume `dist/` is committed back to `main` by CI.
 9. **Anthropic SDK**: Use `@anthropic-ai/sdk` npm package. Model: `claude-sonnet-4-20250514`. Keep AI calls server-side only.
 10. **Test the full loop**: Content brief → AI assembly → validate → save → publish → live static page with correct heading hierarchy and Schema.org markup.
 11. **Phase 7 integration**: Component docs + dynamic AI context are shared between Phase 6 & 7. Design once, use twice.

@@ -1,11 +1,22 @@
 # Shopping Module — Implementation Plan
 
+> Reference-only: legacy strategy/spec context. This file must not override the root handoff pack or the canonical in-folder trilogy: `requirements.md`, `design.md`, and `tasks.md`.
+
+
+> Current authority: this is a feature roadmap document. Deploy/runtime guidance for the live CMS is owned by `docs/SSH_FIRST_OPERATIONS.md` and `docs/UPSTREAM_UPDATES.md`. Any references elsewhere in this file to historical deploy behavior, old restart commands, or the retired CMS-side assistant stack should be treated as archived context only.
+
 > **Project:** lavprishjemmeside.dk
 > **Stack:** Astro 5 MPA + Express API (`.cjs`) + MySQL + cPanel/LiteSpeed + Node 22
-> **Payment:** Quickpay (Dankort, Visa/MC, MobilePay, Apple Pay)
+> **Payment:** Flatpay / Frisbii
 > **Scope:** Own shop, physical products only
-> **Status:** Plan — ready for implementation
-> **Last revised:** 2026-02-16
+> **Status:** Implemented for the core storefront, checkout, admin, and webhook flow
+> **Last revised:** 2026-03-14
+
+> **Implementation status:** live code now exists in `api/src/schema_shop.sql`, `api/src/routes/shop-public.cjs`, `api/src/routes/shop-admin.cjs`, `api/src/routes/shop-flatpay.cjs`, `api/src/services/flatpay.cjs`, `api/src/services/shop-email.cjs`, `src/pages/shop/*`, `src/pages/admin/shop/*`, `src/components/Product*.astro`, `src/components/CartDrawer.astro`, and `src/scripts/cart.js`.
+
+> **Bootstrap note:** the core CMS schema still runs through `node api/run-schema.cjs`, but the shop schema currently also requires manual application of `api/src/schema_shop.sql`.
+
+> **Naming note:** older Quickpay references below reflect the original plan language. The implemented payment gateway is Flatpay / Frisbii.
 
 ---
 
@@ -667,8 +678,8 @@ Reuses existing Resend/Nodemailer from `services/email.js`.
 
 ### Deployment checks
 - All new files are `.cjs`
-- `touch tmp/restart.txt` restarts API
-- Static shop pages build in GitHub Actions
+- API restart follows the current CloudLinux/SSH-first contract
+- Static shop pages build during the current rollout flow
 - Quickpay callback URL accessible externally
 
 ---

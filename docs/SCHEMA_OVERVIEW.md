@@ -1,6 +1,9 @@
 # Schema and seed run order — single overview
 
-**All required schema and seed runs are executed automatically.** No manual SQL steps.
+> Reference-only: internal/operator runbook or task context. External sprint agents should use the root handoff pack as execution authority.
+
+
+**Core CMS schema and seeds are executed automatically.** The shop module currently adds one manual SQL step.
 
 ## How to run
 
@@ -13,6 +16,8 @@ node api/run-schema.cjs
 - Used by **`npm run setup`** (scripts/setup.cjs) during 1-click install.
 - Safe to **re-run**: duplicate table/column/index errors are ignored (additive only).
 - Loads `api/.env` via dotenv; uses mysql2 to execute each file in order.
+- After schema setup, the installer also provisions the draft assistant through Agent Enterprise when the `AGENT_ENTERPRISE_*` inputs are present.
+- If the install should use the e-commerce module, apply `api/src/schema_shop.sql` after the core runner.
 
 ---
 
@@ -36,7 +41,7 @@ node api/run-schema.cjs
 | 10 | `schema_theme_modes.sql` | Theme mode support |
 | 11 | `schema_theme_settings.sql` | Theme settings |
 | 12 | `schema_master.sql` | sites, kanban_items, master tables |
-| 13 | `schema_ian_control_plane.sql` | IAN control plane |
+| 13 | `schema_assistant_settings.sql` | Local CMS assistant settings and sync state |
 | 14 | `schema_indexes.sql` | Production indexes |
 
 ### 2. Seed files (after schemas)
@@ -45,6 +50,30 @@ node api/run-schema.cjs
 |------|---------|
 | `seed_components_v2.sql` | Component library (27 components); ON DUPLICATE KEY UPDATE only for `source = 'library'` |
 | `seed_master.sql` | Master/sites seed if present |
+
+### 3. Manual module bootstrap
+
+#### Shop module
+
+The implemented shop module currently uses a separate schema file:
+
+```bash
+mysql -u <user> -p <database> < api/src/schema_shop.sql
+```
+
+This creates and seeds:
+
+- `product_categories`
+- `products`
+- `product_variants`
+- `product_images`
+- `customers`
+- `shipping_methods`
+- `discount_codes`
+- `orders`
+- `order_items`
+- `order_events`
+- `shop_settings`
 
 ---
 
@@ -68,6 +97,7 @@ These are **not** in the default runner. Run only if needed for a specific migra
 |------|-------------|
 | `schema_master_role.sql` | Add `master` to users.role ENUM (if not in schema_master) |
 | `schema_master_audit.sql` | master_audit_log (if not in schema_master) |
+| `schema_shop.sql` | Shop module tables and seed data; apply manually for shop-enabled installs |
 | `schema_media_v2.sql` | Media table v2 changes |
 | `schema_phase6`-related add-ons | e.g. schema_overlap_module, schema_component_versions, schema_add_product_carousel_sticky_column, schema_immersive_content_visual, schema_migrate_* — run manually if required by your version |
 | `seed_master_user_info.sql` | Example: set a user to role master (after schema_master_role) |
@@ -81,3 +111,4 @@ When in doubt, run **`node api/run-schema.cjs`** first; it is idempotent for the
 - **Setup:** [scripts/setup.cjs](../scripts/setup.cjs) calls `node api/run-schema.cjs` after writing `api/.env`.
 - **Rollout:** [ROLLOUT_MANUAL.md](ROLLOUT_MANUAL.md) and [UPSTREAM_UPDATES.md](UPSTREAM_UPDATES.md) refer to running schema on server (same command).
 - **Runner:** [api/run-schema.cjs](../api/run-schema.cjs).
+

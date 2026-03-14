@@ -1,0 +1,291 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+---
+
+<AdminLayout title="Produkter">
+  <div class="space-y-6">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <h1 class="text-2xl font-bold">Produkter</h1>
+      <button id="new-product-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm">
+        + Nyt produkt
+      </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap gap-3">
+      <input id="search-input" type="search" placeholder="Søg produkt eller SKU..." class="admin-input w-full sm:w-64" />
+      <select id="status-filter" class="admin-input">
+        <option value="">Alle statuser</option>
+        <option value="1">Aktive</option>
+        <option value="0">Inaktive</option>
+      </select>
+    </div>
+
+    <div id="loading" class="text-center py-8 text-gray-500">Henter produkter...</div>
+    <div id="error" class="hidden text-red-600 py-4"></div>
+
+    <!-- Table -->
+    <div id="products-table-wrap" class="hidden overflow-x-auto rounded-lg border border-gray-200">
+      <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600">Produkt</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600">Pris</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600">Lager</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600">Handling</th>
+          </tr>
+        </thead>
+        <tbody id="products-tbody" class="divide-y divide-gray-100 bg-white"></tbody>
+      </table>
+    </div>
+    <div id="pagination" class="hidden flex items-center justify-between text-sm text-gray-500 pt-2"></div>
+  </div>
+
+  <!-- Product modal -->
+  <div id="product-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-start justify-center overflow-y-auto py-8 px-4">
+    <div class="w-full max-w-xl bg-white rounded-xl shadow-xl">
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <h2 id="modal-title" class="text-lg font-bold">Nyt produkt</h2>
+        <button id="modal-close" class="text-gray-400 hover:text-gray-700 text-xl leading-none">&times;</button>
+      </div>
+      <form id="product-form" class="p-6 space-y-4">
+        <input type="hidden" id="product-id" value="" />
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <label class="admin-label" for="p-name">Navn *</label>
+            <input id="p-name" name="name" class="admin-input w-full" required />
+          </div>
+          <div class="col-span-2">
+            <label class="admin-label" for="p-slug">Slug *</label>
+            <input id="p-slug" name="slug" class="admin-input w-full" required />
+          </div>
+          <div>
+            <label class="admin-label" for="p-price">Pris (øre, f.eks. 9995) *</label>
+            <input id="p-price" name="price_ore" type="number" min="0" class="admin-input w-full" required />
+          </div>
+          <div>
+            <label class="admin-label" for="p-compare">Sammenligningspris (øre)</label>
+            <input id="p-compare" name="compare_ore" type="number" min="0" class="admin-input w-full" />
+          </div>
+          <div>
+            <label class="admin-label" for="p-sku">SKU</label>
+            <input id="p-sku" name="sku" class="admin-input w-full" />
+          </div>
+          <div>
+            <label class="admin-label" for="p-stock">Lager</label>
+            <input id="p-stock" name="stock" type="number" min="0" class="admin-input w-full" />
+          </div>
+          <div class="col-span-2">
+            <label class="admin-label" for="p-short-desc">Kort beskrivelse</label>
+            <textarea id="p-short-desc" name="short_desc" rows="2" class="admin-input w-full"></textarea>
+          </div>
+          <div class="col-span-2">
+            <label class="admin-label" for="p-desc">Beskrivelse (HTML tilladt)</label>
+            <textarea id="p-desc" name="description" rows="4" class="admin-input w-full"></textarea>
+          </div>
+          <div class="flex items-center gap-2">
+            <input id="p-active" name="is_active" type="checkbox" checked />
+            <label for="p-active" class="text-sm font-medium text-gray-700">Aktiv</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input id="p-featured" name="is_featured" type="checkbox" />
+            <label for="p-featured" class="text-sm font-medium text-gray-700">Anbefalet</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input id="p-track-stock" name="track_stock" type="checkbox" checked />
+            <label for="p-track-stock" class="text-sm font-medium text-gray-700">Spor lager</label>
+          </div>
+        </div>
+        <div id="form-error" class="hidden rounded bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600"></div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" id="form-cancel" class="px-4 py-2 border border-gray-300 rounded-lg text-sm">Annuller</button>
+          <button type="submit" id="form-save" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">Gem</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+.admin-input { border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.375rem 0.625rem; font-size: 0.875rem; outline: none; }
+.admin-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+.admin-label { display: block; font-size: 0.75rem; font-weight: 600; color: #4b5563; margin-bottom: 0.25rem; }
+</style>
+
+<script define:vars={{ apiUrl }}>
+  const token = () => localStorage.getItem('admin_token');
+  const headers = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` });
+
+  let currentPage = 1;
+  let editingId = null;
+
+  async function loadProducts() {
+    const search = document.getElementById('search-input').value;
+    const active = document.getElementById('status-filter').value;
+    const params = new URLSearchParams({ page: currentPage, limit: 25, ...(search && { search }), ...(active !== '' && { active }) });
+
+    try {
+      const res = await fetch(`${apiUrl}/shop/admin/products?${params}`, { headers: headers() });
+      const data = await res.json();
+      document.getElementById('loading')?.classList.add('hidden');
+      document.getElementById('products-table-wrap')?.classList.remove('hidden');
+
+      const tbody = document.getElementById('products-tbody');
+      tbody.innerHTML = '';
+      (data.products || []).forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-3">
+              ${p.primary_image ? `<img src="${p.primary_image}" class="w-10 h-10 rounded object-cover" loading="lazy"/>` : '<div class="w-10 h-10 rounded bg-gray-100"></div>'}
+              <div>
+                <p class="font-medium text-gray-900">${p.name}</p>
+                <p class="text-xs text-gray-400">${p.sku || '—'}</p>
+              </div>
+            </div>
+          </td>
+          <td class="px-4 py-3">${(p.price_ore / 100).toFixed(2).replace('.', ',')} kr.</td>
+          <td class="px-4 py-3">${p.track_stock ? p.stock : '∞'}</td>
+          <td class="px-4 py-3">
+            <span class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
+              ${p.is_active ? 'Aktiv' : 'Inaktiv'}
+            </span>
+          </td>
+          <td class="px-4 py-3 flex gap-2">
+            <button class="edit-btn text-blue-600 hover:underline text-xs" data-id="${p.id}">Rediger</button>
+            <button class="delete-btn text-red-500 hover:underline text-xs" data-id="${p.id}" data-name="${p.name}">Slet</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const pag = document.getElementById('pagination');
+      pag.classList.remove('hidden');
+      pag.innerHTML = `<span>Side ${currentPage} · ${data.total} produkter i alt</span>
+        <div class="flex gap-2">
+          ${currentPage > 1 ? '<button id="prev-page" class="px-3 py-1 border rounded text-xs">← Forrige</button>' : ''}
+          ${data.total > currentPage * 25 ? '<button id="next-page" class="px-3 py-1 border rounded text-xs">Næste →</button>' : ''}
+        </div>`;
+
+      document.getElementById('prev-page')?.addEventListener('click', () => { currentPage--; loadProducts(); });
+      document.getElementById('next-page')?.addEventListener('click', () => { currentPage++; loadProducts(); });
+    } catch (e) {
+      document.getElementById('loading')?.classList.add('hidden');
+      document.getElementById('error').textContent = 'Fejl ved hentning af produkter: ' + e.message;
+      document.getElementById('error').classList.remove('hidden');
+    }
+  }
+
+  // Delegated events on table
+  document.getElementById('products-tbody')?.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('edit-btn')) {
+      await openEdit(parseInt(e.target.dataset.id));
+    }
+    if (e.target.classList.contains('delete-btn')) {
+      if (!confirm(`Slet "${e.target.dataset.name}"?`)) return;
+      await fetch(`${apiUrl}/shop/admin/products/${e.target.dataset.id}`, { method: 'DELETE', headers: headers() });
+      loadProducts();
+    }
+  });
+
+  // Search / filter
+  let searchTimer;
+  document.getElementById('search-input')?.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { currentPage = 1; loadProducts(); }, 400);
+  });
+  document.getElementById('status-filter')?.addEventListener('change', () => { currentPage = 1; loadProducts(); });
+
+  // Open edit modal
+  async function openEdit(id) {
+    const res = await fetch(`${apiUrl}/shop/admin/products/${id}`, { headers: headers() });
+    const p = await res.json();
+    editingId = id;
+    document.getElementById('modal-title').textContent = 'Rediger produkt';
+    document.getElementById('product-id').value = id;
+    document.getElementById('p-name').value = p.name || '';
+    document.getElementById('p-slug').value = p.slug || '';
+    document.getElementById('p-price').value = p.price_ore || '';
+    document.getElementById('p-compare').value = p.compare_ore || '';
+    document.getElementById('p-sku').value = p.sku || '';
+    document.getElementById('p-stock').value = p.stock || 0;
+    document.getElementById('p-short-desc').value = p.short_desc || '';
+    document.getElementById('p-desc').value = p.description || '';
+    document.getElementById('p-active').checked = !!p.is_active;
+    document.getElementById('p-featured').checked = !!p.is_featured;
+    document.getElementById('p-track-stock').checked = !!p.track_stock;
+    document.getElementById('product-modal').classList.remove('hidden');
+  }
+
+  function openNew() {
+    editingId = null;
+    document.getElementById('modal-title').textContent = 'Nyt produkt';
+    document.getElementById('product-form').reset();
+    document.getElementById('product-id').value = '';
+    document.getElementById('p-active').checked = true;
+    document.getElementById('p-track-stock').checked = true;
+    document.getElementById('form-error').classList.add('hidden');
+    document.getElementById('product-modal').classList.remove('hidden');
+  }
+
+  document.getElementById('new-product-btn')?.addEventListener('click', openNew);
+  document.getElementById('modal-close')?.addEventListener('click', closeModal);
+  document.getElementById('form-cancel')?.addEventListener('click', closeModal);
+  function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
+
+  document.getElementById('product-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('form-save');
+    btn.disabled = true;
+    btn.textContent = 'Gemmer...';
+
+    const body = {
+      name: document.getElementById('p-name').value,
+      slug: document.getElementById('p-slug').value,
+      price_ore: document.getElementById('p-price').value,
+      compare_ore: document.getElementById('p-compare').value || null,
+      sku: document.getElementById('p-sku').value || null,
+      stock: document.getElementById('p-stock').value,
+      short_desc: document.getElementById('p-short-desc').value || null,
+      description: document.getElementById('p-desc').value || null,
+      is_active: document.getElementById('p-active').checked,
+      is_featured: document.getElementById('p-featured').checked,
+      track_stock: document.getElementById('p-track-stock').checked,
+    };
+
+    const url = editingId ? `${apiUrl}/shop/admin/products/${editingId}` : `${apiUrl}/shop/admin/products`;
+    const method = editingId ? 'PUT' : 'POST';
+
+    try {
+      const res = await fetch(url, { method, headers: headers(), body: JSON.stringify(body) });
+      const data = await res.json();
+      if (!res.ok) {
+        document.getElementById('form-error').textContent = data.error || 'Fejl';
+        document.getElementById('form-error').classList.remove('hidden');
+      } else {
+        closeModal();
+        loadProducts();
+      }
+    } catch (e) {
+      document.getElementById('form-error').textContent = e.message;
+      document.getElementById('form-error').classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Gem';
+    }
+  });
+
+  // Auto-generate slug from name
+  document.getElementById('p-name')?.addEventListener('input', () => {
+    if (editingId) return;
+    const slug = document.getElementById('p-name').value
+      .toLowerCase()
+      .replace(/æ/g, 'ae').replace(/ø/g, 'oe').replace(/å/g, 'aa')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    document.getElementById('p-slug').value = slug;
+  });
+
+  loadProducts();
+</script>

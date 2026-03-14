@@ -1,0 +1,182 @@
+---
+/**
+ * CartDrawer — slide-out cart panel (right side).
+ * Toggled open/closed via the data attribute `data-cart-open`.
+ */
+---
+
+<!-- Backdrop -->
+<div
+  id="cart-backdrop"
+  class="cart-backdrop hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+  aria-hidden="true"
+></div>
+
+<!-- Drawer -->
+<aside
+  id="cart-drawer"
+  class="cart-drawer fixed top-0 right-0 z-50 h-full w-full max-w-sm bg-[var(--color-bg-page)]
+         shadow-[var(--shadow-xl,0_20px_60px_rgba(0,0,0,0.2))]
+         transform translate-x-full transition-transform duration-300 ease-in-out
+         flex flex-col"
+  aria-label="Kurv"
+  role="dialog"
+  aria-modal="true"
+>
+  <!-- Header -->
+  <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+    <h2 class="text-lg font-bold text-[var(--color-text-primary)]">Din kurv</h2>
+    <button
+      id="cart-close"
+      type="button"
+      class="p-2 rounded-[var(--radius-md)] text-[var(--color-text-secondary)]
+             hover:bg-[var(--color-neutral-100)] transition-colors focus-modern"
+      aria-label="Luk kurv"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Items list -->
+  <div id="cart-items" class="flex-1 overflow-y-auto p-5">
+    <div id="cart-empty" class="hidden flex-col items-center justify-center h-full text-center text-[var(--color-text-secondary)] py-12">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.5" class="mb-4 opacity-30" aria-hidden="true">
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+      <p class="font-medium">Kurven er tom</p>
+      <a href="/shop/" class="mt-4 text-sm text-[var(--color-primary)] hover:underline">Gå til shoppen</a>
+    </div>
+    <ul id="cart-list" class="space-y-4" aria-label="Varer i kurven"></ul>
+  </div>
+
+  <!-- Footer (total + CTA) -->
+  <div id="cart-footer" class="hidden border-t border-[var(--color-border)] px-5 py-4 space-y-4">
+    <div class="flex items-center justify-between text-sm">
+      <span class="text-[var(--color-text-secondary)]">Subtotal</span>
+      <span id="cart-subtotal" class="font-bold text-[var(--color-text-primary)]">0,00 kr.</span>
+    </div>
+    <p class="text-xs text-[var(--color-text-secondary)]">Fragt beregnes ved checkout.</p>
+    <a
+      href="/shop/checkout/"
+      class="block w-full text-center rounded-[var(--radius-full)] btn-gradient
+             px-6 py-3 font-semibold text-[var(--color-text-on-primary)]
+             shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90"
+    >
+      Til betaling
+    </a>
+    <a href="/shop/kurv/" class="block text-center text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">
+      Se kurven
+    </a>
+  </div>
+</aside>
+
+<script>
+  import { getCart, setQuantity, removeFromCart, getCartTotal } from '../scripts/cart.js';
+
+  const drawer = document.getElementById('cart-drawer');
+  const backdrop = document.getElementById('cart-backdrop');
+  const closeBtn = document.getElementById('cart-close');
+  const itemsList = document.getElementById('cart-list');
+  const emptyMsg = document.getElementById('cart-empty');
+  const footer = document.getElementById('cart-footer');
+  const subtotalEl = document.getElementById('cart-subtotal');
+
+  function formatDkk(ore: number): string {
+    return (ore / 100).toFixed(2).replace('.', ',') + ' kr.';
+  }
+
+  function renderCart() {
+    if (!itemsList) return;
+    const { items } = getCart();
+    itemsList.innerHTML = '';
+
+    if (items.length === 0) {
+      emptyMsg?.classList.replace('hidden', 'flex');
+      footer?.classList.add('hidden');
+      return;
+    }
+
+    emptyMsg?.classList.replace('flex', 'hidden');
+    footer?.classList.remove('hidden');
+
+    items.forEach(item => {
+      const li = document.createElement('li');
+      li.className = 'flex gap-3';
+      li.innerHTML = `
+        <div class="shrink-0 w-16 h-16 rounded-[var(--radius-md)] overflow-hidden bg-[var(--color-neutral-100)]">
+          <img src="${item.image_url || '/favicon.svg'}" alt="${item.name}" width="64" height="64" class="w-full h-full object-cover" loading="lazy" />
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-[var(--color-text-primary)] truncate">${item.name}</p>
+          ${item.variant_name ? `<p class="text-xs text-[var(--color-text-secondary)]">${item.variant_name}</p>` : ''}
+          <p class="text-sm font-semibold mt-1">${formatDkk(item.price_ore * item.quantity)}</p>
+          <div class="flex items-center gap-2 mt-2">
+            <button class="qty-btn w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] text-sm" data-action="minus" data-pid="${item.product_id}" data-vid="${item.variant_id ?? ''}">−</button>
+            <span class="text-sm w-5 text-center">${item.quantity}</span>
+            <button class="qty-btn w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] text-sm" data-action="plus" data-pid="${item.product_id}" data-vid="${item.variant_id ?? ''}">+</button>
+            <button class="remove-btn ml-1 text-xs text-red-500 hover:underline" data-pid="${item.product_id}" data-vid="${item.variant_id ?? ''}">Fjern</button>
+          </div>
+        </div>
+      `;
+      itemsList.appendChild(li);
+    });
+
+    if (subtotalEl) subtotalEl.textContent = formatDkk(getCartTotal());
+  }
+
+  // Delegated events on items list
+  itemsList?.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const pid = parseInt(target.dataset.pid || '0');
+    const vid = target.dataset.vid ? parseInt(target.dataset.vid) : null;
+
+    if (!pid) return;
+
+    const { items } = getCart();
+    const item = items.find(i => i.product_id === pid && (i.variant_id ?? null) === (vid ?? null));
+
+    if (target.classList.contains('qty-btn')) {
+      const action = target.dataset.action;
+      const qty = item ? item.quantity : 0;
+      setQuantity(pid, vid, action === 'plus' ? qty + 1 : qty - 1);
+    } else if (target.classList.contains('remove-btn')) {
+      removeFromCart(pid, vid);
+    }
+  });
+
+  // Open/close
+  function openDrawer() {
+    renderCart();
+    drawer?.classList.remove('translate-x-full');
+    backdrop?.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    closeBtn?.focus();
+  }
+
+  function closeDrawer() {
+    drawer?.classList.add('translate-x-full');
+    backdrop?.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  closeBtn?.addEventListener('click', closeDrawer);
+  backdrop?.addEventListener('click', closeDrawer);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDrawer();
+  });
+
+  // Trigger from CartIcon or elsewhere
+  document.addEventListener('cart:open', openDrawer);
+
+  // Re-render when cart changes
+  window.addEventListener('cart:updated', renderCart);
+
+  renderCart();
+</script>

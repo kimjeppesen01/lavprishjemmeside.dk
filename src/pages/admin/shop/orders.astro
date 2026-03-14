@@ -1,0 +1,276 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+---
+
+<AdminLayout title="Ordrer">
+  <div class="space-y-6">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <h1 class="text-2xl font-bold">Ordrer</h1>
+    </div>
+
+    <!-- Stats row -->
+    <div id="stats-row" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="rounded-lg border border-gray-200 bg-white p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wider">Omsætning (30d)</p>
+        <p id="stat-revenue" class="text-2xl font-bold text-gray-900 mt-1">—</p>
+      </div>
+      <div class="rounded-lg border border-gray-200 bg-white p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wider">Ordrer (30d)</p>
+        <p id="stat-orders" class="text-2xl font-bold text-gray-900 mt-1">—</p>
+      </div>
+      <div class="rounded-lg border border-gray-200 bg-white p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wider">Afventer betaling</p>
+        <p id="stat-pending" class="text-2xl font-bold text-amber-600 mt-1">—</p>
+      </div>
+      <div class="rounded-lg border border-gray-200 bg-white p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wider">Klar til afsendelse</p>
+        <p id="stat-to-ship" class="text-2xl font-bold text-blue-600 mt-1">—</p>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap gap-3">
+      <input id="search-input" type="search" placeholder="Søg ordre, e-mail, navn..." class="admin-input w-full sm:w-64" />
+      <select id="status-filter" class="admin-input">
+        <option value="">Alle statuser</option>
+        <option value="pending_payment">Afventer betaling</option>
+        <option value="paid">Betalt</option>
+        <option value="processing">Under behandling</option>
+        <option value="shipped">Afsendt</option>
+        <option value="delivered">Leveret</option>
+        <option value="cancelled">Annulleret</option>
+        <option value="refunded">Refunderet</option>
+      </select>
+    </div>
+
+    <div id="loading" class="text-center py-8 text-gray-500">Henter ordrer...</div>
+
+    <div id="orders-table-wrap" class="hidden overflow-x-auto rounded-lg border border-gray-200">
+      <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600">Ordre</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600">Kunde</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600">Total</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600">Dato</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-600">Handling</th>
+          </tr>
+        </thead>
+        <tbody id="orders-tbody" class="divide-y divide-gray-100 bg-white"></tbody>
+      </table>
+    </div>
+
+    <div id="pagination" class="hidden flex items-center justify-between text-sm text-gray-500 pt-2"></div>
+  </div>
+
+  <!-- Order detail modal -->
+  <div id="order-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-start justify-center overflow-y-auto py-8 px-4">
+    <div class="w-full max-w-2xl bg-white rounded-xl shadow-xl">
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <h2 id="modal-order-title" class="text-lg font-bold">Ordredetaljer</h2>
+        <button id="modal-close" class="text-gray-400 hover:text-gray-700 text-xl">&times;</button>
+      </div>
+      <div id="modal-body" class="p-6 space-y-6"></div>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+.admin-input { border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.375rem 0.625rem; font-size: 0.875rem; outline: none; }
+.admin-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+</style>
+
+<script define:vars={{ apiUrl }}>
+  const token = () => localStorage.getItem('admin_token');
+  const headers = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` });
+
+  const statusLabels = {
+    pending_payment: ['Afventer betaling', 'bg-amber-100 text-amber-700'],
+    paid: ['Betalt', 'bg-green-100 text-green-700'],
+    processing: ['Under behandling', 'bg-blue-100 text-blue-700'],
+    shipped: ['Afsendt', 'bg-blue-100 text-blue-700'],
+    delivered: ['Leveret', 'bg-green-100 text-green-700'],
+    cancelled: ['Annulleret', 'bg-red-100 text-red-700'],
+    refunded: ['Refunderet', 'bg-gray-100 text-gray-600'],
+  };
+
+  function fmt(ore) { return (ore / 100).toFixed(2).replace('.', ',') + ' kr.'; }
+  function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('da-DK', { day: '2-digit', month: 'short', year: 'numeric' }); }
+
+  let currentPage = 1;
+
+  async function loadDashboard() {
+    try {
+      const res = await fetch(`${apiUrl}/shop/admin/dashboard`, { headers: headers() });
+      const d = await res.json();
+      if (d.revenue) {
+        document.getElementById('stat-revenue').textContent = fmt(d.revenue.revenue_30d_ore || 0);
+        document.getElementById('stat-orders').textContent = d.revenue.orders_30d || 0;
+        document.getElementById('stat-pending').textContent = d.revenue.pending || 0;
+        document.getElementById('stat-to-ship').textContent = d.revenue.to_ship || 0;
+      }
+    } catch {}
+  }
+
+  async function loadOrders() {
+    const search = document.getElementById('search-input').value;
+    const status = document.getElementById('status-filter').value;
+    const params = new URLSearchParams({ page: currentPage, limit: 25, ...(search && { search }), ...(status && { status }) });
+
+    try {
+      const res = await fetch(`${apiUrl}/shop/admin/orders?${params}`, { headers: headers() });
+      const data = await res.json();
+      document.getElementById('loading')?.classList.add('hidden');
+      document.getElementById('orders-table-wrap')?.classList.remove('hidden');
+
+      const tbody = document.getElementById('orders-tbody');
+      tbody.innerHTML = '';
+      (data.orders || []).forEach(o => {
+        const [label, cls] = statusLabels[o.status] || [o.status, 'bg-gray-100 text-gray-600'];
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-4 py-3 font-medium text-gray-900">${o.order_number}</td>
+          <td class="px-4 py-3">
+            <p class="text-gray-900">${o.ship_first_name} ${o.ship_last_name}</p>
+            <p class="text-xs text-gray-400">${o.ship_email}</p>
+          </td>
+          <td class="px-4 py-3 font-medium">${fmt(o.total_ore)}</td>
+          <td class="px-4 py-3">
+            <span class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${cls}">${label}</span>
+          </td>
+          <td class="px-4 py-3 text-gray-500">${fmtDate(o.created_at)}</td>
+          <td class="px-4 py-3">
+            <button class="view-btn text-blue-600 hover:underline text-xs" data-id="${o.id}">Se detaljer</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const pag = document.getElementById('pagination');
+      pag.classList.remove('hidden');
+      pag.innerHTML = `<span>Side ${currentPage} · ${data.total} ordrer i alt</span>
+        <div class="flex gap-2">
+          ${currentPage > 1 ? '<button id="prev-page" class="px-3 py-1 border rounded text-xs">← Forrige</button>' : ''}
+          ${data.total > currentPage * 25 ? '<button id="next-page" class="px-3 py-1 border rounded text-xs">Næste →</button>' : ''}
+        </div>`;
+
+      document.getElementById('prev-page')?.addEventListener('click', () => { currentPage--; loadOrders(); });
+      document.getElementById('next-page')?.addEventListener('click', () => { currentPage++; loadOrders(); });
+    } catch (e) {
+      document.getElementById('loading')?.classList.add('hidden');
+    }
+  }
+
+  document.getElementById('orders-tbody')?.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('view-btn')) openOrder(parseInt(e.target.dataset.id));
+  });
+
+  async function openOrder(id) {
+    const res = await fetch(`${apiUrl}/shop/admin/orders/${id}`, { headers: headers() });
+    const o = await res.json();
+
+    const [label, cls] = statusLabels[o.status] || [o.status, 'bg-gray-100 text-gray-600'];
+
+    document.getElementById('modal-order-title').textContent = `Ordre ${o.order_number}`;
+    document.getElementById('modal-body').innerHTML = `
+      <div class="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <p class="text-xs font-semibold text-gray-500 uppercase">Status</p>
+          <span class="inline-block mt-1 rounded-full px-2 py-0.5 text-xs font-semibold ${cls}">${label}</span>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-500 uppercase">Total</p>
+          <p class="font-bold mt-1">${fmt(o.total_ore)}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-500 uppercase">Kunde</p>
+          <p class="mt-1">${o.ship_first_name} ${o.ship_last_name}<br><a href="mailto:${o.ship_email}" class="text-blue-600">${o.ship_email}</a></p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-500 uppercase">Adresse</p>
+          <p class="mt-1">${o.ship_address1}, ${o.ship_zip} ${o.ship_city}</p>
+        </div>
+      </div>
+
+      <div>
+        <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Produkter</p>
+        <ul class="space-y-1 text-sm">
+          ${(o.items || []).map(i => `
+            <li class="flex justify-between">
+              <span>${i.product_name}${i.variant_name ? ' / ' + i.variant_name : ''} × ${i.quantity}</span>
+              <span class="font-medium">${fmt(i.total_price_ore)}</span>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+
+      <div class="border-t pt-4">
+        <p class="text-xs font-semibold text-gray-500 uppercase mb-3">Opdater status</p>
+        <div class="flex flex-wrap gap-2">
+          ${['paid','processing','shipped','delivered','cancelled','refunded'].map(s => {
+            const [sl] = statusLabels[s] || [s];
+            return `<button class="status-update-btn px-3 py-1 text-xs border rounded-full hover:bg-gray-50 font-medium ${o.status === s ? 'bg-gray-100' : ''}" data-order-id="${o.id}" data-status="${s}">${sl}</button>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div class="border-t pt-4">
+        <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Sporings-id</p>
+        <div class="flex gap-2">
+          <input id="tracking-number" type="text" value="${o.tracking_number || ''}" placeholder="Sporings-id" class="admin-input flex-1" />
+          <input id="tracking-carrier" type="text" value="${o.tracking_carrier || ''}" placeholder="Fragtfirma" class="admin-input w-28" />
+          <button id="save-tracking-btn" data-order-id="${o.id}" class="px-3 py-1 bg-gray-800 text-white rounded text-xs">Gem</button>
+        </div>
+      </div>
+
+      <div class="border-t pt-4">
+        <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Hændelseslog</p>
+        <ul class="space-y-1 text-xs text-gray-500">
+          ${(o.events || []).slice(0, 10).map(ev => `
+            <li>${new Date(ev.created_at).toLocaleString('da-DK')} · <strong>${ev.event_type}</strong>${ev.message ? ' — ' + ev.message : ''}</li>
+          `).join('')}
+        </ul>
+      </div>
+    `;
+
+    document.querySelectorAll('.status-update-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await fetch(`${apiUrl}/shop/admin/orders/${btn.dataset.orderId}/status`, {
+          method: 'POST', headers: headers(),
+          body: JSON.stringify({ status: btn.dataset.status })
+        });
+        document.getElementById('order-modal').classList.add('hidden');
+        loadOrders();
+        loadDashboard();
+      });
+    });
+
+    document.getElementById('save-tracking-btn')?.addEventListener('click', async (e) => {
+      await fetch(`${apiUrl}/shop/admin/orders/${e.target.dataset.orderId}/tracking`, {
+        method: 'POST', headers: headers(),
+        body: JSON.stringify({
+          tracking_number: document.getElementById('tracking-number').value,
+          tracking_carrier: document.getElementById('tracking-carrier').value,
+        })
+      });
+    });
+
+    document.getElementById('order-modal').classList.remove('hidden');
+  }
+
+  document.getElementById('modal-close')?.addEventListener('click', () => {
+    document.getElementById('order-modal').classList.add('hidden');
+  });
+
+  let searchTimer;
+  document.getElementById('search-input')?.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { currentPage = 1; loadOrders(); }, 400);
+  });
+  document.getElementById('status-filter')?.addEventListener('change', () => { currentPage = 1; loadOrders(); });
+
+  loadDashboard();
+  loadOrders();
+</script>

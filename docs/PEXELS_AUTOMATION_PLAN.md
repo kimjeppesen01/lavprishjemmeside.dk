@@ -1,5 +1,10 @@
 # Pexels Media Automation — Integrated Implementation Plan
 
+> Reference-only: legacy strategy/spec context. This file must not override the root handoff pack or the canonical in-folder trilogy: `requirements.md`, `design.md`, and `tasks.md`.
+
+
+> Current authority: use this as a product/reference plan only. Any older rollout or runtime assumptions are superseded by the SSH-first and assistant-architecture docs.
+
 > **Project:** lavprishjemmeside.dk
 > **Stack:** Astro 5 MPA + Express API (`.cjs`) + MySQL + cPanel/LiteSpeed + Node 22
 > **Status:** Plan — ready for implementation
@@ -51,7 +56,7 @@ api/
 - Admin media UI at `/admin/media`
 - AI generation endpoints (`POST /ai-generate/page`, `/page-advanced`)
 - The `getMediaForAi()` helper — enhanced, not replaced
-- Deploy flow (GitHub Actions → SSH → `touch tmp/restart.txt`)
+- Deploy flow follows the current SSH-first contract documented in `docs/SSH_FIRST_OPERATIONS.md`
 
 ---
 

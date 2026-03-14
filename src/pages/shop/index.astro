@@ -1,0 +1,88 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ShopHero from '../../components/ShopHero.astro';
+import ProductGrid from '../../components/ProductGrid.astro';
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+
+// Fetch featured products and categories at build time
+let featuredProducts = [];
+let categories = [];
+
+try {
+  const [prodRes, catRes] = await Promise.all([
+    fetch(`${apiUrl}/shop/products?featured=1&limit=8`),
+    fetch(`${apiUrl}/shop/categories`),
+  ]);
+  if (prodRes.ok) {
+    const data = await prodRes.json();
+    featuredProducts = data.products || [];
+  }
+  if (catRes.ok) {
+    categories = await catRes.json();
+  }
+} catch {
+  // Build continues — pages load with empty state
+}
+---
+
+<Layout title="Shop — Lavprishjemmeside.dk" description="Køb produkter direkte fra Lavprishjemmeside.dk — hurtig levering, gode priser og nem betaling.">
+  <main>
+    <ShopHero
+      heading="Vores shop"
+      subheading="Kvalitetsprodukter til gode priser — hurtig levering overalt i Danmark."
+      ctaLabel="Se alle produkter"
+      ctaHref="/shop/"
+      badge="Officiel shop"
+    />
+
+    <!-- Categories -->
+    {categories.length > 0 && (
+      <section class="mx-auto max-w-[var(--container-max-width)] px-[var(--container-padding-x)] py-12">
+        <h2 class="text-2xl font-bold text-[var(--color-text-primary)] mb-6">Kategorier</h2>
+        <ul class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4" role="list">
+          {categories.map((cat: any) => (
+            <li>
+              <a
+                href={`/shop/${cat.slug}/`}
+                class="flex flex-col items-center gap-2 rounded-[var(--radius-lg)] border border-[var(--color-border)]
+                       bg-[var(--color-bg-card,var(--color-neutral-100))] p-5 text-center
+                       hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-md)] transition-all"
+              >
+                {cat.image_url && (
+                  <img src={cat.image_url} alt={cat.name} width="48" height="48" class="h-12 w-12 object-cover rounded-full" loading="lazy" />
+                )}
+                <span class="font-semibold text-sm text-[var(--color-text-primary)]">{cat.name}</span>
+                {cat.description && (
+                  <span class="text-xs text-[var(--color-text-secondary)] line-clamp-2">{cat.description}</span>
+                )}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    <!-- Featured products -->
+    <section class="mx-auto max-w-[var(--container-max-width)] px-[var(--container-padding-x)] py-12">
+      <ProductGrid
+        products={featuredProducts}
+        title="Udvalgte produkter"
+        description="Håndplukkede favoritter fra vores sortiment."
+        columns={4}
+        emptyText="Ingen udvalgte produkter endnu."
+      />
+      {featuredProducts.length > 0 && (
+        <div class="mt-10 text-center">
+          <a
+            href="/shop/?all=1"
+            class="focus-modern inline-flex items-center gap-2 rounded-[var(--radius-full)] border border-[var(--color-border)]
+                   px-8 py-3 font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-neutral-100)] transition-colors"
+          >
+            Se alle produkter
+          </a>
+        </div>
+      )}
+    </section>
+  </main>
+</Layout>

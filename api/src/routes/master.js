@@ -11,6 +11,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
+const agentEnterprise = require('../services/agent-enterprise');
 
 // Claude OAuth constants (extracted from claude CLI source)
 const CLAUDE_OAUTH = {
@@ -33,6 +34,55 @@ const REPO_BASE = '/home/theartis/repositories';
 const MASTER_STEP_UP_REQUIRED = process.env.MASTER_STEP_UP_REQUIRED === '1';
 const MASTER_STEP_UP_TTL_MIN = Math.min(Math.max(parseInt(process.env.MASTER_STEP_UP_TTL_MIN || '30', 10), 5), 120);
 const PLAN_MAX_CHARS = 24000;
+const PARENT_DOMAIN = 'lavprishjemmeside.dk';
+
+function compareRolloutTelemetry(parentCms, siteCms) {
+  if (!parentCms || !siteCms) {
+    return {
+      status: 'telemetry_missing',
+      update_available: false,
+      update_message: 'Opdateringsstatus mangler release-telemetri.',
+    };
+  }
+
+  if (parentCms.changelog_sha && siteCms.changelog_sha) {
+    if (parentCms.changelog_sha === siteCms.changelog_sha) {
+      return {
+        status: 'aligned',
+        update_available: false,
+        update_message: 'Matcher mastersite.',
+      };
+    }
+
+    return {
+      status: 'update_available',
+      update_available: true,
+      update_message: 'Mastersitet er foran denne installation.',
+    };
+  }
+
+  if (parentCms.build && siteCms.build) {
+    if (parentCms.build === siteCms.build) {
+      return {
+        status: 'aligned',
+        update_available: false,
+        update_message: 'Matcher mastersite build.',
+      };
+    }
+
+    return {
+      status: 'update_available',
+      update_available: true,
+      update_message: 'Mastersitet har et nyere build.',
+    };
+  }
+
+  return {
+    status: 'telemetry_missing',
+    update_available: false,
+    update_message: 'Opdateringsstatus mangler release-telemetri.',
+  };
+}
 
 const TASK_MD_TABLE_SQL = `
 CREATE TABLE IF NOT EXISTS kanban_task_md_files (
@@ -188,15 +238,6 @@ function stripAnsi(s) {
   return s.replace(/\x1b\[[0-9;]*[mGKHFJA-Da-z]/g, '');
 }
 
-// Auth for IAN Python agent (no JWT needed)
-function requireApiKey(req, res, next) {
-  const key = req.headers['x-api-key'];
-  if (!process.env.MASTER_API_KEY || key !== process.env.MASTER_API_KEY) {
-    return res.status(401).json({ error: 'Invalid API key' });
-  }
-  next();
-}
-
 // Audit: log every /master/* request (user, path, method, ip, optional meta)
 function getClientIp(req) {
   const forwarded = req.headers['x-forwarded-for'];
@@ -302,6 +343,16 @@ router.get('/claude-repos', requireAuth, requireMaster, async (req, res) => {
 router.get('/sites', requireAuth, requireMaster, async (req, res) => {
   try {
     const [sites] = await pool.query('SELECT * FROM sites WHERE is_active = 1 ORDER BY id ASC');
+    let rollout = null;
+
+    try {
+      rollout = await agentEnterprise.getRolloutStatus();
+    } catch (error) {
+      rollout = {
+        status: 'status_unavailable',
+        error: error.message || 'Kunne ikke hente rollout-status fra Agent Enterprise.',
+      };
+    }
 
     const results = await Promise.all(sites.map(async (site) => {
       const row = {
@@ -319,6 +370,13 @@ router.get('/sites', requireAuth, requireMaster, async (req, res) => {
         db_size_mb: 0,
         ai_tokens: 0,
         ai_cost_usd: 0,
+        live_build: null,
+        live_changelog_sha: null,
+        last_deployed_at: null,
+        telemetry_missing: false,
+        update_status: 'unknown',
+        update_available: false,
+        update_message: 'Afventer sammenligning.',
       };
 
       // Health check
@@ -329,8 +387,13 @@ router.get('/sites', requireAuth, requireMaster, async (req, res) => {
         ]);
         if (resp.ok) {
           const json = await resp.json();
+          const cms = json?.cms && typeof json.cms === 'object' ? json.cms : null;
           row.health = 'online';
-          row.db_connected = json.db === 'connected';
+          row.db_connected = json.database === 'connected';
+          row.live_build = cms?.build || null;
+          row.live_changelog_sha = cms?.changelog_sha || null;
+          row.last_deployed_at = cms?.last_deployed_at || null;
+          row.telemetry_missing = !cms || !cms.changelog_sha || !cms.build;
         } else {
           row.health = 'degraded';
         }
@@ -369,8 +432,44 @@ router.get('/sites', requireAuth, requireMaster, async (req, res) => {
 
       return row;
     }));
+    const parentSite = results.find((site) => site.domain === PARENT_DOMAIN) || null;
+    const parentCms = parentSite
+      ? {
+          build: parentSite.live_build,
+          changelog_sha: parentSite.live_changelog_sha,
+        }
+      : null;
 
-    res.json(results);
+    for (const site of results) {
+      if (site.domain === PARENT_DOMAIN) {
+        const comparison = rollout?.sourceVsParent || null;
+        site.update_status = comparison?.status || 'unknown';
+        site.update_available = Boolean(comparison?.updateAvailable);
+        site.update_message =
+          comparison?.message || 'Afventer sammenligning med den lokale kilde.';
+        continue;
+      }
+
+      if (!parentCms) {
+        site.update_status = 'telemetry_missing';
+        site.update_available = false;
+        site.update_message = 'Mastersite telemetri mangler.';
+        continue;
+      }
+
+      const comparison = compareRolloutTelemetry(parentCms, {
+        build: site.live_build,
+        changelog_sha: site.live_changelog_sha,
+      });
+      site.update_status = comparison.status;
+      site.update_available = comparison.update_available;
+      site.update_message = comparison.update_message;
+    }
+
+    res.json({
+      sites: results,
+      rollout,
+    });
   } catch (err) {
     console.error('GET /master/sites error:', err);
     res.status(500).json({ error: 'Failed to load sites' });
@@ -593,240 +692,6 @@ router.post('/task-md-files', requireAuth, requireMaster, async (req, res) => {
   } catch (err) {
     console.error('POST /master/task-md-files error:', err);
     res.status(500).json({ error: 'Failed to save task markdown file' });
-  }
-});
-
-// ─── IAN Agent ────────────────────────────────────────────────────────────────
-
-const IAN_CONTROL_TABLE_SQL = `
-CREATE TABLE IF NOT EXISTS ian_control (
-  id TINYINT PRIMARY KEY,
-  enabled TINYINT(1) NOT NULL DEFAULT 1,
-  desired_state ENUM('on','off') NOT NULL DEFAULT 'on',
-  updated_by_user_id INT NULL,
-  note VARCHAR(255) NULL,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-)`;
-
-const IAN_ASSIGNMENT_EVENTS_TABLE_SQL = `
-CREATE TABLE IF NOT EXISTS ian_assignment_events (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  agent_type ENUM('brainstormer','planner','ian') NOT NULL,
-  ticket_id VARCHAR(64) NULL,
-  assignment_type VARCHAR(64) NULL,
-  tokens_delta INT NOT NULL DEFAULT 0,
-  cost_delta_usd DECIMAL(10,6) NOT NULL DEFAULT 0,
-  messages_delta INT NOT NULL DEFAULT 0,
-  metadata JSON NULL,
-  completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_completed_at (completed_at),
-  INDEX idx_agent_type (agent_type),
-  INDEX idx_ticket_id (ticket_id)
-)`;
-
-const HEARTBEAT_WORK_STATE_ALTER_SQL =
-  "ALTER TABLE ian_heartbeat ADD COLUMN work_state ENUM('operating','idle','off') DEFAULT 'idle' AFTER status";
-const HEARTBEAT_ASSIGNMENTS_ALTER_SQL =
-  'ALTER TABLE ian_heartbeat ADD COLUMN assignments_completed_today INT NOT NULL DEFAULT 0 AFTER cost_usd_today';
-
-async function ensureIAnControlTables() {
-  await pool.query(IAN_CONTROL_TABLE_SQL);
-  await pool.query(IAN_ASSIGNMENT_EVENTS_TABLE_SQL);
-  try { await pool.query(HEARTBEAT_WORK_STATE_ALTER_SQL); } catch (_) {}
-  try { await pool.query(HEARTBEAT_ASSIGNMENTS_ALTER_SQL); } catch (_) {}
-  await pool.query(
-    "INSERT IGNORE INTO ian_control (id, enabled, desired_state, note) VALUES (1, 1, 'on', 'Default enabled state')"
-  );
-}
-
-function isValidWorkState(v) {
-  return v === 'operating' || v === 'idle' || v === 'off';
-}
-
-function normalizeWorkState(status, workState) {
-  if (isValidWorkState(workState)) return workState;
-  if (status === 'busy') return 'operating';
-  if (status === 'offline') return 'off';
-  return 'idle';
-}
-
-// GET /master/ian-control — current ON/OFF control state (master UI + runtime polling)
-router.get('/ian-control', [
-  (req, res, next) => {
-    const key = req.headers['x-api-key'];
-    if (process.env.MASTER_API_KEY && key === process.env.MASTER_API_KEY) {
-      req._viaApiKey = true;
-      return next();
-    }
-    requireAuth(req, res, () => requireMaster(req, res, next));
-  },
-], async (req, res) => {
-  try {
-    await ensureIAnControlTables();
-    const [rows] = await pool.query('SELECT id, enabled, desired_state, note, updated_at FROM ian_control WHERE id = 1');
-    const row = rows[0] || { enabled: 1, desired_state: 'on', note: null, updated_at: null };
-    res.json({
-      enabled: Number(row.enabled) === 1,
-      desired_state: row.desired_state || (Number(row.enabled) === 1 ? 'on' : 'off'),
-      note: row.note || null,
-      updated_at: row.updated_at || null,
-      source: req._viaApiKey ? 'api_key' : 'master',
-    });
-  } catch (err) {
-    console.error('GET /master/ian-control error:', err);
-    res.status(500).json({ error: 'Failed to load ian control state' });
-  }
-});
-
-// POST /master/ian-control — toggle ON/OFF state from Master dashboard
-router.post('/ian-control', requireAuth, requireMaster, requireMasterStepUp, async (req, res) => {
-  const enabled = req.body?.enabled;
-  const note = req.body?.note ? String(req.body.note).slice(0, 255) : null;
-  if (typeof enabled !== 'boolean') return res.status(400).json({ error: 'enabled (boolean) required' });
-  try {
-    await ensureIAnControlTables();
-    await pool.query(
-      `INSERT INTO ian_control (id, enabled, desired_state, updated_by_user_id, note)
-       VALUES (1, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         enabled=VALUES(enabled),
-         desired_state=VALUES(desired_state),
-         updated_by_user_id=VALUES(updated_by_user_id),
-         note=VALUES(note),
-         updated_at=NOW()`,
-      [enabled ? 1 : 0, enabled ? 'on' : 'off', req.user.id, note]
-    );
-    if (!enabled) {
-      await pool.query(
-        "UPDATE ian_heartbeat SET work_state='off', status='offline', current_task=NULL, last_seen=NOW()"
-      );
-    }
-    res.json({ ok: true, enabled, desired_state: enabled ? 'on' : 'off' });
-  } catch (err) {
-    console.error('POST /master/ian-control error:', err);
-    res.status(500).json({ error: 'Failed to update ian control state' });
-  }
-});
-
-// POST /master/ian-heartbeat — IAN Python agent posts its status (API key, no JWT)
-router.post('/ian-heartbeat', requireApiKey, async (req, res) => {
-  const {
-    agent_type, status, work_state, current_task,
-    messages_sent_today, tokens_used_today, cost_usd_today,
-    assignments_completed_today, metadata,
-  } = req.body;
-  if (!agent_type) return res.status(400).json({ error: 'agent_type required' });
-  try {
-    await ensureIAnControlTables();
-    const normalizedWorkState = normalizeWorkState(status || 'online', work_state);
-    const normalizedStatus = normalizedWorkState === 'operating'
-      ? 'busy'
-      : (normalizedWorkState === 'off' ? 'offline' : 'online');
-
-    // Heartbeats may omit usage counters; persist zero for NOT NULL-safe writes.
-    const msgCount = (messages_sent_today === undefined || messages_sent_today === null) ? 0 : Number(messages_sent_today);
-    const tokenCount = (tokens_used_today === undefined || tokens_used_today === null) ? 0 : Number(tokens_used_today);
-    const costCount = (cost_usd_today === undefined || cost_usd_today === null) ? 0 : Number(cost_usd_today);
-    const assignCount = (assignments_completed_today === undefined || assignments_completed_today === null) ? 0 : Number(assignments_completed_today);
-
-    await pool.query(
-      `INSERT INTO ian_heartbeat (agent_type, status, work_state, current_task, messages_sent_today, tokens_used_today, cost_usd_today, assignments_completed_today, metadata)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         status=VALUES(status),
-         work_state=VALUES(work_state),
-         current_task=VALUES(current_task),
-         messages_sent_today=IFNULL(VALUES(messages_sent_today), messages_sent_today),
-         tokens_used_today=IFNULL(VALUES(tokens_used_today), tokens_used_today),
-         cost_usd_today=IFNULL(VALUES(cost_usd_today), cost_usd_today),
-         assignments_completed_today=IFNULL(VALUES(assignments_completed_today), assignments_completed_today),
-         metadata=VALUES(metadata),
-         last_seen=NOW()`,
-      [
-        agent_type,
-        normalizedStatus,
-        normalizedWorkState,
-        current_task || null,
-        msgCount,
-        tokenCount,
-        costCount,
-        assignCount,
-        metadata ? JSON.stringify(metadata) : null,
-      ],
-    );
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('POST /master/ian-heartbeat error:', err);
-    res.status(500).json({ error: 'Failed to save heartbeat' });
-  }
-});
-
-// POST /master/ian-assignment-complete — incremental usage/event accounting
-router.post('/ian-assignment-complete', requireApiKey, async (req, res) => {
-  const {
-    agent_type,
-    ticket_id,
-    assignment_type,
-    tokens_delta,
-    cost_delta_usd,
-    messages_delta,
-    metadata,
-  } = req.body || {};
-  if (!agent_type) return res.status(400).json({ error: 'agent_type required' });
-  try {
-    await ensureIAnControlTables();
-    const tDelta = Number(tokens_delta || 0);
-    const cDelta = Number(cost_delta_usd || 0);
-    const mDelta = Number(messages_delta || 0);
-    await pool.query(
-      `UPDATE ian_heartbeat
-         SET tokens_used_today = COALESCE(tokens_used_today,0) + ?,
-             cost_usd_today = COALESCE(cost_usd_today,0) + ?,
-             messages_sent_today = COALESCE(messages_sent_today,0) + ?,
-             assignments_completed_today = COALESCE(assignments_completed_today,0) + 1,
-             work_state = 'idle',
-             status = 'online',
-             current_task = NULL,
-             last_seen = NOW()
-       WHERE agent_type = ?`,
-      [tDelta, cDelta, mDelta, agent_type]
-    );
-    await pool.query(
-      `INSERT INTO ian_assignment_events
-       (agent_type, ticket_id, assignment_type, tokens_delta, cost_delta_usd, messages_delta, metadata)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        agent_type,
-        ticket_id ? String(ticket_id).slice(0, 64) : null,
-        assignment_type ? String(assignment_type).slice(0, 64) : null,
-        tDelta,
-        cDelta,
-        mDelta,
-        metadata ? JSON.stringify(metadata) : null,
-      ]
-    );
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('POST /master/ian-assignment-complete error:', err);
-    res.status(500).json({ error: 'Failed to register assignment completion' });
-  }
-});
-
-// GET /master/ian-status — latest heartbeat per agent type
-router.get('/ian-status', [
-  (req, res, next) => {
-    const key = req.headers['x-api-key'];
-    if (process.env.MASTER_API_KEY && key === process.env.MASTER_API_KEY) return next();
-    requireAuth(req, res, () => requireMaster(req, res, next));
-  },
-], async (req, res) => {
-  try {
-    await ensureIAnControlTables();
-    const [rows] = await pool.query('SELECT * FROM ian_heartbeat ORDER BY FIELD(agent_type, "brainstormer","planner","ian")');
-    res.json(rows);
-  } catch (err) {
-    console.error('GET /master/ian-status error:', err);
-    res.status(500).json({ error: 'Failed to load IAN status' });
   }
 });
 

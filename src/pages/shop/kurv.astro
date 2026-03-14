@@ -1,0 +1,147 @@
+---
+import Layout from '../../layouts/Layout.astro';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+---
+
+<Layout title="Kurv — Shop — Lavprishjemmeside.dk" description="Se din indkøbskurv og gå til betaling.">
+  <main class="mx-auto max-w-[var(--container-max-width)] px-[var(--container-padding-x)] py-12">
+    <h1 class="text-3xl font-extrabold text-[var(--color-text-primary)] mb-8">Din kurv</h1>
+
+    <div id="cart-loading" class="text-center py-16 text-[var(--color-text-secondary)]">Henter kurv...</div>
+
+    <div id="cart-page-content" class="hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Items -->
+        <div class="lg:col-span-2">
+          <div id="cart-empty-msg" class="hidden text-center py-16 text-[var(--color-text-secondary)]">
+            <p class="text-lg font-medium mb-2">Kurven er tom</p>
+            <a href="/shop/" class="text-[var(--color-primary)] hover:underline">Gå til shoppen</a>
+          </div>
+          <ul id="kurv-items" class="divide-y divide-[var(--color-border)]"></ul>
+        </div>
+
+        <!-- Summary -->
+        <div id="cart-summary" class="hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] p-6 h-fit space-y-4">
+          <h2 class="text-lg font-bold text-[var(--color-text-primary)]">Oversigt</h2>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-[var(--color-text-secondary)]">Subtotal</span>
+              <span id="summary-subtotal" class="font-medium">—</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-[var(--color-text-secondary)]">Fragt</span>
+              <span class="text-[var(--color-text-secondary)]">Beregnes ved checkout</span>
+            </div>
+          </div>
+          <div class="border-t border-[var(--color-border)] pt-3 flex justify-between font-bold">
+            <span>Total (ex. fragt)</span>
+            <span id="summary-total">—</span>
+          </div>
+          <p class="text-xs text-[var(--color-text-secondary)]">Inkl. 25% moms.</p>
+          <a
+            href="/shop/checkout/"
+            class="block w-full text-center rounded-[var(--radius-full)] btn-gradient
+                   px-6 py-3 font-semibold text-[var(--color-text-on-primary)]
+                   shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90"
+          >
+            Til betaling
+          </a>
+          <a href="/shop/" class="block text-center text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">
+            Fortsæt med at handle
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script define:vars={{ apiUrl }}>
+  import('/shop/../scripts/cart.js').then(({ getCart, setQuantity, removeFromCart, getCartTotal, validateCart }) => {
+    init(getCart, setQuantity, removeFromCart, getCartTotal, validateCart);
+  }).catch(() => {
+    // Fallback: load from window module
+  });
+
+  async function init(getCart, setQuantity, removeFromCart, getCartTotal, validateCart) {
+    const loadingEl = document.getElementById('cart-loading');
+    const contentEl = document.getElementById('cart-page-content');
+    const itemsList = document.getElementById('kurv-items');
+    const emptyMsg = document.getElementById('cart-empty-msg');
+    const summaryEl = document.getElementById('cart-summary');
+    const subtotalEl = document.getElementById('summary-subtotal');
+    const totalEl = document.getElementById('summary-total');
+
+    function fmt(ore) {
+      return (ore / 100).toFixed(2).replace('.', ',') + ' kr.';
+    }
+
+    function render() {
+      const { items } = getCart();
+      loadingEl?.classList.add('hidden');
+      contentEl?.classList.remove('hidden');
+
+      if (items.length === 0) {
+        emptyMsg?.classList.remove('hidden');
+        summaryEl?.classList.add('hidden');
+        itemsList.innerHTML = '';
+        return;
+      }
+
+      emptyMsg?.classList.add('hidden');
+      summaryEl?.classList.remove('hidden');
+
+      itemsList.innerHTML = '';
+      items.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'py-5 flex gap-4';
+        li.innerHTML = `
+          <div class="shrink-0 w-20 h-20 rounded-[var(--radius-md)] overflow-hidden bg-[var(--color-neutral-100)]">
+            <img src="${item.image_url || '/favicon.svg'}" alt="${item.name}" width="80" height="80" class="w-full h-full object-cover" loading="lazy"/>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between gap-2">
+              <div>
+                <p class="font-semibold text-[var(--color-text-primary)]">${item.name}</p>
+                ${item.variant_name ? `<p class="text-sm text-[var(--color-text-secondary)]">${item.variant_name}</p>` : ''}
+              </div>
+              <p class="font-bold text-[var(--color-text-primary)] shrink-0">${fmt(item.price_ore * item.quantity)}</p>
+            </div>
+            <div class="flex items-center gap-3 mt-3">
+              <div class="flex items-center border border-[var(--color-border)] rounded-[var(--radius-md)] overflow-hidden">
+                <button class="qty-minus px-3 py-1.5 hover:bg-[var(--color-neutral-100)] text-sm" data-pid="${item.product_id}" data-vid="${item.variant_id ?? ''}">−</button>
+                <span class="text-sm w-8 text-center">${item.quantity}</span>
+                <button class="qty-plus px-3 py-1.5 hover:bg-[var(--color-neutral-100)] text-sm" data-pid="${item.product_id}" data-vid="${item.variant_id ?? ''}">+</button>
+              </div>
+              <span class="text-sm text-[var(--color-text-secondary)]">${fmt(item.price_ore)} / stk</span>
+              <button class="remove-item ml-auto text-sm text-red-500 hover:underline" data-pid="${item.product_id}" data-vid="${item.variant_id ?? ''}">Fjern</button>
+            </div>
+          </div>
+        `;
+        itemsList.appendChild(li);
+      });
+
+      const total = getCartTotal();
+      if (subtotalEl) subtotalEl.textContent = fmt(total);
+      if (totalEl) totalEl.textContent = fmt(total);
+    }
+
+    // Event delegation
+    itemsList?.addEventListener('click', e => {
+      const t = e.target;
+      const pid = parseInt(t.dataset.pid || '0');
+      const vid = t.dataset.vid ? parseInt(t.dataset.vid) : null;
+      if (!pid) return;
+      const { items } = getCart();
+      const item = items.find(i => i.product_id === pid && (i.variant_id ?? null) === (vid ?? null));
+      if (t.classList.contains('qty-minus')) setQuantity(pid, vid, (item?.quantity || 1) - 1);
+      else if (t.classList.contains('qty-plus')) setQuantity(pid, vid, (item?.quantity || 1) + 1);
+      else if (t.classList.contains('remove-item')) removeFromCart(pid, vid);
+    });
+
+    window.addEventListener('cart:updated', render);
+
+    // Validate cart stock on load
+    await validateCart(apiUrl);
+    render();
+  }
+</script>

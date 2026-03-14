@@ -1,57 +1,18 @@
-# Upstream Updates: Pulling CMS Changes Into Your Site
+# Upstream Updates
 
-If your site is a **fork** or **template copy** of the main lavprishjemmeside.dk CMS repo, you can pull upstream changes to get new features, components, and fixes while keeping your content and config.
+> Reference-only: internal/operator runbook or task context. External sprint agents should use the root handoff pack as execution authority.
 
-**Principle:** Only **config** (and optionally a few project-specific files) are local. All code (`src/`, `api/`, `.github/`) is updated from upstream. Your **content lives in your database** and is not touched by pulls.
 
-See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
+Use this guide when an existing client install needs new CMS code from upstream.
 
----
+## Core Rule
 
-## 0. Check your current version
+- Content lives in MySQL and is not replaced by upstream updates.
+- `api/.env` is local and must be preserved.
+- Assistant site-binding values in `api/.env` are local and must be preserved.
+- Deploy updated code over SSH after merging upstream; the publish button is not the code rollout mechanism.
 
-```bash
-git describe --tags
-```
-
-Example output: `v1.0.0` or `v1.0.0-3-gabcdef` (3 commits ahead of v1.0.0). Compare to the latest tag on upstream to know if you are behind.
-
----
-
-## 1. Add upstream (one-time)
-
-```bash
-git remote add upstream https://github.com/kimjeppesen01/lavprishjemmeside.dk.git
-# Verify:
-git remote -v
-```
-
----
-
-## 2. What to keep local (do not overwrite)
-
-| Item | Why |
-|------|-----|
-| `api/.env` | Your DB credentials, CORS_ORIGIN, PASSWORD_RESET_BASE_URL, GITHUB_REPO, ANTHROPIC_API_KEY, etc. Never commit; never overwrite with upstream. |
-| `src/components/custom/` | Client-specific components. Do not overwrite with upstream; merge strategy should preserve this folder and its contents. |
-| Project-specific config | Any file you changed for this domain. Prefer not to change core code so merges stay simple. |
-
-**Recommendation:** Do not customize files under `src/`, `api/src/`, or `.github/` unless you are prepared to resolve merge conflicts. Use env vars and DB content for per-site differences.
-
----
-
-## 3. Pull and merge upstream
-
-### Option A — Merge a specific release tag (recommended)
-
-```bash
-git fetch upstream
-git checkout main
-git pull --rebase origin main     # sync any CI dist commits first
-git merge upstream/v1.1.0         # replace with target version tag
-```
-
-### Option B — Track upstream main (latest)
+## 1. Sync The Repo
 
 ```bash
 git fetch upstream
@@ -60,75 +21,57 @@ git pull --rebase origin main
 git merge upstream/main
 ```
 
-**Conflict resolution:**
-- If there are conflicts, fix them in the reported files, then:
-  ```bash
-  git add .
-  git commit -m "Merge upstream v1.1.0, resolve conflicts"
-  ```
-- `dist/` conflicts always favour HEAD: `git checkout HEAD -- dist/`
+If you track release tags instead of `upstream/main`, merge the target tag instead.
 
----
+## 2. Review Local Config
 
-## 4. Apply database migrations
+Keep these local:
 
-After merging, always run the schema runner — it is **safe to re-run** on existing databases (all migrations use `IF NOT EXISTS` / `CREATE TABLE IF NOT EXISTS`):
+- `api/.env`
+- any client-only assets or component files
+- the installed site’s current `AGENT_ENTERPRISE_*` binding values
+- the installed site’s `LAVPRIS_PARENT_API_URL` if it differs from the default parent API origin
 
-```bash
-ssh thirdwave "export PATH=/opt/alt/alt-nodejs22/root/usr/bin:\$PATH \
-  && cd ~/repositories/yourdomain.dk \
-  && node api/run-schema.cjs \
-  && touch api/tmp/restart.txt \
-  && echo 'Schema OK, API restarting'"
-```
+Review whether upstream added new required env keys.
 
-Check [CHANGELOG.md](CHANGELOG.md) under the version you merged for the specific SQL files added and what they do.
+## 3. Apply Schema
 
-**New env vars?** If the release added new env vars (listed in CHANGELOG), add them to `api/.env` on the server and restart.
-
----
-
-## 5. Deploy
-
-Push the merged branch — GitHub Actions builds and deploys automatically:
+From the repo root on the server:
 
 ```bash
-git push origin main        # for lavprishjemmeside.dk
-# or
-git push ljdesign main --force   # for client repos (force because CI commits dist back)
+export PATH=/opt/alt/alt-nodejs22/root/usr/bin:$PATH
+node api/run-schema.cjs
 ```
 
-Wait for the workflow to go green in GitHub Actions.
+The runner is additive and safe to re-run.
 
----
+## 4. Deploy Over SSH
 
-## 6. Verify
+Use the SSH-first flow for code changes:
 
-```bash
-PUBLIC_API_URL=https://api.yourdomain.dk PUBLIC_SITE_URL=https://yourdomain.dk npm run verify
-```
+1. update the repo clone under `~/repositories/<domain>`
+2. run `npm run build`
+3. sync `dist/` into the document root
+4. touch `api/tmp/restart.txt`
+5. verify `/health`
 
----
+The admin publish button can be used afterward for later content-only rebuilds.
 
-## 7. Conflict avoidance
+## 5. Verify Assistant Access
 
-| Do | Don't |
-|----|--------|
-| Keep `api/.env` out of git and maintain it manually. | Commit `.env` or overwrite it from upstream. |
-| Use repository Variables for PUBLIC_SITE_URL / PUBLIC_API_URL. | Hardcode domain URLs in code. |
-| Add new pages/content via Admin; schema changes via migrations. | Edit core schema or seed files without a migration strategy. |
-| Prefer upstream's `.github/workflows/deploy.yml` and override behaviour with Variables. | Heavily edit the workflow so it no longer merges. |
-| Merge specific release tags (`v1.1.0`) not `upstream/main` in production. | Pull `upstream/main` directly to a live client without testing first. |
+If the install uses the assistant module, confirm:
 
----
+- `AGENT_ENTERPRISE_URL` still points at the correct Funnel origin
+- `AGENT_ENTERPRISE_SITE_KEY` is present
+- `AGENT_ENTERPRISE_SITE_TOKEN` is present
+- `AGENT_ENTERPRISE_CLIENT_AGENT_ID` is present
+- `/admin/assistant/` still loads and can fetch assistant state
 
-## 8. When upstream has breaking changes (MAJOR version bump)
+## 6. Verify Rollout Telemetry
 
-A MAJOR version (e.g. v2.0.0) may require:
-- Manual data migration steps (documented in CHANGELOG.md under that release)
-- New required env vars in `api/.env`
-- Changes to GitHub Secrets/Variables
+After the upstream code is live, confirm:
 
-Always read CHANGELOG.md for the target version **before** merging a major release.
+- `/health` now exposes the `cms` release telemetry fields including `changelog_sha` and `last_deployed_at`
+- `/rollout/status` responds for the local CMS install
+- `npm run lavpris:release-health` reflects the new rollout state from Agent Enterprise
 
-Your **content** (pages, design settings, media, users) stays in your database; only code and optional schema updates come from upstream.

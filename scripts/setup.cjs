@@ -50,6 +50,13 @@ function buildEnv(vars) {
     'GOOGLE_GA4_PROPERTY_ID=',
     'GOOGLE_SERVICE_ACCOUNT_EMAIL=',
     'GOOGLE_PRIVATE_KEY=',
+    `AGENT_ENTERPRISE_URL=${vars.agentEnterpriseUrl || ''}`,
+    `AGENT_ENTERPRISE_PROVISION_TOKEN=${vars.agentEnterpriseProvisionToken || ''}`,
+    `AGENT_ENTERPRISE_LAVPRIS_MASTER_TOKEN=${vars.agentEnterpriseMasterToken || ''}`,
+    `LAVPRIS_PARENT_API_URL=${vars.lavprisParentApiUrl || 'https://api.lavprishjemmeside.dk'}`,
+    `AGENT_ENTERPRISE_SITE_KEY=${vars.agentEnterpriseSiteKey || ''}`,
+    `AGENT_ENTERPRISE_SITE_TOKEN=${vars.agentEnterpriseSiteToken || ''}`,
+    `AGENT_ENTERPRISE_CLIENT_AGENT_ID=${vars.agentEnterpriseClientAgentId || ''}`,
     '',
   ].join('\n');
 }
@@ -66,6 +73,40 @@ async function pollHealth(maxMs) {
   return false;
 }
 
+async function parseJson(response) {
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (_) {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(payload?.error || `Agent Enterprise provisioning failed (${response.status})`);
+  }
+
+  return payload;
+}
+
+async function provisionAssistantForSite(vars) {
+  const origin = String(vars.agentEnterpriseUrl || '').replace(/\/+$/, '');
+  const domain = new URL(vars.siteUrl).hostname;
+  const response = await fetch(`${origin}/api/lavpris/client-agents/provision`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-lavpris-provision-token': vars.agentEnterpriseProvisionToken,
+    },
+    body: JSON.stringify({
+      domain,
+      siteLabel: domain,
+      installSource: 'lavprishjemmeside-cms-setup',
+    }),
+  });
+
+  return parseJson(response);
+}
+
 async function main() {
   checkNode();
   const interactive = process.env.SETUP_INTERACTIVE !== '0';
@@ -79,6 +120,10 @@ async function main() {
   let adminEmail = process.env.ADMIN_EMAIL || '';
   let adminPassword = process.env.ADMIN_PASSWORD || '';
   let outputPath = process.env.SETUP_OUTPUT_PATH || '';
+  let agentEnterpriseUrl = process.env.AGENT_ENTERPRISE_URL || '';
+  let agentEnterpriseProvisionToken = process.env.AGENT_ENTERPRISE_PROVISION_TOKEN || '';
+  let agentEnterpriseMasterToken = process.env.AGENT_ENTERPRISE_LAVPRIS_MASTER_TOKEN || '';
+  let lavprisParentApiUrl = process.env.LAVPRIS_PARENT_API_URL || 'https://api.lavprishjemmeside.dk';
 
   if (interactive) {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -94,6 +139,10 @@ async function main() {
     dbPass = await ask(rl, 'DB password', dbPass);
     adminEmail = await ask(rl, 'Admin email', adminEmail || `admin@${domain}`);
     adminPassword = await ask(rl, 'Admin password', adminPassword);
+    agentEnterpriseUrl = await ask(rl, 'Agent Enterprise URL', agentEnterpriseUrl || 'https://agent-enterprise.example.dk');
+    agentEnterpriseProvisionToken = await ask(rl, 'Agent Enterprise provision token', agentEnterpriseProvisionToken);
+    agentEnterpriseMasterToken = await ask(rl, 'Agent Enterprise master rollout token (optional)', agentEnterpriseMasterToken);
+    lavprisParentApiUrl = await ask(rl, 'Parent rollout API URL', lavprisParentApiUrl);
     outputPath = await ask(rl, 'Output path for dist (default: ./deploy-output)', outputPath || './deploy-output');
     rl.close();
   } else {
@@ -107,6 +156,11 @@ async function main() {
     process.exit(1);
   }
 
+  if (!agentEnterpriseUrl || !agentEnterpriseProvisionToken) {
+    console.error('Missing required: AGENT_ENTERPRISE_URL, AGENT_ENTERPRISE_PROVISION_TOKEN');
+    process.exit(1);
+  }
+
   console.log('\n1. Writing api/.env');
   const envContent = buildEnv({
     siteUrl,
@@ -115,6 +169,10 @@ async function main() {
     dbName,
     dbUser,
     dbPassword: dbPass,
+    agentEnterpriseUrl,
+    agentEnterpriseProvisionToken,
+    agentEnterpriseMasterToken,
+    lavprisParentApiUrl,
   });
   fs.writeFileSync(ENV_FILE, envContent, 'utf8');
 
@@ -132,7 +190,29 @@ async function main() {
     env: { ...process.env, ADMIN_EMAIL: adminEmail, ADMIN_PASSWORD: adminPassword },
   });
 
-  console.log('5. Starting API (background)');
+  console.log('5. Provisioning dedicated Agent Enterprise assistant');
+  const provisioned = await provisionAssistantForSite({
+    siteUrl,
+    agentEnterpriseUrl,
+    agentEnterpriseProvisionToken,
+  });
+  fs.writeFileSync(ENV_FILE, buildEnv({
+    siteUrl,
+    apiUrl,
+    dbHost,
+    dbName,
+    dbUser,
+    dbPassword: dbPass,
+    agentEnterpriseUrl,
+    agentEnterpriseProvisionToken,
+    agentEnterpriseMasterToken,
+    lavprisParentApiUrl,
+    agentEnterpriseSiteKey: provisioned.siteKey,
+    agentEnterpriseSiteToken: provisioned.siteToken,
+    agentEnterpriseClientAgentId: provisioned.clientAgentId,
+  }), 'utf8');
+
+  console.log('6. Starting API (background)');
   const apiProcess = spawn('node', ['server.cjs'], {
     cwd: API_DIR,
     stdio: 'pipe',
@@ -143,7 +223,7 @@ async function main() {
     process.exit(1);
   });
 
-  console.log('6. Waiting for API /health (max 60s)');
+  console.log('7. Waiting for API /health (max 60s)');
   const ok = await pollHealth(60000);
   if (!ok) {
     apiProcess.kill();
@@ -151,18 +231,18 @@ async function main() {
     process.exit(1);
   }
 
-  console.log('7. Building site (PUBLIC_SITE_URL + PUBLIC_API_URL)');
+  console.log('8. Building site (PUBLIC_SITE_URL + PUBLIC_API_URL)');
   execSync('npm run build', {
     cwd: ROOT,
     stdio: 'inherit',
     env: { ...process.env, PUBLIC_SITE_URL: siteUrl, PUBLIC_API_URL: apiUrl },
   });
 
-  console.log('8. Stopping API');
+  console.log('9. Stopping API');
   apiProcess.kill();
 
   const outAbs = path.resolve(ROOT, outputPath);
-  console.log('9. Copying dist to', outAbs);
+  console.log('10. Copying dist to', outAbs);
   if (!fs.existsSync(outAbs)) fs.mkdirSync(outAbs, { recursive: true });
   const distDir = path.join(ROOT, 'dist');
   if (fs.existsSync(distDir)) {
@@ -186,6 +266,7 @@ async function main() {
   console.log('1) cPanel → Setup Node.js App. Application root: [full path to]/api. Startup: server.cjs. URL: ' + (apiUrl ? new URL(apiUrl).hostname : 'api.yourdomain.dk'));
   console.log('2) Point site document root to: ' + outAbs);
   console.log('3) Admin: ' + siteUrl + '/admin/ — log in with ' + adminEmail);
+  console.log('4) Assistant site key: ' + provisioned.siteKey + ' · client agent: ' + provisioned.clientAgentId);
   console.log('');
 }
 

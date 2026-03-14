@@ -1,5 +1,10 @@
 # Future Implementations (Nice-to-Have)
 
+> Reference-only: legacy strategy/spec context. This file must not override the root handoff pack or the canonical in-folder trilogy: `requirements.md`, `design.md`, and `tasks.md`.
+
+
+> Current authority: backlog ideas remain valid, but deploy/runtime assumptions in older sections should be read through the current SSH-first and Agent Enterprise assistant model.
+
 > Items in this file are **not critical** for MVP or initial product launch. They may be implemented later based on client needs, feedback, or strategic direction.
 
 ---
@@ -61,7 +66,7 @@ getLCP(metric => sendToAnalytics('LCP', metric.value));
 
 ---
 
-### Performance Budget (Lighthouse CI in GitHub Actions)
+### Performance Budget (Future Lighthouse CI)
 **Status**: No need - Astro's build-time optimization is sufficient
 
 **Rationale**:

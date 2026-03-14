@@ -1,8 +1,13 @@
 # Multi-Domain CMS: Deployment & Update Strategy
 
+> Reference-only: legacy strategy/spec context. This file must not override the root handoff pack or the canonical in-folder trilogy: `requirements.md`, `design.md`, and `tasks.md`.
+
+
+> Current authority: deploy and assistant-runtime behavior in this file is historical where it conflicts with `docs/SSH_FIRST_OPERATIONS.md`, `docs/UPSTREAM_UPDATES.md`, and `docs/CLIENT_ASSISTANT_ARCHITECTURE.md`. Keep using this file for broader standalone-product strategy only.
+
 > **Plan status**: Living document. Incorporates product vision, roadmap, and technical prep for multi-domain deployment.
 >
-> **Primary deployment model**: ZIP + 1-click setup — extract on domain folder, run `npm run setup`, follow prompts. Like 1-click WordPress installation.
+> **Primary deployment model in this historical plan**: ZIP + guided setup. Current live rollout authority is still the SSH-first contract in `docs/SSH_FIRST_OPERATIONS.md` and `docs/UPSTREAM_UPDATES.md`.
 
 **Custom components:** The repo/ZIP includes `src/components/custom/` from the start (empty except README). Deploy and seed do not delete or overwrite that folder. New client domains have it by default; client-specific components go there and are never overwritten by upstream or seed.
 
@@ -99,17 +104,17 @@ flowchart TB
 ```
 
 ### Deploy (New Domain)
-1. Create from template or fork upstream repo
+1. Create the site from the current upstream codebase
 2. cPanel: add domain, clone repo, create MySQL, create `api.<domain>`, Node.js app
-3. Create `.env` (site URL, API URL, DB, CORS, GITHUB_REPO)
-4. GitHub secrets + workflow env vars
-5. Run schema + seed components
+3. Create `.env` and `api/.env` with site URL, API URL, DB, CORS, and Agent Enterprise assistant binding values
+4. Run the documented setup flow from `docs/DEPLOY_NEW_DOMAIN.md`
+5. Run schema + seed components and verify assistant provisioning through the Funnel-backed ingress
 
-### Update Flow (Push Core CMS Changes)
-1. You push to upstream repo
-2. Client runs `git pull upstream main` (or "Sync fork")
-3. Client redeploys (or CI auto-deploys on push)
-4. Client content untouched (lives in their DB)
+### Update Flow
+1. Update the shared upstream codebase
+2. Pull or merge the new code into the client repo
+3. Roll out over SSH using the current deploy contract in `docs/UPSTREAM_UPDATES.md`
+4. Client content remains untouched because it lives in that site's own DB
 
 ---
 
@@ -157,7 +162,7 @@ flowchart TB
 | 1.2 | `.github/workflows/deploy.yml` | ✓ |
 | 1.3 | `api/src/routes/publish.js`, `api/.env.example` | ✓ |
 
-**Env vars:** Root `.env.example`: `PUBLIC_SITE_URL`, `PUBLIC_API_URL`. API `.env`: `CORS_ORIGIN`, `PASSWORD_RESET_BASE_URL`, `GOOGLE_SITE_URL`, `GITHUB_REPO` (optional). GitHub Actions vars (optional): `PUBLIC_SITE_URL`, `PUBLIC_API_URL`, `DEPLOY_REPO_PATH`, `DEPLOY_SITE_ROOT`.
+**Env vars:** Root `.env.example`: `PUBLIC_SITE_URL`, `PUBLIC_API_URL`. API `.env`: `CORS_ORIGIN`, `PASSWORD_RESET_BASE_URL`, `GOOGLE_SITE_URL`, `AGENT_ENTERPRISE_URL`, `AGENT_ENTERPRISE_SITE_KEY`, `AGENT_ENTERPRISE_SITE_TOKEN`, `AGENT_ENTERPRISE_CLIENT_AGENT_ID`. Historical GitHub Actions vars in older notes are no longer the live deployment authority.
 
 **Phase 2 (implemented):** `docs/DEPLOY_NEW_DOMAIN.md`, `docs/UPSTREAM_UPDATES.md`, `scripts/setup-domain.mjs`.
 
@@ -279,9 +284,9 @@ The setup script runs SQL files in this order (respecting FK dependencies):
 
 ### 8.8 Post-Setup: Publish / Deploy
 
-- **With GitHub Actions**: User adds repo, secrets, workflow — "Publicer" button triggers rebuild (current flow).
-- **Without GitHub**: `deploy.sh` script: `PUBLIC_SITE_URL=... PUBLIC_API_URL=... npm run build && cp -R dist/* /path/to/docroot/`
-- Setup can optionally create this script with the correct paths baked in
+- **Current live model**: operator rolls out code over SSH, then the CMS "Publicer" button can rebuild from code already present on the server.
+- **Optional helper**: a local deploy script can run `PUBLIC_SITE_URL=... PUBLIC_API_URL=... npm run build` and sync `dist/` to the docroot.
+- Setup can optionally create this helper with the correct paths baked in
 
 ### 8.9 Implementation Checklist
 

@@ -1,5 +1,10 @@
 # Component Editor — Developer Reference
 
+> Reference-only: legacy strategy/spec context. This file must not override the root handoff pack or the canonical in-folder trilogy: `requirements.md`, `design.md`, and `tasks.md`.
+
+
+> Current authority: use this doc for feature intent only. Deploy/runtime instructions are superseded by `docs/SSH_FIRST_OPERATIONS.md`, `docs/UPSTREAM_UPDATES.md`, and `docs/CLIENT_ASSISTANT_ARCHITECTURE.md`.
+
 **File:** `src/pages/admin/pages.astro`
 **Route:** `/admin/pages/`
 **Purpose:** Admin interface for building and editing the content of every page on the site.
@@ -18,8 +23,8 @@ Database (schema_fields + content)
 Admin editor (builds a form from the schema)
     ↓  User edits, clicks "Gem ændringer"
 Database updated (new content JSON saved)
-    ↓  Admin clicks "Publicer" → GitHub Actions webhook
-Static site rebuilt (Astro SSG reads DB at build time → new HTML)
+    ↓  Admin clicks "Publicer" → current server-side rebuild flow
+Static site rebuilt and synced (Astro SSG reads DB at build time → new HTML)
 ```
 
 **Key architectural point:** The editor only runs in the browser on the `/admin/pages/` page. None of its JavaScript ships to the public site. Published pages are purely static HTML — zero runtime overhead.
@@ -220,7 +225,7 @@ saveComponentEdit()
     → Alert "✓ Komponent opdateret"
 ```
 
-The save does **not** trigger a site rebuild. That requires a separate "Publicer side" action, which calls `POST /publish` to trigger GitHub Actions.
+The save does **not** trigger a site rebuild. That requires a separate "Publicer side" action, which calls `POST /publish` to trigger the current local rebuild + deploy-sync flow.
 
 ---
 

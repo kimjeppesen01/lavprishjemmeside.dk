@@ -1,5 +1,8 @@
 # Claude Code integration — full reference
 
+> Reference-only: internal/operator runbook or task context. External sprint agents should use the root handoff pack as execution authority.
+
+
 This document describes the **Claude Code** integration in the Master Hub: how the dashboard runs the Claude CLI on the server, how authentication and safeguards work, and how to operate and extend it. It reflects the **current implementation** and maps plan actions to status (done vs pending).
 
 **See also:** [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) — Admin Dashboard and *Claude Code integration* section. [docs/COMPREHENSIVE_PLAN.md](docs/COMPREHENSIVE_PLAN.md) — Consolidated plan including Claude goals and roadmap.
@@ -158,7 +161,7 @@ Repo path convention is fixed: `/home/theartis/repositories/<domain>` where `dom
 
 **Rule:** Do not suggest or implement changes that edit existing **CMS library** component source files (`src/components/*.astro`). Use **new** components or the **user-generated component system** instead. This avoids overwriting user-adjusted components when re-running plans or syncing upstream.
 
-- **Planner / Brainstormer:** Tasks and plans must not say “update PricingTable.astro” or “modify the pricing component source.” Describe desired behaviour or content (e.g. “pricing tiers with Starter 29 kr/md and upgrade nudge”) and direct implementation to (a) **new** components or (b) **user-generated** components in `src/components/custom/`, not edits to canonical CMS components.
+- **Planning workflows:** Tasks and plans must not say “update PricingTable.astro” or “modify the pricing component source.” Describe desired behaviour or content (e.g. “pricing tiers with Starter 29 kr/md and upgrade nudge”) and direct implementation to (a) **new** components or (b) **user-generated** components in `src/components/custom/`, not edits to canonical CMS components.
 - **Claude Code:** No run flow should encourage editing files under `src/components/*.astro` for existing library components. Verification flows are read-only (compare/verify), not “apply changes to the component file.”
 - **User-generated components:** Custom or user-adjusted components live in `src/components/custom/` and are never overwritten by CMS/seed updates. See [Custom components](#custom-components) below.
 
@@ -261,3 +264,4 @@ Process policy alignment:
   - `POST /master/task-md-files` (create new plan file)
 - [x] **Safety copy in UI:** run panel shows: `A run requires a planning .md file.`
 - [x] **Acceptance criteria:** Claude run cannot start without existing `.md` selection or explicit new-file creation.
+

@@ -17,10 +17,15 @@ const pageComponentsRoutes = require('./src/routes/page-components');
 const aiContextRoutes = require('./src/routes/ai-context');
 const aiGenerateRoutes = require('./src/routes/ai-generate');
 const aiPromptSettingsRoutes = require('./src/routes/ai-prompt-settings');
+const assistantRoutes = require('./src/routes/assistant');
+const rolloutRoutes = require('./src/routes/rollout');
 const publishRoutes = require('./src/routes/publish');
 const mediaRoutes = require('./src/routes/media');
 const trafficRoutes = require('./src/routes/traffic');
 const masterRoutes = require('./src/routes/master');
+const shopPublicRoutes = require('./src/routes/shop-public.cjs');
+const shopAdminRoutes = require('./src/routes/shop-admin.cjs');
+const shopFlatpayRoutes = require('./src/routes/shop-flatpay.cjs');
 const { requestLogger } = require('./src/middleware/logger');
 
 const app = express();
@@ -57,10 +62,15 @@ app.use('/page-components', pageComponentsRoutes);
 app.use('/ai', aiContextRoutes);
 app.use('/ai-generate', aiGenerateRoutes);
 app.use('/ai-prompt-settings', aiPromptSettingsRoutes);
+app.use('/assistant', assistantRoutes);
+app.use('/rollout', rolloutRoutes);
 app.use('/publish', publishRoutes);
 app.use('/media', mediaRoutes);
 app.use('/traffic', trafficRoutes);
 app.use('/master', masterRoutes);
+app.use('/shop/flatpay', shopFlatpayRoutes);
+app.use('/shop/admin', shopAdminRoutes);
+app.use('/shop', shopPublicRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

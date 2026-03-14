@@ -2,43 +2,69 @@ const nodemailer = require('nodemailer');
 
 /**
  * Email service for sending transactional emails
- * Uses Resend SMTP for reliable delivery
+ * Uses Resend SMTP when configured, otherwise falls back to domain SMTP.
  */
 
-// Resend configuration (primary)
-const transporter = nodemailer.createTransport({
-  host: 'smtp.resend.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: 'resend',
-    pass: process.env.RESEND_API_KEY
-  }
-});
+function normalizeBool(value, fallback = true) {
+  if (value === undefined || value === null || value === '') return fallback;
+  return !['0', 'false', 'no', 'off'].includes(String(value).toLowerCase());
+}
 
-// cPanel SMTP fallback configuration (if Resend not used)
-// Uncomment and configure if switching to cPanel email
-// const transporter = nodemailer.createTransport({
-//   host: 'mail.lavprishjemmeside.dk',
-//   port: 465,
-//   secure: true,
-//   auth: {
-//     user: process.env.SMTP_USER, // e.g., noreply@lavprishjemmeside.dk
-//     pass: process.env.SMTP_PASSWORD
-//   },
-//   pool: true, // Connection pooling for better performance
-//   maxConnections: 5,
-//   maxMessages: 100
-// });
+function hasValue(value) {
+  return Boolean(value && String(value).trim());
+}
 
-// Verify transporter on startup
-transporter.verify((err, success) => {
-  if (err) {
-    console.error('Email transporter verification failed:', err.message);
-  } else {
-    console.log('Email transporter ready');
+function createTransportConfig() {
+  if (hasValue(process.env.RESEND_API_KEY)) {
+    return {
+      kind: 'resend',
+      config: {
+        host: 'smtp.resend.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: 'resend',
+          pass: process.env.RESEND_API_KEY
+        }
+      }
+    };
   }
-});
+
+  if (hasValue(process.env.SMTP_HOST) && hasValue(process.env.SMTP_USER) && hasValue(process.env.SMTP_PASSWORD)) {
+    return {
+      kind: 'smtp',
+      config: {
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT || 465),
+        secure: normalizeBool(process.env.SMTP_SECURE, true),
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASSWORD
+        },
+        pool: true,
+        maxConnections: Number(process.env.SMTP_MAX_CONNECTIONS || 5),
+        maxMessages: Number(process.env.SMTP_MAX_MESSAGES || 100)
+      }
+    };
+  }
+
+  return null;
+}
+
+const transportConfig = createTransportConfig();
+const transporter = transportConfig ? nodemailer.createTransport(transportConfig.config) : null;
+
+if (transporter) {
+  transporter.verify((err) => {
+    if (err) {
+      console.error(`Email transporter verification failed (${transportConfig.kind}):`, err.message);
+    } else {
+      console.log(`Email transporter ready (${transportConfig.kind})`);
+    }
+  });
+} else {
+  console.error('Email transporter not configured: set RESEND_API_KEY or SMTP_HOST/SMTP_USER/SMTP_PASSWORD');
+}
 
 /**
  * Send email helper function
@@ -51,6 +77,9 @@ transporter.verify((err, success) => {
  */
 async function sendEmail({ to, subject, html, text }) {
   try {
+    if (!transporter) {
+      throw new Error('Email transporter is not configured');
+    }
     const info = await transporter.sendMail({
       from: `"${process.env.EMAIL_FROM_NAME || 'Lavprishjemmeside.dk'}" <${process.env.EMAIL_FROM_ADDRESS || 'noreply@lavprishjemmeside.dk'}>`,
       to,
@@ -66,4 +95,4 @@ async function sendEmail({ to, subject, html, text }) {
   }
 }
 
-module.exports = { sendEmail, transporter };
+module.exports = { sendEmail, transporter, transportKind: transportConfig ? transportConfig.kind : null };

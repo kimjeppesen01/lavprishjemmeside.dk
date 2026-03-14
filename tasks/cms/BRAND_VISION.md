@@ -1,11 +1,11 @@
 # Brand Vision
 
 > This document captures your brand's core identity and direction.
-> It helps our AI tools (Brainstormer and Planner) tailor ideas and plans
+> It helps our assistant and planning workflows tailor ideas and plans
 > specifically to your brand — not just a generic website.
 >
-> Fill in each section. If you're unsure where to start, ask the Brainstormer
-> in Slack to guide you through it: "Help me fill out my brand vision."
+> Fill in each section. If you're unsure where to start, use the CMS assistant
+> to help shape the answers with you.
 >
 > See [BRAND_VISION_EXAMPLE.md](../../BRAND_VISION_EXAMPLE.md) (repo root) for a completed example.
 
@@ -45,7 +45,7 @@ online presence without technical complexity]
 
 ## Visual Identity
 
-[Describe your brand's visual style. This helps the Planner suggest appropriate
+[Describe your brand's visual style. This helps the assistant suggest appropriate
 UI designs and component choices.]
 
 | Element | Value |
@@ -79,7 +79,7 @@ local pricing, local language — not a one-size-fits-all global product]
 
 ## Current Goals (update regularly)
 
-[What are you working toward right now? This helps the Planner prioritize features
+[What are you working toward right now? This helps the assistant prioritize features
 that support your actual business objectives.]
 
 - [e.g., Grow from 10 to 50 clients in 2026]

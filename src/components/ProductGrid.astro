@@ -1,0 +1,100 @@
+---
+/**
+ * ProductGrid — responsive 2-4 column product grid.
+ *
+ * AI component schema: see api/src/component-docs/product-grid.md
+ */
+import ProductCard from './ProductCard.astro';
+
+interface Product {
+  id: number;
+  name: string;
+  slug: string;
+  short_desc?: string;
+  price_ore: number;
+  compare_ore?: number;
+  primary_image?: string;
+  category_slug?: string;
+  is_featured?: boolean;
+  stock?: number;
+  track_stock?: boolean;
+}
+
+interface Props {
+  products: Product[];
+  title?: string;
+  description?: string;
+  columns?: 2 | 3 | 4;
+  showEmpty?: boolean;
+  emptyText?: string;
+}
+
+const {
+  products = [],
+  title,
+  description,
+  columns = 3,
+  showEmpty = true,
+  emptyText = 'Ingen produkter fundet.',
+} = Astro.props;
+
+const colClass = {
+  2: 'grid-cols-1 sm:grid-cols-2',
+  3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+  4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+}[columns];
+---
+
+<section class="product-grid-section">
+  {(title || description) && (
+    <div class="mb-8 text-center">
+      {title && <h2 class="text-2xl font-bold text-[var(--color-text-primary)]">{title}</h2>}
+      {description && <p class="mt-2 text-[var(--color-text-secondary)]">{description}</p>}
+    </div>
+  )}
+
+  {products.length > 0 ? (
+    <ul class:list={['grid gap-6', colClass]} role="list">
+      {products.map(product => (
+        <li>
+          <ProductCard {...product} />
+        </li>
+      ))}
+    </ul>
+  ) : showEmpty ? (
+    <div class="flex flex-col items-center justify-center py-20 text-[var(--color-text-secondary)]">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.5" class="mb-4 opacity-40" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <p>{emptyText}</p>
+    </div>
+  ) : null}
+</section>
+
+<script>
+  // Global "add to cart" handler for ProductCard buttons
+  import { addToCart } from '../scripts/cart.js';
+
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.add-to-cart-btn');
+    if (!btn || btn.hasAttribute('disabled')) return;
+
+    const productId = parseInt(btn.getAttribute('data-product-id') || '0');
+    const name = btn.getAttribute('data-product-name') || '';
+    const priceOre = parseInt(btn.getAttribute('data-price-ore') || '0');
+
+    if (!productId) return;
+
+    addToCart({ product_id: productId, name, price_ore: priceOre, quantity: 1 });
+
+    // Visual feedback
+    const orig = btn.textContent;
+    btn.textContent = 'Tilføjet ✓';
+    btn.setAttribute('disabled', '');
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.removeAttribute('disabled');
+    }, 1500);
+  });
+</script>

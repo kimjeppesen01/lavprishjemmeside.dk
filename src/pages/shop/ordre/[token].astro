@@ -1,0 +1,178 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+// This page is fully client-rendered — token comes from URL on client
+// getStaticPaths returns a single catch-all that handles all tokens
+export async function getStaticPaths() {
+  return [{ params: { token: '_' } }];
+}
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+---
+
+<Layout title="Ordrebekræftelse — Shop — Lavprishjemmeside.dk" description="Tak for din ordre!">
+  <main class="mx-auto max-w-[var(--container-max-width)] px-[var(--container-padding-x)] py-12">
+    <div id="order-loading" class="text-center py-16 text-[var(--color-text-secondary)]">Henter ordre...</div>
+    <div id="order-error" class="hidden text-center py-16 text-[var(--color-text-secondary)]">
+      <p class="mb-2">Ordre ikke fundet.</p>
+      <a href="/shop/" class="text-[var(--color-primary)] hover:underline">Gå til shoppen</a>
+    </div>
+    <div id="order-content" class="hidden max-w-2xl mx-auto">
+      <!-- Success header -->
+      <div id="order-success-header" class="hidden text-center mb-10">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <h1 class="text-3xl font-extrabold text-[var(--color-text-primary)]">Tak for din ordre!</h1>
+        <p class="mt-2 text-[var(--color-text-secondary)]">Du modtager en ordrebekræftelse på e-mail.</p>
+      </div>
+
+      <div id="order-pending-header" class="hidden text-center mb-10">
+        <h1 class="text-2xl font-bold text-[var(--color-text-primary)]">Vi venter på betalingsbekræftelse</h1>
+        <p class="mt-2 text-[var(--color-text-secondary)]">Din ordre er oprettet og betaling behandles. Opdater siden om lidt.</p>
+      </div>
+
+      <!-- Order details -->
+      <div class="rounded-[var(--radius-lg)] border border-[var(--color-border)] overflow-hidden">
+        <div class="bg-[var(--color-neutral-100)] px-6 py-4 flex justify-between items-center">
+          <div>
+            <p class="text-sm text-[var(--color-text-secondary)]">Ordrenummer</p>
+            <p id="ord-number" class="font-bold text-[var(--color-text-primary)]">—</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm text-[var(--color-text-secondary)]">Status</p>
+            <span id="ord-status-badge" class="inline-block rounded-full px-3 py-0.5 text-sm font-semibold">—</span>
+          </div>
+        </div>
+
+        <!-- Items -->
+        <div class="px-6 py-4 border-b border-[var(--color-border)]">
+          <h2 class="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-3">Produkter</h2>
+          <ul id="ord-items" class="space-y-3"></ul>
+        </div>
+
+        <!-- Totals -->
+        <div class="px-6 py-4 border-b border-[var(--color-border)] space-y-1 text-sm">
+          <div class="flex justify-between">
+            <span class="text-[var(--color-text-secondary)]">Subtotal</span>
+            <span id="ord-subtotal">—</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-[var(--color-text-secondary)]">Fragt</span>
+            <span id="ord-shipping">—</span>
+          </div>
+          <div id="ord-discount-row" class="hidden flex justify-between text-green-600">
+            <span>Rabat</span>
+            <span id="ord-discount">—</span>
+          </div>
+          <div class="flex justify-between font-bold pt-2 border-t border-[var(--color-border)]">
+            <span>Total inkl. moms</span>
+            <span id="ord-total">—</span>
+          </div>
+        </div>
+
+        <!-- Delivery address -->
+        <div class="px-6 py-4">
+          <h2 class="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">Levering</h2>
+          <p id="ord-address" class="text-sm text-[var(--color-text-primary)] leading-relaxed"></p>
+        </div>
+      </div>
+
+      <div class="mt-8 text-center">
+        <a href="/shop/" class="text-[var(--color-primary)] hover:underline text-sm">Fortsæt med at handle</a>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script define:vars={{ apiUrl }}>
+  function fmt(ore) { return (ore / 100).toFixed(2).replace('.', ',') + ' kr.'; }
+
+  const statusLabels = {
+    pending_payment: ['Afventer betaling', 'bg-amber-100 text-amber-700'],
+    paid: ['Betalt', 'bg-green-100 text-green-700'],
+    processing: ['Under behandling', 'bg-blue-100 text-blue-700'],
+    shipped: ['Afsendt', 'bg-blue-100 text-blue-700'],
+    delivered: ['Leveret', 'bg-green-100 text-green-700'],
+    cancelled: ['Annulleret', 'bg-red-100 text-red-700'],
+    refunded: ['Refunderet', 'bg-gray-100 text-gray-700'],
+  };
+
+  async function load() {
+    // Token is the last path segment
+    const token = window.location.pathname.split('/').filter(Boolean).pop();
+    if (!token || token === '_') {
+      document.getElementById('order-loading')?.classList.add('hidden');
+      document.getElementById('order-error')?.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiUrl}/shop/orders/${token}`);
+      document.getElementById('order-loading')?.classList.add('hidden');
+
+      if (!res.ok) {
+        document.getElementById('order-error')?.classList.remove('hidden');
+        return;
+      }
+
+      const order = await res.json();
+      document.getElementById('order-content')?.classList.remove('hidden');
+
+      // Success / pending header
+      if (['paid','processing','shipped','delivered'].includes(order.status)) {
+        document.getElementById('order-success-header')?.classList.remove('hidden');
+        // Clear cart on success
+        const cart = await import('/src/scripts/cart.js').catch(() => null);
+        if (cart) cart.clearCart();
+      } else {
+        document.getElementById('order-pending-header')?.classList.remove('hidden');
+      }
+
+      document.getElementById('ord-number').textContent = order.order_number;
+
+      const [label, cls] = statusLabels[order.status] || [order.status, 'bg-gray-100 text-gray-700'];
+      const badge = document.getElementById('ord-status-badge');
+      badge.textContent = label;
+      badge.className = `inline-block rounded-full px-3 py-0.5 text-sm font-semibold ${cls}`;
+
+      // Items
+      const itemsEl = document.getElementById('ord-items');
+      (order.items || []).forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'flex justify-between gap-2 text-sm';
+        li.innerHTML = `
+          <span class="text-[var(--color-text-primary)]">
+            ${item.product_name}${item.variant_name ? ` / ${item.variant_name}` : ''} × ${item.quantity}
+          </span>
+          <span class="font-medium shrink-0">${fmt(item.total_price_ore)}</span>
+        `;
+        itemsEl.appendChild(li);
+      });
+
+      document.getElementById('ord-subtotal').textContent = fmt(order.subtotal_ore);
+      document.getElementById('ord-shipping').textContent = order.shipping_ore === 0 ? 'Gratis' : fmt(order.shipping_ore);
+      document.getElementById('ord-total').textContent = fmt(order.total_ore);
+
+      if (order.discount_ore > 0) {
+        document.getElementById('ord-discount-row')?.classList.remove('hidden');
+        document.getElementById('ord-discount').textContent = `−${fmt(order.discount_ore)}`;
+      }
+
+      // Address
+      document.getElementById('ord-address').innerHTML = [
+        `${order.ship_first_name} ${order.ship_last_name}`,
+        order.ship_address1,
+        order.ship_address2,
+        `${order.ship_zip} ${order.ship_city}`,
+        'Danmark',
+      ].filter(Boolean).join('<br>');
+
+    } catch {
+      document.getElementById('order-loading')?.classList.add('hidden');
+      document.getElementById('order-error')?.classList.remove('hidden');
+    }
+  }
+
+  load();
+</script>

@@ -1,0 +1,160 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+---
+
+<AdminLayout title="Shop-indstillinger">
+  <div class="space-y-8 max-w-2xl">
+    <h1 class="text-2xl font-bold">Shop-indstillinger</h1>
+
+    <div id="loading" class="text-center py-8 text-gray-500">Henter indstillinger...</div>
+
+    <form id="settings-form" class="hidden space-y-8">
+
+      <!-- General -->
+      <section class="rounded-xl border border-gray-200 p-6 space-y-4">
+        <h2 class="text-lg font-semibold text-gray-900">Generelt</h2>
+        <div>
+          <label class="admin-label" for="shop-name">Shopnavn</label>
+          <input id="shop-name" name="shop_name" class="admin-input w-full" />
+        </div>
+        <div>
+          <label class="admin-label" for="shop-email">Shop-e-mail (bekræftelsesmails sendes fra/til)</label>
+          <input id="shop-email" name="shop_email" type="email" class="admin-input w-full" />
+        </div>
+        <div>
+          <label class="admin-label" for="cvr">CVR-nummer</label>
+          <input id="cvr" name="cvr_number" class="admin-input w-40" />
+        </div>
+      </section>
+
+      <!-- Flatpay -->
+      <section class="rounded-xl border border-gray-200 p-6 space-y-4">
+        <h2 class="text-lg font-semibold text-gray-900">Flatpay / Frisbii betaling</h2>
+        <p class="text-sm text-gray-500">API-nøgler gemmes krypteret. Eksisterende nøgler vises som ••••••••. Lad feltet stå tomt for at beholde eksisterende nøgle.</p>
+        <div>
+          <label class="admin-label" for="fp-key">Flatpay API-nøgle (privat, format: priv_xxxx)</label>
+          <input id="fp-key" name="flatpay_api_key" type="password" autocomplete="off" class="admin-input w-full" placeholder="••••••••" />
+        </div>
+        <div>
+          <label class="admin-label" for="fp-secret">Webhook-hemmelighed</label>
+          <input id="fp-secret" name="flatpay_webhook_secret" type="password" autocomplete="off" class="admin-input w-full" placeholder="••••••••" />
+        </div>
+        <div class="flex items-center gap-2">
+          <input id="fp-test" name="flatpay_test_mode" type="checkbox" />
+          <label for="fp-test" class="text-sm font-medium text-gray-700">Test-tilstand (brug Frisbii testmiljø)</label>
+        </div>
+        <div class="text-sm text-gray-500 bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <strong>Webhook URL (til Flatpay dashboard):</strong><br>
+          <code id="webhook-url" class="text-xs break-all"></code>
+        </div>
+      </section>
+
+      <!-- Notifications -->
+      <section class="rounded-xl border border-gray-200 p-6 space-y-4">
+        <h2 class="text-lg font-semibold text-gray-900">E-mail-notifikationer</h2>
+        <div>
+          <label class="admin-label" for="notify-email">Admin-e-mail (modtager kopi af nye ordrer)</label>
+          <input id="notify-email" name="notify_admin_email" type="email" class="admin-input w-full" />
+        </div>
+        <div class="flex items-center gap-2">
+          <input id="cust-confirm" name="send_customer_confirmation" type="checkbox" />
+          <label for="cust-confirm" class="text-sm font-medium text-gray-700">Send ordrebekræftelse til kunden</label>
+        </div>
+        <div class="flex items-center gap-2">
+          <input id="ship-notify" name="send_shipping_notification" type="checkbox" />
+          <label for="ship-notify" class="text-sm font-medium text-gray-700">Send forsendelsesnotifikation til kunden</label>
+        </div>
+      </section>
+
+      <div id="settings-error" class="hidden rounded bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600"></div>
+      <div id="settings-success" class="hidden rounded bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">Indstillinger gemt!</div>
+
+      <button type="submit" id="save-btn" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm">
+        Gem indstillinger
+      </button>
+    </form>
+  </div>
+</AdminLayout>
+
+<style>
+.admin-input { border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.375rem 0.625rem; font-size: 0.875rem; outline: none; }
+.admin-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+.admin-label { display: block; font-size: 0.75rem; font-weight: 600; color: #4b5563; margin-bottom: 0.25rem; }
+</style>
+
+<script define:vars={{ apiUrl }}>
+  const token = () => localStorage.getItem('admin_token');
+  const headers = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` });
+
+  // Show webhook URL
+  const apiBase = apiUrl.replace('https://api.', 'https://api.');
+  document.getElementById('webhook-url').textContent = `${apiUrl}/shop/flatpay/webhook`;
+
+  async function load() {
+    const res = await fetch(`${apiUrl}/shop/admin/settings`, { headers: headers() });
+    const s = await res.json();
+
+    document.getElementById('loading')?.classList.add('hidden');
+    document.getElementById('settings-form')?.classList.remove('hidden');
+
+    document.getElementById('shop-name').value = s.shop_name || '';
+    document.getElementById('shop-email').value = s.shop_email || '';
+    document.getElementById('cvr').value = s.cvr_number || '';
+    document.getElementById('fp-test').checked = !!s.flatpay_test_mode;
+    document.getElementById('notify-email').value = s.notify_admin_email || '';
+    document.getElementById('cust-confirm').checked = !!s.send_customer_confirmation;
+    document.getElementById('ship-notify').checked = !!s.send_shipping_notification;
+  }
+
+  document.getElementById('settings-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('save-btn');
+    const errEl = document.getElementById('settings-error');
+    const succEl = document.getElementById('settings-success');
+    errEl.classList.add('hidden');
+    succEl.classList.add('hidden');
+    btn.disabled = true;
+    btn.textContent = 'Gemmer...';
+
+    const body = {
+      shop_name: document.getElementById('shop-name').value,
+      shop_email: document.getElementById('shop-email').value,
+      cvr_number: document.getElementById('cvr').value,
+      flatpay_test_mode: document.getElementById('fp-test').checked,
+      notify_admin_email: document.getElementById('notify-email').value,
+      send_customer_confirmation: document.getElementById('cust-confirm').checked,
+      send_shipping_notification: document.getElementById('ship-notify').checked,
+    };
+
+    const fpKey = document.getElementById('fp-key').value.trim();
+    const fpSecret = document.getElementById('fp-secret').value.trim();
+    if (fpKey) body.flatpay_api_key = fpKey;
+    if (fpSecret) body.flatpay_webhook_secret = fpSecret;
+
+    try {
+      const res = await fetch(`${apiUrl}/shop/admin/settings`, {
+        method: 'POST', headers: headers(), body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        errEl.textContent = data.error || 'Fejl';
+        errEl.classList.remove('hidden');
+      } else {
+        succEl.classList.remove('hidden');
+        // Clear sensitive fields
+        document.getElementById('fp-key').value = '';
+        document.getElementById('fp-secret').value = '';
+        setTimeout(() => succEl.classList.add('hidden'), 3000);
+      }
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Gem indstillinger';
+    }
+  });
+
+  load();
+</script>

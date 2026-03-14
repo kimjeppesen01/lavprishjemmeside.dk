@@ -1,0 +1,41 @@
+---
+/**
+ * PriceDisplay — Danish price formatting component.
+ * Prices stored as øre (integers). 9995 = 99,95 kr.
+ */
+interface Props {
+  ore: number;           // Price in øre
+  compareOre?: number;   // "Was" price for strikethrough (optional)
+  showVat?: boolean;     // Append "inkl. moms" label
+  size?: 'sm' | 'md' | 'lg';
+  class?: string;
+}
+
+const { ore, compareOre, showVat = false, size = 'md', class: cls = '' } = Astro.props;
+
+function formatDkk(ore: number): string {
+  return (ore / 100).toFixed(2).replace('.', ',') + ' kr.';
+}
+
+const sizeClass = {
+  sm: 'text-sm',
+  md: 'text-base',
+  lg: 'text-2xl font-bold',
+}[size];
+
+const isDiscounted = compareOre && compareOre > ore;
+---
+
+<span class:list={['price-display inline-flex flex-wrap items-baseline gap-2', sizeClass, cls]}>
+  <span class:list={['font-semibold', isDiscounted ? 'text-[var(--color-danger,#e53e3e)]' : 'text-[var(--color-text-primary)]']}>
+    {formatDkk(ore)}
+  </span>
+  {isDiscounted && (
+    <span class="text-[var(--color-text-secondary)] line-through text-sm font-normal">
+      {formatDkk(compareOre!)}
+    </span>
+  )}
+  {showVat && (
+    <span class="text-[var(--color-text-secondary)] text-xs font-normal">inkl. moms</span>
+  )}
+</span>

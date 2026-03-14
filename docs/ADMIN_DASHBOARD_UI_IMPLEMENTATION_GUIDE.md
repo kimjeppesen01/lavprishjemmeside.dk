@@ -1,5 +1,8 @@
 # Stage 6: Admin Dashboard UI - Implementation Guide
 
+> Reference-only: internal/operator runbook or task context. External sprint agents should use the root handoff pack as execution authority.
+
+
 ## Overview
 Build 4 admin dashboard pages for managing design tokens, components, pages, and AI content generation.
 
@@ -425,3 +428,4 @@ After building each page:
 - Handle loading states (disable buttons during API calls)
 
 Good luck! 🚀
+

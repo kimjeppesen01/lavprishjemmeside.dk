@@ -1,5 +1,8 @@
 # Phase 7: Visual Page Builder - Technical Specification
 
+> Reference-only: legacy strategy/spec context. This file must not override the root handoff pack or the canonical in-folder trilogy: `requirements.md`, `design.md`, and `tasks.md`.
+
+
 > **Status**: Future implementation (Premium feature)
 > **Dependencies**: Phase 6 (Component Library) **MUST** be completed first
 > **Estimated Implementation**: 2-3 weeks

@@ -1,5 +1,8 @@
 # AI Engineering Standards
 
+> Reference-only: internal/operator runbook or task context. External sprint agents should use the root handoff pack as execution authority.
+
+
 Comprehensive best-practice framework for running this project as an AI-assisted software system.
 
 ## 1. Delivery Lifecycle
@@ -78,3 +81,4 @@ Each active task should include:
   - the task file in `tasks/`
   - relevant reference docs in `docs/`
   - deploy/health evidence when production paths were touched.
+

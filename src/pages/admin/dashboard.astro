@@ -27,10 +27,45 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
   <!-- Dashboard content (hidden until data loads) -->
   <div id="dashboard" class="hidden">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-      <h1 class="text-2xl font-bold">Oversigt</h1>
+      <div class="space-y-1">
+        <h1 class="text-2xl font-bold">Oversigt</h1>
+        <p class="text-sm text-gray-500">Brug build-id'et nedenfor når en klient skal opdateres eller supporteres.</p>
+      </div>
       <button id="dashboard-publish-btn" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-sm">
         Publicer til live (~90 sek)
       </button>
+    </div>
+
+    <div id="rollout-banner" class="hidden mb-6 rounded-2xl border px-4 py-4 text-sm"></div>
+
+    <div class="mb-8 rounded-2xl bg-slate-900 text-white shadow-lg">
+      <div class="flex flex-wrap items-start justify-between gap-4 p-5">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">CMS-version</p>
+          <div class="mt-2 flex flex-wrap items-center gap-3">
+            <p id="cms-build" class="text-2xl font-semibold">—</p>
+            <span id="cms-release-pill" class="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-slate-200">Release —</span>
+          </div>
+          <p id="cms-version-help" class="mt-2 text-sm text-slate-300">Hent versionsdata fra API...</p>
+        </div>
+        <button id="cms-copy-version-btn" class="rounded-lg border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15">
+          Kopiér build-id
+        </button>
+      </div>
+      <div class="grid grid-cols-1 gap-4 border-t border-white/10 px-5 py-4 text-sm text-slate-200 md:grid-cols-3">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Commit</p>
+          <p id="cms-commit" class="mt-1 font-mono text-sm text-white">—</p>
+        </div>
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Seneste kodeændring</p>
+          <p id="cms-committed-at" class="mt-1 text-white">—</p>
+        </div>
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Opdateringskanal</p>
+          <p id="cms-update-channel" class="mt-1 text-white">—</p>
+        </div>
+      </div>
     </div>
 
     <!-- Settings overview: Pages + Global + Media & SEO -->
@@ -180,7 +215,88 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
       return d.toLocaleDateString('da-DK') + ' ' + d.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' });
     }
 
+    function setVersionMeta(meta) {
+      var build = meta && meta.build ? meta.build : '\u2014';
+      var releaseVersion = meta && meta.release_version ? meta.release_version : '\u2014';
+      var commitShort = meta && meta.commit_short ? meta.commit_short : '\u2014';
+      var committedAt = meta && meta.git_committed_at ? fmt(meta.git_committed_at) : '\u2014';
+      var updateChannel = meta && meta.update_channel ? meta.update_channel : '\u2014';
+      var gitRef = meta && meta.git_ref ? meta.git_ref : null;
+      var dirty = Boolean(meta && meta.dirty);
+      var helpText = 'Del dette build-id når en klient skal opdateres.';
+
+      if (gitRef && gitRef !== build) {
+        helpText += ' Git reference: ' + gitRef + '.';
+      }
+      if (dirty) {
+        helpText += ' Denne installation har lokale ændringer og er ikke på en ren commit.';
+      }
+
+      document.getElementById('cms-build').textContent = build;
+      document.getElementById('cms-release-pill').textContent = 'Release ' + releaseVersion;
+      document.getElementById('cms-version-help').textContent = helpText;
+      document.getElementById('cms-commit').textContent = commitShort;
+      document.getElementById('cms-committed-at').textContent = committedAt;
+      document.getElementById('cms-update-channel').textContent = updateChannel;
+
+      var copyBtn = document.getElementById('cms-copy-version-btn');
+      if (copyBtn) {
+        copyBtn.dataset.copyValue = build;
+      }
+    }
+
+    function renderRolloutStatus(payload) {
+      var banner = document.getElementById('rollout-banner');
+      if (!banner) return;
+
+      if (!payload) {
+        banner.className = 'mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800';
+        banner.innerHTML = '<strong>Opdateringsstatus utilgængelig.</strong> Kunne ikke hente release-status fra Agent Enterprise.';
+        return;
+      }
+
+      var comparison = payload.comparison || payload.sourceVsParent || null;
+      var summary = payload.summary || null;
+      var status = comparison && comparison.status ? comparison.status : (payload.status || summary && summary.status) || 'unknown';
+      var message = comparison && comparison.message
+        ? comparison.message
+        : (payload.error || (summary && summary.warnings && summary.warnings[0]) || 'Ingen aktiv release-advarsel.');
+
+      if (status === 'aligned' && !(summary && summary.pendingParentRollout) && !(summary && summary.clientUpdateCount)) {
+        banner.classList.add('hidden');
+        banner.innerHTML = '';
+        return;
+      }
+
+      if (status === 'changelog_live_pending' || (summary && summary.pendingParentRollout)) {
+        banner.className = 'mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900';
+        banner.innerHTML = '<strong>Rollout afventer.</strong> ' + message;
+        return;
+      }
+
+      if (status === 'update_available') {
+        banner.className = 'mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-900';
+        banner.innerHTML = '<strong>Opdatering tilgængelig.</strong> ' + message;
+        return;
+      }
+
+      banner.className = 'mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800';
+      banner.innerHTML = '<strong>Opdateringsstatus utilgængelig.</strong> ' + message;
+    }
+
+    function refreshRolloutStatus() {
+      authFetch(API + '/rollout/status')
+        .then(function(payload) {
+          renderRolloutStatus(payload);
+        })
+        .catch(function() {
+          renderRolloutStatus(null);
+        });
+    }
+
     Promise.all([
+      authFetch(API + '/health').catch(function() { return null; }),
+      authFetch(API + '/rollout/status').catch(function() { return null; }),
       authFetch(API + '/events/summary').catch(function() {
         return { total: 0, today: 0, top_events: [], recent: [] };
       }),
@@ -191,10 +307,15 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
       authFetch(API + '/page-components?page=all').catch(function() { return []; })
     ])
     .then(function(results) {
-      var events = results[0] || { total: 0, today: 0, top_events: [], recent: [] };
-      var sessions = results[1] || { total: 0, today: 0, avg_pages: 0, top_pages: [], recent: [] };
-      var designSettings = results[2];
-      var pageComponents = results[3] || [];
+      var health = results[0] || null;
+      var rollout = results[1] || null;
+      var events = results[2] || { total: 0, today: 0, top_events: [], recent: [] };
+      var sessions = results[3] || { total: 0, today: 0, avg_pages: 0, top_pages: [], recent: [] };
+      var designSettings = results[4];
+      var pageComponents = results[5] || [];
+
+      setVersionMeta(health && health.cms ? health.cms : null);
+      renderRolloutStatus(rollout);
 
       // Settings: Pages (group by page_path)
       var pageGroups = {};
@@ -278,6 +399,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
       // Show dashboard
       document.getElementById('loading').classList.add('hidden');
       document.getElementById('dashboard').classList.remove('hidden');
+      window.setInterval(refreshRolloutStatus, 60000);
     })
     .catch(function(err) {
       if (err.message === 'Unauthorized') return;
@@ -313,6 +435,30 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
         .finally(function() {
           btn.disabled = false;
         });
+    });
+
+    document.getElementById('cms-copy-version-btn')?.addEventListener('click', function() {
+      var btn = this;
+      var value = btn.dataset.copyValue;
+      if (!value) return;
+      var restore = btn.textContent;
+
+      function done(label) {
+        btn.textContent = label;
+        setTimeout(function() {
+          btn.textContent = restore;
+        }, 1500);
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(function() {
+          done('Kopieret');
+        }).catch(function() {
+          done('Kopiér manuelt');
+        });
+      } else {
+        done('Kopiér manuelt');
+      }
     });
   })();
   </script>

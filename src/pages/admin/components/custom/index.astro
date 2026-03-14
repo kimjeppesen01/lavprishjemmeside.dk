@@ -1,0 +1,266 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+---
+
+<AdminLayout title="Egne komponenter">
+  <div class="max-w-7xl mx-auto space-y-8">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Custom components</p>
+        <h1 class="text-3xl font-bold text-gray-900">Egne komponenter</h1>
+        <p class="mt-2 max-w-3xl text-gray-600">
+          Registrer klient-specifikke komponenter uden at overskrive CMS-biblioteket. Komponenten skal findes som en
+          `.astro` fil i `src/components/custom/` og registreres med slug-formatet `custom/navn-paa-komponent`.
+        </p>
+      </div>
+      <a href="/admin/components/" class="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+        Tilbage til biblioteket
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900">Registrer komponent</h2>
+            <p class="mt-1 text-sm text-gray-500">
+              Brug samme slug som filnavnet, fx `src/components/custom/PricingTable.astro` → `custom/pricing-table`.
+            </p>
+          </div>
+          <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">Uden database-migration af indhold</span>
+        </div>
+
+        <div id="register-success" class="mt-4 hidden rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"></div>
+        <div id="register-error" class="mt-4 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></div>
+
+        <form id="custom-component-form" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label class="block">
+            <span class="mb-1 block text-sm font-medium text-gray-700">Slug</span>
+            <input id="component-slug" type="text" placeholder="pricing-table" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" required>
+            <span class="mt-1 block text-xs text-gray-500">Prefix `custom/` tilføjes automatisk hvis det mangler.</span>
+          </label>
+
+          <label class="block">
+            <span class="mb-1 block text-sm font-medium text-gray-700">Visningsnavn</span>
+            <input id="component-name" type="text" placeholder="Pricing Table" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+          </label>
+
+          <label class="block md:col-span-2">
+            <span class="mb-1 block text-sm font-medium text-gray-700">Beskrivelse</span>
+            <textarea id="component-description" rows="3" placeholder="Kort forklaring til editoren..." class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"></textarea>
+          </label>
+
+          <label class="block">
+            <span class="mb-1 block text-sm font-medium text-gray-700">Kategori</span>
+            <select id="component-category" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+              <option value="content">content</option>
+              <option value="opener">opener</option>
+              <option value="trust">trust</option>
+              <option value="conversion">conversion</option>
+              <option value="structure">structure</option>
+            </select>
+          </label>
+
+          <div class="flex items-end">
+            <button id="register-submit" type="submit" class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+              Registrer komponent
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <aside class="rounded-2xl border border-gray-200 bg-slate-50 p-6 shadow-sm">
+        <h2 class="text-lg font-semibold text-gray-900">Workflow</h2>
+        <ol class="mt-4 space-y-3 text-sm text-gray-600">
+          <li><strong>1.</strong> Opret komponentfilen i `src/components/custom/`.</li>
+          <li><strong>2.</strong> Registrer sluggen her i CMS'et.</li>
+          <li><strong>3.</strong> Rebuild klient-sitet så Astro loader den nye komponent.</li>
+          <li><strong>4.</strong> Tilføj komponenten til sider via page builder eller AI-flow.</li>
+        </ol>
+        <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p class="font-medium">Vigtigt</p>
+          <p class="mt-1">
+            Registrering i databasen er ikke nok alene. Den tilsvarende `.astro` fil skal findes i klient-repoet, ellers kan den ikke rendere på sitet.
+          </p>
+        </div>
+      </aside>
+    </div>
+
+    <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900">Registrerede custom-komponenter</h2>
+          <p class="mt-1 text-sm text-gray-500">Listen hentes fra `components` tabellen med filter `source=custom`.</p>
+        </div>
+        <button id="refresh-custom-components" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          Opdatér liste
+        </button>
+      </div>
+
+      <div id="custom-loading" class="py-10 text-center text-gray-500">Henter custom-komponenter...</div>
+      <div id="custom-empty" class="hidden py-10 text-center text-gray-500">Ingen custom-komponenter registreret endnu.</div>
+      <div id="custom-grid" class="hidden mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2"></div>
+    </section>
+  </div>
+
+  <script define:vars={{ apiUrl }}>
+  (function() {
+    var API = apiUrl;
+    var token = localStorage.getItem('admin_token');
+
+    if (!token) {
+      window.location.href = '/admin/';
+      return;
+    }
+
+    function escapeHtml(text) {
+      var div = document.createElement('div');
+      div.textContent = text || '';
+      return div.innerHTML;
+    }
+
+    function normalizeSlug(value) {
+      var cleaned = (value || '').trim().toLowerCase().replace(/\s+/g, '-');
+      if (!cleaned) return '';
+      return cleaned.indexOf('custom/') === 0 ? cleaned : 'custom/' + cleaned;
+    }
+
+    function showMessage(id, message) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = message;
+      el.classList.remove('hidden');
+    }
+
+    function hideMessage(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = '';
+      el.classList.add('hidden');
+    }
+
+    function authFetch(url, options) {
+      var config = options || {};
+      config.headers = Object.assign({}, config.headers || {}, {
+        'Authorization': 'Bearer ' + token
+      });
+
+      return fetch(url, config).then(function(res) {
+        return res.json().catch(function() { return {}; }).then(function(data) {
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem('admin_token');
+            window.location.href = '/admin/';
+            throw new Error('Unauthorized');
+          }
+          if (!res.ok) {
+            throw new Error(data.error || ('HTTP ' + res.status));
+          }
+          return data;
+        });
+      });
+    }
+
+    function renderCustomComponents(items) {
+      var loading = document.getElementById('custom-loading');
+      var empty = document.getElementById('custom-empty');
+      var grid = document.getElementById('custom-grid');
+
+      loading.classList.add('hidden');
+      grid.innerHTML = '';
+
+      if (!items.length) {
+        empty.classList.remove('hidden');
+        grid.classList.add('hidden');
+        return;
+      }
+
+      empty.classList.add('hidden');
+      grid.classList.remove('hidden');
+
+      items.forEach(function(item) {
+        var card = document.createElement('article');
+        card.className = 'rounded-xl border border-gray-200 bg-gray-50 p-4';
+        card.innerHTML = ''
+          + '<div class="flex items-start justify-between gap-3">'
+          + '<div>'
+          + '<h3 class="text-base font-semibold text-gray-900">' + escapeHtml(item.name || item.slug) + '</h3>'
+          + '<p class="mt-1 font-mono text-xs text-gray-500">' + escapeHtml(item.slug) + '</p>'
+          + '</div>'
+          + '<span class="rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white">' + escapeHtml(item.category || 'content') + '</span>'
+          + '</div>'
+          + '<p class="mt-3 text-sm text-gray-600">' + escapeHtml(item.description || 'Ingen beskrivelse endnu.') + '</p>'
+          + '<div class="mt-4 flex flex-wrap gap-2">'
+          + '<a href="/admin/components/preview/' + encodeURIComponent(item.slug) + '/" target="_blank" rel="noopener noreferrer" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-white">Forhåndsvis</a>'
+          + '<a href="/admin/components/" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-white">Åbn bibliotek</a>'
+          + '</div>';
+        grid.appendChild(card);
+      });
+    }
+
+    function loadCustomComponents() {
+      document.getElementById('custom-loading').classList.remove('hidden');
+      document.getElementById('custom-empty').classList.add('hidden');
+      document.getElementById('custom-grid').classList.add('hidden');
+
+      return authFetch(API + '/components?source=custom')
+        .then(function(items) {
+          renderCustomComponents(Array.isArray(items) ? items : []);
+        })
+        .catch(function(err) {
+          document.getElementById('custom-loading').textContent = 'Kunne ikke hente custom-komponenter: ' + err.message;
+        });
+    }
+
+    document.getElementById('custom-component-form').addEventListener('submit', function(event) {
+      event.preventDefault();
+      hideMessage('register-success');
+      hideMessage('register-error');
+
+      var submit = document.getElementById('register-submit');
+      var rawSlug = document.getElementById('component-slug').value;
+      var payload = {
+        slug: normalizeSlug(rawSlug),
+        name_da: document.getElementById('component-name').value.trim() || null,
+        description_da: document.getElementById('component-description').value.trim() || null,
+        category: document.getElementById('component-category').value || 'content',
+        schema_fields: {},
+        default_content: {}
+      };
+
+      if (!payload.slug || payload.slug === 'custom/') {
+        showMessage('register-error', 'Indtast et gyldigt slug, fx pricing-table.');
+        return;
+      }
+
+      submit.disabled = true;
+      submit.textContent = 'Registrerer...';
+
+      authFetch(API + '/components/register-custom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+        .then(function(result) {
+          document.getElementById('custom-component-form').reset();
+          document.getElementById('component-category').value = 'content';
+          showMessage('register-success', 'Komponenten er registreret som ' + (result.slug || payload.slug) + '. Husk at rebuild sitet hvis filen er ny.');
+          return loadCustomComponents();
+        })
+        .catch(function(err) {
+          showMessage('register-error', err.message);
+        })
+        .finally(function() {
+          submit.disabled = false;
+          submit.textContent = 'Registrer komponent';
+        });
+    });
+
+    document.getElementById('refresh-custom-components').addEventListener('click', function() {
+      loadCustomComponents();
+    });
+
+    loadCustomComponents();
+  })();
+  </script>
+</AdminLayout>

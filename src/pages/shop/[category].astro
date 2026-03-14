@@ -1,0 +1,64 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductGrid from '../../components/ProductGrid.astro';
+
+export async function getStaticPaths() {
+  const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+  try {
+    const res = await fetch(`${apiUrl}/shop/categories`);
+    if (!res.ok) return [];
+    const categories = await res.json();
+    return categories.map((cat: any) => ({
+      params: { category: cat.slug },
+      props: { category: cat },
+    }));
+  } catch {
+    return [];
+  }
+}
+
+const { category } = Astro.props;
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+
+let products = [];
+let total = 0;
+
+try {
+  const res = await fetch(`${apiUrl}/shop/products?category=${category.slug}&limit=48`);
+  if (res.ok) {
+    const data = await res.json();
+    products = data.products || [];
+    total = data.total || 0;
+  }
+} catch {}
+---
+
+<Layout
+  title={`${category.name} — Shop — Lavprishjemmeside.dk`}
+  description={category.description || `Køb ${category.name} hos Lavprishjemmeside.dk`}
+>
+  <main>
+    <div class="mx-auto max-w-[var(--container-max-width)] px-[var(--container-padding-x)] py-10">
+      <!-- Breadcrumb -->
+      <nav class="mb-6 text-sm text-[var(--color-text-secondary)]" aria-label="Brødkrumme">
+        <a href="/shop/" class="hover:text-[var(--color-primary)]">Shop</a>
+        <span class="mx-2">›</span>
+        <span class="text-[var(--color-text-primary)]">{category.name}</span>
+      </nav>
+
+      <header class="mb-8">
+        <h1 class="text-3xl font-extrabold text-[var(--color-text-primary)]">{category.name}</h1>
+        {category.description && (
+          <p class="mt-2 text-[var(--color-text-secondary)]">{category.description}</p>
+        )}
+        <p class="mt-1 text-sm text-[var(--color-text-secondary)]">{total} produkt{total === 1 ? '' : 'er'}</p>
+      </header>
+
+      <ProductGrid
+        products={products}
+        columns={4}
+        emptyText={`Ingen produkter fundet i "${category.name}".`}
+      />
+    </div>
+  </main>
+</Layout>

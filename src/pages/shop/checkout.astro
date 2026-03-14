@@ -1,0 +1,401 @@
+---
+import Layout from '../../layouts/Layout.astro';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+---
+
+<Layout title="Checkout — Shop — Lavprishjemmeside.dk" description="Udfyld din leveringsadresse og betal sikkert.">
+  <main class="mx-auto max-w-[var(--container-max-width)] px-[var(--container-padding-x)] py-12">
+
+    <!-- Cancelled notice -->
+    <div id="cancelled-notice" class="hidden mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800" role="alert">
+      Betalingen blev annulleret. Du kan prøve igen nedenfor.
+    </div>
+
+    <h1 class="text-3xl font-extrabold text-[var(--color-text-primary)] mb-8">Checkout</h1>
+
+    <div id="checkout-empty" class="hidden text-center py-16 text-[var(--color-text-secondary)]">
+      <p class="mb-2">Kurven er tom.</p>
+      <a href="/shop/" class="text-[var(--color-primary)] hover:underline">Gå til shoppen</a>
+    </div>
+
+    <div id="checkout-content" class="hidden grid grid-cols-1 lg:grid-cols-5 gap-10">
+      <!-- Form (3 cols) -->
+      <div class="lg:col-span-3">
+        <form id="checkout-form" novalidate class="space-y-8">
+          <!-- Contact -->
+          <section>
+            <h2 class="text-lg font-bold text-[var(--color-text-primary)] mb-4">Kontaktoplysninger</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="form-label" for="first_name">Fornavn *</label>
+                <input id="first_name" name="first_name" type="text" required autocomplete="given-name" class="form-input" />
+              </div>
+              <div>
+                <label class="form-label" for="last_name">Efternavn *</label>
+                <input id="last_name" name="last_name" type="text" required autocomplete="family-name" class="form-input" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="form-label" for="email">E-mail *</label>
+                <input id="email" name="email" type="email" required autocomplete="email" class="form-input" />
+              </div>
+              <div>
+                <label class="form-label" for="phone">Telefon</label>
+                <input id="phone" name="phone" type="tel" autocomplete="tel" class="form-input" />
+              </div>
+            </div>
+          </section>
+
+          <!-- Delivery address -->
+          <section>
+            <h2 class="text-lg font-bold text-[var(--color-text-primary)] mb-4">Leveringsadresse</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="sm:col-span-2">
+                <label class="form-label" for="address1">Adresse *</label>
+                <input id="address1" name="address1" type="text" required autocomplete="street-address" class="form-input" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="form-label" for="address2">Adresse 2 (etage, lejlighedsnr.)</label>
+                <input id="address2" name="address2" type="text" autocomplete="address-line2" class="form-input" />
+              </div>
+              <div>
+                <label class="form-label" for="zip">Postnummer *</label>
+                <input id="zip" name="zip" type="text" required autocomplete="postal-code" class="form-input" maxlength="4" />
+              </div>
+              <div>
+                <label class="form-label" for="city">By *</label>
+                <input id="city" name="city" type="text" required autocomplete="address-level2" class="form-input" />
+              </div>
+            </div>
+          </section>
+
+          <!-- Shipping -->
+          <section>
+            <h2 class="text-lg font-bold text-[var(--color-text-primary)] mb-4">Forsendelse</h2>
+            <div id="shipping-methods" class="space-y-3">
+              <p class="text-sm text-[var(--color-text-secondary)]">Henter forsendelsesmetoder...</p>
+            </div>
+          </section>
+
+          <!-- Discount code -->
+          <section>
+            <h2 class="text-lg font-bold text-[var(--color-text-primary)] mb-4">Rabatkode</h2>
+            <div class="flex gap-2">
+              <input id="discount-input" type="text" placeholder="Indtast kode" class="form-input flex-1" />
+              <button type="button" id="discount-btn" class="px-4 py-2 rounded-[var(--radius-md)] border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-neutral-100)] transition-colors">
+                Anvend
+              </button>
+            </div>
+            <p id="discount-msg" class="mt-2 text-sm hidden"></p>
+          </section>
+
+          <!-- Error -->
+          <div id="checkout-error" class="hidden rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700" role="alert"></div>
+
+          <!-- Submit -->
+          <button
+            type="submit"
+            id="pay-btn"
+            class="w-full rounded-[var(--radius-full)] btn-gradient px-6 py-4 text-base font-semibold
+                   text-[var(--color-text-on-primary)] shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90
+                   disabled:opacity-50"
+          >
+            Betal sikkert med Flatpay
+          </button>
+          <p class="text-xs text-center text-[var(--color-text-secondary)]">
+            Du sendes videre til en sikker betalingsside (Visa, Mastercard, MobilePay).
+          </p>
+        </form>
+      </div>
+
+      <!-- Order summary (2 cols) -->
+      <div class="lg:col-span-2">
+        <div class="rounded-[var(--radius-lg)] border border-[var(--color-border)] p-6 space-y-4">
+          <h2 class="text-lg font-bold text-[var(--color-text-primary)]">Din ordre</h2>
+          <ul id="summary-items" class="space-y-3 text-sm"></ul>
+          <div class="border-t border-[var(--color-border)] pt-3 space-y-1 text-sm">
+            <div class="flex justify-between">
+              <span class="text-[var(--color-text-secondary)]">Subtotal</span>
+              <span id="sum-subtotal">—</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-[var(--color-text-secondary)]">Fragt</span>
+              <span id="sum-shipping">Vælg forsendelse</span>
+            </div>
+            <div id="sum-discount-row" class="hidden flex justify-between text-green-600">
+              <span>Rabat</span>
+              <span id="sum-discount">—</span>
+            </div>
+          </div>
+          <div class="border-t border-[var(--color-border)] pt-3 flex justify-between font-bold">
+            <span>Total inkl. moms</span>
+            <span id="sum-total">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<style>
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 0.25rem;
+}
+.form-input {
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-page);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 150ms;
+}
+.form-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+</style>
+
+<script define:vars={{ apiUrl }}>
+  // Detect cancelled payment
+  if (new URLSearchParams(window.location.search).get('cancelled')) {
+    document.getElementById('cancelled-notice')?.classList.remove('hidden');
+  }
+
+  let shippingMethods = [];
+  let selectedShipping = null;
+  let appliedDiscount = null;
+
+  function fmt(ore) { return (ore / 100).toFixed(2).replace('.', ',') + ' kr.'; }
+
+  async function init() {
+    // Lazy-load cart module
+    const cart = await import('/src/scripts/cart.js');
+    const { getCart, getCartTotal, validateCart } = cart;
+
+    const { items } = getCart();
+    const contentEl = document.getElementById('checkout-content');
+    const emptyEl = document.getElementById('checkout-empty');
+
+    if (items.length === 0) {
+      emptyEl?.classList.remove('hidden');
+      return;
+    }
+    contentEl?.classList.remove('hidden');
+
+    // Validate cart
+    await validateCart(apiUrl);
+
+    renderSummary(getCart, getCartTotal);
+    await loadShipping(getCart, getCartTotal);
+
+    // Discount
+    document.getElementById('discount-btn')?.addEventListener('click', async () => {
+      const code = document.getElementById('discount-input').value.trim();
+      const msgEl = document.getElementById('discount-msg');
+      if (!code) return;
+
+      const subtotal = getCartTotal();
+      try {
+        const res = await fetch(`${apiUrl}/shop/discount/validate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, subtotal_ore: subtotal }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          msgEl.textContent = data.error || 'Ugyldig kode';
+          msgEl.className = 'mt-2 text-sm text-red-600';
+          msgEl.classList.remove('hidden');
+          appliedDiscount = null;
+        } else {
+          appliedDiscount = data;
+          msgEl.textContent = `Kode "${data.code}" anvendt — -${fmt(data.discount_ore)}`;
+          msgEl.className = 'mt-2 text-sm text-green-600';
+          msgEl.classList.remove('hidden');
+        }
+      } catch {
+        msgEl.textContent = 'Kunne ikke validere kode';
+        msgEl.className = 'mt-2 text-sm text-red-600';
+        msgEl.classList.remove('hidden');
+      }
+      updateTotals(getCartTotal);
+    });
+
+    // Form submit
+    document.getElementById('checkout-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('pay-btn');
+      const errEl = document.getElementById('checkout-error');
+      errEl?.classList.add('hidden');
+
+      if (!selectedShipping) {
+        errEl.textContent = 'Vælg en forsendelsesmetode';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      const f = e.target;
+      const customer = {
+        first_name: f.first_name.value.trim(),
+        last_name: f.last_name.value.trim(),
+        email: f.email.value.trim(),
+        phone: f.phone.value.trim(),
+        address1: f.address1.value.trim(),
+        address2: f.address2.value.trim(),
+        city: f.city.value.trim(),
+        zip: f.zip.value.trim(),
+        country: 'DK',
+      };
+
+      btn.disabled = true;
+      btn.textContent = 'Opretter ordre...';
+
+      try {
+        const { items } = getCart();
+        const res = await fetch(`${apiUrl}/shop/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: items.map(i => ({ product_id: i.product_id, variant_id: i.variant_id, quantity: i.quantity })),
+            customer,
+            shipping_method_id: selectedShipping.id,
+            discount_code: appliedDiscount?.code || null,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          errEl.textContent = data.error || 'Ordren kunne ikke oprettes';
+          errEl.classList.remove('hidden');
+          btn.disabled = false;
+          btn.textContent = 'Betal sikkert med Flatpay';
+          return;
+        }
+
+        // Launch Frisbii Checkout
+        if (typeof window.Frisbii !== 'undefined') {
+          window.Frisbii.open(data.frisbii_session_id);
+        } else {
+          // Fallback: load SDK dynamically
+          btn.textContent = 'Åbner betalingsvindue...';
+          const script = document.createElement('script');
+          script.src = 'https://checkout.frisbii.com/checkout.js';
+          script.onload = () => {
+            if (typeof window.Frisbii !== 'undefined') {
+              window.Frisbii.open(data.frisbii_session_id);
+            } else {
+              // Last resort: store session and redirect
+              window.location.href = `/shop/ordre/${data.order_token}/`;
+            }
+          };
+          script.onerror = () => {
+            window.location.href = `/shop/ordre/${data.order_token}/`;
+          };
+          document.head.appendChild(script);
+        }
+
+      } catch {
+        errEl.textContent = 'Der opstod en fejl. Prøv igen.';
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Betal sikkert med Flatpay';
+      }
+    });
+  }
+
+  function renderSummary(getCart, getCartTotal) {
+    const { items } = getCart();
+    const listEl = document.getElementById('summary-items');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+    items.forEach(item => {
+      const li = document.createElement('li');
+      li.className = 'flex justify-between gap-2';
+      li.innerHTML = `
+        <span class="text-[var(--color-text-primary)] truncate max-w-[60%]">
+          ${item.name}${item.variant_name ? ` / ${item.variant_name}` : ''} × ${item.quantity}
+        </span>
+        <span class="font-medium shrink-0">${fmt(item.price_ore * item.quantity)}</span>
+      `;
+      listEl.appendChild(li);
+    });
+    document.getElementById('sum-subtotal').textContent = fmt(getCartTotal());
+    updateTotals(getCartTotal);
+  }
+
+  function updateTotals(getCartTotal) {
+    const subtotal = getCartTotal();
+    const shippingOre = selectedShipping?.price_ore ?? null;
+    let shipping = shippingOre;
+    if (selectedShipping?.free_above_ore && subtotal >= selectedShipping.free_above_ore) shipping = 0;
+
+    const discountOre = appliedDiscount?.discount_ore ?? 0;
+    const discountRow = document.getElementById('sum-discount-row');
+    const discountEl = document.getElementById('sum-discount');
+    if (discountOre > 0) {
+      discountRow?.classList.remove('hidden');
+      if (discountEl) discountEl.textContent = `−${fmt(discountOre)}`;
+    } else {
+      discountRow?.classList.add('hidden');
+    }
+
+    const shippingEl = document.getElementById('sum-shipping');
+    const totalEl = document.getElementById('sum-total');
+
+    if (shipping === null) {
+      if (shippingEl) shippingEl.textContent = 'Vælg forsendelse';
+      if (totalEl) totalEl.textContent = '—';
+    } else {
+      if (shippingEl) shippingEl.textContent = shipping === 0 ? 'Gratis' : fmt(shipping);
+      const total = Math.max(0, subtotal + shipping - discountOre);
+      if (totalEl) totalEl.textContent = fmt(total);
+    }
+  }
+
+  async function loadShipping(getCart, getCartTotal) {
+    const container = document.getElementById('shipping-methods');
+    try {
+      const res = await fetch(`${apiUrl}/shop/shipping/methods`);
+      if (!res.ok) return;
+      shippingMethods = await res.json();
+    } catch { return; }
+
+    if (!container) return;
+    container.innerHTML = '';
+    const subtotal = getCartTotal();
+
+    shippingMethods.forEach((method, i) => {
+      const isFree = method.free_above_ore !== null && subtotal >= method.free_above_ore;
+      const displayPrice = isFree ? 'Gratis' : fmt(method.price_ore);
+      const label = document.createElement('label');
+      label.className = 'flex items-center gap-3 cursor-pointer rounded-[var(--radius-md)] border border-[var(--color-border)] p-3 hover:border-[var(--color-primary)] transition-colors has-[:checked]:border-[var(--color-primary)] has-[:checked]:bg-[var(--color-primary)]/5';
+      label.innerHTML = `
+        <input type="radio" name="shipping_method" value="${method.id}" class="accent-[var(--color-primary)]" ${i === 0 ? 'checked' : ''} />
+        <div class="flex-1">
+          <p class="font-medium text-sm">${method.name}</p>
+          <p class="text-xs text-[var(--color-text-secondary)]">${method.est_days_min}–${method.est_days_max} hverdage</p>
+        </div>
+        <span class="font-semibold text-sm">${displayPrice}</span>
+      `;
+      container.appendChild(label);
+
+      if (i === 0) {
+        selectedShipping = method;
+        updateTotals(getCartTotal);
+      }
+    });
+
+    container.addEventListener('change', (e) => {
+      const val = parseInt(e.target.value);
+      selectedShipping = shippingMethods.find(m => m.id === val) || null;
+      updateTotals(getCartTotal);
+    });
+  }
+
+  init().catch(console.error);
+</script>
