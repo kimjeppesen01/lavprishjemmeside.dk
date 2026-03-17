@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { isValidThemeKey, THEME_CATALOG } = require('../lib/theme-catalog');
 
 async function ensureThemeTable() {
   try {
@@ -9,7 +10,7 @@ async function ensureThemeTable() {
       CREATE TABLE IF NOT EXISTS site_theme_settings (
         id INT AUTO_INCREMENT PRIMARY KEY,
         site_id INT NOT NULL DEFAULT 1,
-        active_theme_key ENUM('simple','modern','kreativ') NOT NULL DEFAULT 'simple',
+        active_theme_key VARCHAR(64) NOT NULL DEFAULT 'simple',
         motion_profile ENUM('standard','reduced','expressive') NOT NULL DEFAULT 'standard',
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         updated_by INT DEFAULT NULL,
@@ -41,11 +42,11 @@ async function ensureThemeTable() {
 
     const [themeCols] = await pool.query(`SHOW COLUMNS FROM site_theme_settings LIKE 'active_theme_key'`);
     if (!Array.isArray(themeCols) || themeCols.length === 0) {
-      await pool.query(`ALTER TABLE site_theme_settings ADD COLUMN active_theme_key ENUM('simple','modern','kreativ') NOT NULL DEFAULT 'simple'`);
+      await pool.query(`ALTER TABLE site_theme_settings ADD COLUMN active_theme_key VARCHAR(64) NOT NULL DEFAULT 'simple'`);
     } else {
-      const type = String(themeCols[0].Type || '').toLowerCase();
-      if (!type.includes('kreativ')) {
-        await pool.query(`ALTER TABLE site_theme_settings MODIFY COLUMN active_theme_key ENUM('simple','modern','kreativ') NOT NULL DEFAULT 'simple'`);
+      const colType = String(themeCols[0].Type || '').toLowerCase();
+      if (colType.startsWith('enum')) {
+        await pool.query(`ALTER TABLE site_theme_settings MODIFY COLUMN active_theme_key VARCHAR(64) NOT NULL DEFAULT 'simple'`);
       }
     }
 
@@ -76,7 +77,7 @@ function normalize(row) {
   }
   return {
     site_id: row.site_id || 1,
-    active_theme_key: ['simple', 'modern', 'kreativ'].includes(row.active_theme_key) ? row.active_theme_key : 'simple',
+    active_theme_key: isValidThemeKey(row.active_theme_key) ? row.active_theme_key : 'simple',
     motion_profile: ['standard', 'reduced', 'expressive'].includes(row.motion_profile) ? row.motion_profile : 'standard',
     updated_at: row.updated_at || null,
     updated_by: row.updated_by || null,
@@ -221,8 +222,10 @@ router.post('/update', requireAuth, async (req, res) => {
     const active_theme_key = String(req.body.active_theme_key || 'simple').toLowerCase();
     const motion_profile = String(req.body.motion_profile || 'standard').toLowerCase();
 
-    if (!['simple', 'modern', 'kreativ'].includes(active_theme_key)) {
-      return res.status(400).json({ error: 'Ugyldig active_theme_key' });
+    if (!isValidThemeKey(active_theme_key)) {
+      return res.status(400).json({
+        error: `Ugyldig active_theme_key: '${active_theme_key}'. Gyldige værdier: ${THEME_CATALOG.map(t => t.theme_key).join(', ')}`
+      });
     }
     if (!['standard', 'reduced', 'expressive'].includes(motion_profile)) {
       return res.status(400).json({ error: 'Ugyldig motion_profile' });
