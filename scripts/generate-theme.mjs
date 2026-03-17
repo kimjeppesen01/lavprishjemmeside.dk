@@ -1,15 +1,17 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { assertRemoteBrandIsolation, resolveSiteTarget } from './lib/site-target.mjs';
+import { isValidThemeKey, THEME_CATALOG } from '../api/src/lib/theme-catalog.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const API_URL = process.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
-const SITE_URL = process.env.PUBLIC_SITE_URL || 'https://lavprishjemmeside.dk';
+const { apiUrl: API_URL, siteUrl: SITE_URL } = resolveSiteTarget();
 const THEME_FILE = path.join(__dirname, '../src/styles/theme.css');
 const FEATURES_FILE = path.join(__dirname, '../src/data/design-features.json');
 const HEADER_FOOTER_FILE = path.join(__dirname, '../src/data/header-footer.json');
+const ALLOW_DEFAULTS = process.env.ALLOW_DEFAULT_THEME_BUILD === '1';
 
 const DEFAULT_HEADER_FOOTER = {
   header_layout: 'regular',
@@ -20,7 +22,7 @@ const DEFAULT_HEADER_FOOTER = {
   header_mega_html: null,
   header_mega_menu: null,
   footer_columns: [
-    { title: new URL(SITE_URL).hostname || 'lavprishjemmeside.dk', text: 'Professionelle hjemmesider til lav pris for danske virksomheder.' },
+    { title: new URL(SITE_URL).hostname || 'site.local', text: 'Professionelle digitale løsninger til danske virksomheder.' },
     { title: 'Sider', links: [{ href: '/', label: 'Forside' }, { href: '/priser', label: 'Priser' }, { href: '/om-os', label: 'Om os' }, { href: '/kontakt', label: 'Kontakt' }] },
     { title: 'Kontakt', links: [{ href: `mailto:info@${new URL(SITE_URL).hostname}`, label: `info@${new URL(SITE_URL).hostname}` }] },
   ],
@@ -66,6 +68,7 @@ const DEFAULT_THEME_SETTINGS = {
 
 async function generateTheme() {
   try {
+    await assertRemoteBrandIsolation();
     console.log('Fetching design tokens from API...');
     const response = await fetch(`${API_URL}/design-settings/public`);
 
@@ -89,11 +92,27 @@ async function generateTheme() {
       const themeRes = await fetch(`${API_URL}/theme-settings/public`);
       if (themeRes.ok) {
         const t = await themeRes.json();
-        themeSettings.active_theme_key = ['simple', 'modern', 'kreativ'].includes(t.active_theme_key) ? t.active_theme_key : 'simple';
-        themeSettings.motion_profile = ['standard', 'reduced', 'expressive'].includes(t.motion_profile) ? t.motion_profile : 'standard';
+        const rawKey = String(t.active_theme_key || 'simple').toLowerCase();
+
+        if (!isValidThemeKey(rawKey)) {
+          const validKeys = THEME_CATALOG.map((e) => e.theme_key).join(', ');
+          throw new Error(
+            `Build afbrudt: active_theme_key '${rawKey}' findes ikke i tema-kataloget. ` +
+            `Gyldige nøgler: ${validKeys}. ` +
+            `Ret temaindstillingen i admin eller tilføj pakken til api/src/lib/theme-catalog.js.`
+          );
+        }
+
+        themeSettings.active_theme_key = rawKey;
+        themeSettings.motion_profile = ['standard', 'reduced', 'expressive'].includes(t.motion_profile)
+          ? t.motion_profile
+          : 'standard';
       }
-    } catch (_) {
-      // Theme endpoint may not exist on older installs; fallback is simple/standard.
+    } catch (err) {
+      // Re-throw validation errors (invalid theme key) unconditionally.
+      if (err.message.startsWith('Build afbrudt:')) throw err;
+      // Other fetch errors (network, old install): fall back silently.
+      console.warn('⚠ Could not fetch theme settings, using defaults:', err.message);
     }
 
     // Write feature flags and page loader config for Layout/Header
@@ -135,6 +154,10 @@ async function generateTheme() {
       console.log(`✓ Generated ${HEADER_FOOTER_FILE} (with defaults)`);
     }
   } catch (error) {
+    if (!ALLOW_DEFAULTS) {
+      throw error;
+    }
+
     console.warn('⚠ API fetch failed, using defaults:', error.message);
     const css = buildCSS(DEFAULT_TOKENS);
     fs.writeFileSync(THEME_FILE, css, 'utf-8');
@@ -167,18 +190,22 @@ async function generateTheme() {
 # Requires mod_headers (enabled on cPanel/LiteSpeed by default)
 
 <IfModule mod_headers.c>
-  Header set X-Frame-Options "DENY"
+  Header set X-Frame-Options "SAMEORIGIN"
   Header set X-Content-Type-Options "nosniff"
   Header set Referrer-Policy "strict-origin-when-cross-origin"
   Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
   # CSP: allow self, GA, Google Fonts, inline styles (Tailwind)
-  Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ${API_URL} https://www.google-analytics.com"
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ${API_URL} https://www.google-analytics.com; frame-ancestors 'self'"
 </IfModule>
 `;
   fs.writeFileSync(htaccessPath, htaccessContent, 'utf-8');
   console.log(`✓ Generated ${htaccessPath}`);
 }
 
+generateTheme().catch((error) => {
+  console.error(`✗ Theme generation aborted: ${error.message}`);
+  process.exit(1);
+});
 function buildCSS(tokens) {
   function isValidHex(hex) {
     return /^#([a-f\d]{6})$/i.test(String(hex || '').trim());
@@ -410,5 +437,3 @@ function buildCSS(tokens) {
 }
 `;
 }
-
-generateTheme();
