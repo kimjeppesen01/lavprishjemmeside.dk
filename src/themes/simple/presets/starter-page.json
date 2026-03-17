@@ -1,0 +1,9 @@
+{
+  "name": "Simple starter",
+  "description": "Minimal startside til Simple-temaet.",
+  "components": [
+    { "slug": "hero-section", "version": "default" },
+    { "slug": "features-section", "version": "default" },
+    { "slug": "cta-section", "version": "default" }
+  ]
+}

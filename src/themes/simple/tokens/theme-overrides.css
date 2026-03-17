@@ -1,0 +1,7 @@
+/* src/themes/simple/tokens/theme-overrides.css */
+/*
+ * Simple theme — compatibility bridge.
+ * Design tokens are applied by generate-theme.mjs from design_settings.
+ * This file exists to satisfy the theme package contract.
+ * V2 theme packages will declare their own tokens here.
+ */
