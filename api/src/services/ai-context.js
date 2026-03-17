@@ -1,6 +1,11 @@
 const pool = require('../db');
-const fs = require('fs');
-const path = require('path');
+const {
+  buildComponentLibraryIndex,
+  loadActiveLibraryComponents,
+  loadComponentDocsForLibrary,
+  loadCustomComponents,
+} = require('./component-library');
+const { resolveTheme } = require('../lib/theme-resolver');
 
 /**
  * Build AI context from database and filesystem
@@ -18,50 +23,17 @@ async function buildAiContext() {
 
   const tokens = settings[0];
 
-  // 2. Load component library index
-  const indexPath = path.join(__dirname, '../component-docs/_COMPONENT_LIBRARY_INDEX.md');
-  let libraryIndex = '';
+  // 2. Load active component registry and docs for the current CMS library.
+  const libraryComponents = await loadActiveLibraryComponents(pool);
+  const { docs: componentDocs, missingDocs } = loadComponentDocsForLibrary(libraryComponents);
+  const libraryIndex = buildComponentLibraryIndex(libraryComponents);
 
-  if (fs.existsSync(indexPath)) {
-    libraryIndex = fs.readFileSync(indexPath, 'utf-8');
-  } else {
-    console.warn('Component library index not found');
-    libraryIndex = '# Component Library Index\n\n(To be created)';
-  }
-
-  // 3. Load all component docs (library only — from disk)
-  const componentDocs = loadAllComponentDocs();
-
-  // 3b. Load custom components from DB (source = 'custom')
+  // 3. Load custom components from DB (source = 'custom')
   let customComponents = [];
   try {
-    const [customRows] = await pool.execute(
-      `SELECT slug, name_da, schema_fields, default_content FROM components WHERE source = 'custom' AND is_active = 1 ORDER BY sort_order ASC, name_da ASC`
-    );
-    customComponents = (customRows || []).map((row) => ({
-      slug: row.slug,
-      name_da: row.name_da,
-      schema_fields: typeof row.schema_fields === 'string' ? JSON.parse(row.schema_fields || '{}') : (row.schema_fields || {}),
-      default_content: typeof row.default_content === 'string' ? JSON.parse(row.default_content || '{}') : (row.default_content || {}),
-    }));
+    customComponents = await loadCustomComponents(pool);
   } catch (err) {
-    if (err.code === 'ER_BAD_FIELD_ERROR') {
-      try {
-        const [customRows] = await pool.execute(
-          `SELECT slug, name_da, schema_fields, default_content FROM components WHERE slug LIKE 'custom/%' AND is_active = 1 ORDER BY sort_order ASC, name_da ASC`
-        );
-        customComponents = (customRows || []).map((row) => ({
-          slug: row.slug,
-          name_da: row.name_da,
-          schema_fields: typeof row.schema_fields === 'string' ? JSON.parse(row.schema_fields || '{}') : (row.schema_fields || {}),
-          default_content: typeof row.default_content === 'string' ? JSON.parse(row.default_content || '{}') : (row.default_content || {}),
-        }));
-      } catch (e2) {
-        console.warn('Could not load custom components:', e2.message);
-      }
-    } else {
-      console.warn('Could not load custom components:', err.message);
-    }
+    console.warn('Could not load custom components:', err.message);
   }
 
   // 4. Load AI prompt settings (optional – table may not exist yet)
@@ -102,7 +74,31 @@ async function buildAiContext() {
     console.warn('Could not load media for AI:', err.message);
   }
 
-  // 6. Build dynamic context
+  // 6. Load active theme from site_theme_settings and resolve catalog entry
+  let activeTheme = null;
+  try {
+    const [themeRows] = await pool.execute(
+      'SELECT active_theme_key, motion_profile FROM site_theme_settings WHERE site_id = 1 LIMIT 1'
+    );
+    if (themeRows.length > 0) {
+      const { active_theme_key, motion_profile } = themeRows[0];
+      const entry = resolveTheme(active_theme_key);
+      activeTheme = {
+        theme_key: active_theme_key,
+        motion_profile: motion_profile || 'standard',
+        label: entry.label,
+        supports_commerce: entry.supports_commerce,
+        supports_page_builder: entry.supports_page_builder,
+        supported_sections: entry.supported_sections ?? null,
+        business_modes: entry.business_modes,
+        constraint: `Generer kun komponenter og layouts der er kompatible med temaet '${active_theme_key}'.`,
+      };
+    }
+  } catch (err) {
+    console.warn('ai-context: could not load theme settings:', err.message);
+  }
+
+  // 7. Build dynamic context
   return {
     designTokens: {
       colors: {
@@ -136,6 +132,8 @@ async function buildAiContext() {
     componentLibrary: {
       index: libraryIndex,
       components: componentDocs,
+      registry: libraryComponents,
+      missingDocs,
       customComponents
     },
     cssVariableSyntax: {
@@ -146,33 +144,9 @@ async function buildAiContext() {
       critical: 'NEVER use hardcoded Tailwind classes like bg-blue-600. Always use CSS variables.'
     },
     promptSettings,
-    availableMedia
+    availableMedia,
+    activeTheme
   };
-}
-
-function loadAllComponentDocs() {
-  const docsDir = path.join(__dirname, '../component-docs');
-
-  if (!fs.existsSync(docsDir)) {
-    console.warn('Component docs directory not found');
-    return {};
-  }
-
-  const files = fs.readdirSync(docsDir).filter(f =>
-    f.endsWith('.md') && f !== '_COMPONENT_LIBRARY_INDEX.md'
-  );
-
-  const docs = {};
-  for (const file of files) {
-    const slug = file.replace('.md', '');
-    try {
-      docs[slug] = fs.readFileSync(path.join(docsDir, file), 'utf-8');
-    } catch (error) {
-      console.error(`Error reading component doc ${file}:`, error.message);
-    }
-  }
-
-  return docs;
 }
 
 module.exports = { buildAiContext };
