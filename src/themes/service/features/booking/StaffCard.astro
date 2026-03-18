@@ -1,0 +1,27 @@
+---
+// src/themes/service/features/booking/StaffCard.astro
+interface Props {
+  id: string | number;
+  name: string;
+  title?: string;
+  bio?: string;
+  avatar_url?: string;
+  specialties?: string[];
+}
+const { id, name, title, bio, avatar_url, specialties = [] } = Astro.props;
+---
+<div class="bg-[var(--color-bg-warm)] rounded-[var(--radius-card)] p-6 text-center">
+  {avatar_url
+    ? <img src={avatar_url} alt={name} class="w-24 h-24 rounded-full object-cover mx-auto mb-4 shadow-[var(--shadow-sm)]" width="96" height="96" />
+    : <div class="w-24 h-24 rounded-full bg-[var(--color-primary-light)] flex items-center justify-center mx-auto mb-4 text-3xl font-bold text-[var(--color-primary)]">{name[0]}</div>
+  }
+  <h3 class="font-semibold text-lg text-[var(--color-text-primary)]" style="font-family: var(--font-heading)">{name}</h3>
+  {title && <p class="text-sm text-[var(--color-accent)] font-medium mb-2">{title}</p>}
+  {bio && <p class="text-sm text-[var(--color-text-secondary)] mb-4">{bio}</p>}
+  {specialties.length > 0 && (
+    <div class="flex flex-wrap gap-1 justify-center mb-4">
+      {specialties.map(s => <span class="text-xs px-2 py-0.5 rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)] font-medium">{s}</span>)}
+    </div>
+  )}
+  <a href={`/book?staff=${id}`} class="text-sm font-semibold px-6 py-2 rounded-[var(--radius-full)] bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors inline-block">Book tid</a>
+</div>

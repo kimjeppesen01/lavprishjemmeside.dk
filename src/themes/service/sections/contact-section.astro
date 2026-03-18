@@ -1,0 +1,39 @@
+---
+// src/themes/service/sections/contact-section.astro
+import headerFooter from '../../../data/header-footer.json';
+
+interface Props {
+  title?: string;
+  hours?: Array<{ day: string; time: string }>;
+}
+const { title = 'Kontakt os', hours = [] } = Astro.props;
+const phone = headerFooter.footer_phone || '';
+const email = headerFooter.footer_email || '';
+const address = headerFooter.footer_address || '';
+---
+<section class="py-[var(--section-padding-y)] bg-[var(--color-bg-warm)]">
+  <div class="mx-auto px-[var(--container-padding-x)]" style="max-width: var(--container-max-width)">
+    <h2 class="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mb-12 text-center" style="font-family: var(--font-heading)">{title}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-2xl mx-auto">
+      <div>
+        <p class="font-semibold text-[var(--color-accent)] mb-4 uppercase tracking-wider text-sm">Kontaktoplysninger</p>
+        {address && <p class="text-[var(--color-text-secondary)] mb-3 text-sm">{address}</p>}
+        {phone && <p class="mb-2 text-sm"><a href={`tel:${phone}`} class="text-[var(--color-text-primary)] hover:text-[var(--color-primary)] transition-colors font-medium">{phone}</a></p>}
+        {email && <p class="text-sm"><a href={`mailto:${email}`} class="text-[var(--color-text-primary)] hover:text-[var(--color-primary)] transition-colors">{email}</a></p>}
+      </div>
+      {hours.length > 0 && (
+        <div>
+          <p class="font-semibold text-[var(--color-accent)] mb-4 uppercase tracking-wider text-sm">Åbningstider</p>
+          <dl class="space-y-2">
+            {hours.map(h => (
+              <div class="flex justify-between text-sm border-b border-[var(--color-border)] pb-2 last:border-0">
+                <dt class="text-[var(--color-text-primary)]">{h.day}</dt>
+                <dd class="text-[var(--color-text-secondary)]">{h.time}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+    </div>
+  </div>
+</section>

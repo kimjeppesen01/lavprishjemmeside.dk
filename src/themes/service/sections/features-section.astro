@@ -1,0 +1,27 @@
+---
+// src/themes/service/sections/features-section.astro
+interface FeatureItem { icon?: string; title?: string; body?: string; }
+interface Props { title?: string; subtitle?: string; items?: FeatureItem[]; }
+const { title, subtitle, items = [] } = Astro.props;
+---
+<section class="py-[var(--section-padding-y)]">
+  <div class="mx-auto px-[var(--container-padding-x)]" style="max-width: var(--container-max-width)">
+    {(title || subtitle) && (
+      <div class="text-center mb-14">
+        {subtitle && <p class="text-sm font-semibold uppercase tracking-widest text-[var(--color-accent)] mb-3">{subtitle}</p>}
+        {title && <h2 class="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)]" style="font-family: var(--font-heading)">{title}</h2>}
+      </div>
+    )}
+    {items.length > 0 && (
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {items.map((item) => (
+          <div class="bg-[var(--color-bg-warm)] rounded-[var(--radius-card)] p-7 text-center">
+            {item.icon && <span class="text-3xl mb-4 block">{item.icon}</span>}
+            {item.title && <h3 class="text-lg font-semibold text-[var(--color-text-primary)] mb-2" style="font-family: var(--font-heading)">{item.title}</h3>}
+            {item.body && <p class="text-sm text-[var(--color-text-secondary)]">{item.body}</p>}
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</section>

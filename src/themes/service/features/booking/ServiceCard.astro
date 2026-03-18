@@ -1,0 +1,27 @@
+---
+// src/themes/service/features/booking/ServiceCard.astro
+interface Props {
+  id: string | number;
+  name: string;
+  description?: string;
+  duration_min?: number;
+  price?: number;
+  image_url?: string;
+  currency?: string;
+}
+const { id, name, description, duration_min, price, image_url, currency = 'DKK' } = Astro.props;
+---
+<div class="bg-white rounded-[var(--radius-card)] shadow-[var(--shadow-sm)] border border-[var(--color-border)] overflow-hidden">
+  {image_url && <img src={image_url} alt={name} class="w-full h-40 object-cover" width="400" height="160" />}
+  <div class="p-6">
+    <h3 class="font-semibold text-lg text-[var(--color-text-primary)] mb-1" style="font-family: var(--font-heading)">{name}</h3>
+    {description && <p class="text-sm text-[var(--color-text-secondary)] mb-4">{description}</p>}
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex gap-3 text-xs text-[var(--color-text-secondary)]">
+        {duration_min && <span>{duration_min} min</span>}
+        {price !== undefined && <span class="font-bold text-[var(--color-primary)]">{price.toLocaleString('da-DK')} {currency}</span>}
+      </div>
+      <a href={`/book?service=${id}`} class="text-xs font-semibold px-4 py-2 rounded-[var(--radius-full)] bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors">Book</a>
+    </div>
+  </div>
+</div>

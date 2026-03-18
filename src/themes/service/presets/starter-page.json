@@ -1,0 +1,16 @@
+{
+  "theme_key": "service",
+  "pages": [
+    {
+      "slug": "/",
+      "title": "Forside",
+      "sections": [
+        { "type": "hero-section", "title": "Professionel behandling", "cta_label": "Book din tid", "cta_href": "/book" },
+        { "type": "features-section", "title": "Vores ydelser", "items": [] },
+        { "type": "testimonials-section", "title": "Hvad vores kunder siger", "items": [] },
+        { "type": "contact-section", "title": "Find os", "hours": [] },
+        { "type": "cta-section", "title": "Klar til at booke?", "cta_label": "Book tid nu", "cta_href": "/book" }
+      ]
+    }
+  ]
+}

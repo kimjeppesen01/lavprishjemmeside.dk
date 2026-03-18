@@ -1,0 +1,181 @@
+---
+// src/themes/service/features/booking/BookingWizard.astro
+// 4-step booking wizard wired to the CMS booking API.
+interface Service {
+  id: string | number;
+  name: string;
+  duration_min?: number;
+  price?: number;
+}
+interface StaffMember {
+  id: string | number;
+  name: string;
+  avatar_url?: string;
+  title?: string;
+}
+interface Props {
+  services?: Service[];
+  staff?: StaffMember[];
+  currency?: string;
+}
+const { services = [], staff = [], currency = 'DKK' } = Astro.props;
+---
+<div id="book" class="bg-white rounded-[var(--radius-card)] shadow-[var(--shadow-md)] border border-[var(--color-border)] overflow-hidden max-w-2xl mx-auto">
+  <!-- Step indicators -->
+  <div class="flex border-b border-[var(--color-border)]">
+    {['Ydelse', 'Medarbejder', 'Tidspunkt', 'Bekræft'].map((step, i) => (
+      <button type="button" class="flex-1 py-4 text-xs font-semibold text-center transition-colors" data-wizard-step-btn={i + 1}>
+        <span class="block text-lg font-bold mb-0.5">{i + 1}</span>
+        {step}
+      </button>
+    ))}
+  </div>
+
+  <!-- Step 1: Service selection -->
+  <div data-wizard-panel="1" class="p-6">
+    <h3 class="font-semibold text-[var(--color-text-primary)] mb-4" style="font-family: var(--font-heading)">Vælg ydelse</h3>
+    <div class="space-y-3">
+      {services.map(s => (
+        <label class="flex items-center justify-between gap-4 p-4 rounded-[var(--radius-md)] border border-[var(--color-border)] cursor-pointer hover:border-[var(--color-primary)] transition-colors has-[:checked]:border-[var(--color-primary)] has-[:checked]:bg-[var(--color-primary-light)]">
+          <div class="flex items-center gap-3">
+            <input type="radio" name="bw_service" value={s.id} class="accent-[var(--color-primary)]" />
+            <div>
+              <p class="font-medium text-sm text-[var(--color-text-primary)]">{s.name}</p>
+              {s.duration_min && <p class="text-xs text-[var(--color-text-secondary)]">{s.duration_min} min</p>}
+            </div>
+          </div>
+          {s.price !== undefined && <span class="text-sm font-bold text-[var(--color-primary)]">{s.price.toLocaleString('da-DK')} {currency}</span>}
+        </label>
+      ))}
+    </div>
+    <button type="button" class="mt-6 w-full py-3 bg-[var(--color-primary)] text-white font-semibold rounded-[var(--radius-full)] hover:bg-[var(--color-primary-hover)] transition-colors" data-wizard-next="1">Fortsæt</button>
+  </div>
+
+  <!-- Step 2: Staff selection -->
+  <div data-wizard-panel="2" class="p-6 hidden">
+    <h3 class="font-semibold text-[var(--color-text-primary)] mb-4" style="font-family: var(--font-heading)">Vælg medarbejder</h3>
+    <div class="grid grid-cols-2 gap-3">
+      {staff.map(m => (
+        <label class="flex flex-col items-center gap-2 p-4 rounded-[var(--radius-md)] border border-[var(--color-border)] cursor-pointer text-center hover:border-[var(--color-primary)] transition-colors has-[:checked]:border-[var(--color-primary)] has-[:checked]:bg-[var(--color-primary-light)]">
+          <input type="radio" name="bw_staff" value={m.id} class="sr-only" />
+          {m.avatar_url
+            ? <img src={m.avatar_url} alt={m.name} class="w-16 h-16 rounded-full object-cover" width="64" height="64" />
+            : <div class="w-16 h-16 rounded-full bg-[var(--color-primary-light)] flex items-center justify-center text-[var(--color-primary)] font-bold text-xl">{m.name[0]}</div>
+          }
+          <p class="text-sm font-medium text-[var(--color-text-primary)]">{m.name}</p>
+          {m.title && <p class="text-xs text-[var(--color-text-secondary)]">{m.title}</p>}
+        </label>
+      ))}
+    </div>
+    <button type="button" class="mt-6 w-full py-3 bg-[var(--color-primary)] text-white font-semibold rounded-[var(--radius-full)] hover:bg-[var(--color-primary-hover)] transition-colors" data-wizard-next="2">Fortsæt</button>
+  </div>
+
+  <!-- Step 3: Date/time -->
+  <div data-wizard-panel="3" class="p-6 hidden">
+    <h3 class="font-semibold text-[var(--color-text-primary)] mb-4" style="font-family: var(--font-heading)">Vælg tidspunkt</h3>
+    <div id="bw-slots" class="space-y-3">
+      <p class="text-sm text-[var(--color-text-secondary)]">Indlæser ledige tider...</p>
+    </div>
+    <button type="button" class="mt-6 w-full py-3 bg-[var(--color-primary)] text-white font-semibold rounded-[var(--radius-full)] hover:bg-[var(--color-primary-hover)] transition-colors" data-wizard-next="3">Fortsæt</button>
+  </div>
+
+  <!-- Step 4: Confirm -->
+  <div data-wizard-panel="4" class="p-6 hidden">
+    <h3 class="font-semibold text-[var(--color-text-primary)] mb-4" style="font-family: var(--font-heading)">Bekræft booking</h3>
+    <div id="bw-summary" class="bg-[var(--color-bg-warm)] rounded-[var(--radius-md)] p-4 mb-4 text-sm text-[var(--color-text-secondary)]">
+      <p>Gennemgå din booking nedenfor.</p>
+    </div>
+    <div class="space-y-3">
+      <input type="text" id="bw-name" placeholder="Dit navn" class="w-full border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]" />
+      <input type="email" id="bw-email" placeholder="E-mail" class="w-full border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]" />
+      <input type="tel" id="bw-phone" placeholder="Telefon" class="w-full border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]" />
+    </div>
+    <div id="bw-error" class="hidden text-sm text-red-600 mt-3"></div>
+    <button type="button" id="bw-confirm" class="mt-6 w-full py-3 bg-[var(--color-primary)] text-white font-semibold rounded-[var(--radius-full)] hover:bg-[var(--color-primary-hover)] transition-colors">Bekræft booking</button>
+  </div>
+
+  <!-- Success state -->
+  <div data-wizard-panel="success" class="p-8 text-center hidden">
+    <div class="text-5xl mb-4">✓</div>
+    <h3 class="text-xl font-bold text-[var(--color-text-primary)] mb-2" style="font-family: var(--font-heading)">Booking bekræftet!</h3>
+    <p class="text-[var(--color-text-secondary)] text-sm">Du modtager en bekræftelse pr. e-mail.</p>
+  </div>
+</div>
+
+<script>
+  const panels = document.querySelectorAll('[data-wizard-panel]');
+  const stepBtns = document.querySelectorAll('[data-wizard-step-btn]');
+  let currentStep = 1;
+  const state: Record<string, string> = {};
+
+  function showPanel(step: number | string) {
+    panels.forEach(p => {
+      const key = (p as HTMLElement).dataset.wizardPanel;
+      (p as HTMLElement).classList.toggle('hidden', key !== String(step));
+    });
+    stepBtns.forEach(b => {
+      const s = parseInt((b as HTMLElement).dataset.wizardStepBtn || '0');
+      b.classList.toggle('text-[var(--color-primary)]', s === step);
+      b.classList.toggle('text-[var(--color-text-secondary)]', s !== step);
+    });
+    if (typeof step === 'number') currentStep = step;
+  }
+
+  document.querySelectorAll('[data-wizard-next]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const fromStep = parseInt((btn as HTMLElement).dataset.wizardNext || '1');
+      if (fromStep === 3) {
+        // Load slots when moving to step 3 would have already loaded; move to step 4
+      }
+      showPanel(fromStep + 1);
+    });
+  });
+
+  // Load slots when step 3 is shown
+  document.querySelector('[data-wizard-next="2"]')?.addEventListener('click', () => {
+    const staffId = (document.querySelector('input[name="bw_staff"]:checked') as HTMLInputElement)?.value;
+    const serviceId = (document.querySelector('input[name="bw_service"]:checked') as HTMLInputElement)?.value;
+    if (!staffId || !serviceId) return;
+    state.staff_id = staffId;
+    state.service_id = serviceId;
+    fetch(`/api/booking/slots?staff_id=${staffId}&service_id=${serviceId}`)
+      .then(r => r.json())
+      .then(data => {
+        const container = document.getElementById('bw-slots');
+        if (!container) return;
+        if (!data.slots?.length) { container.innerHTML = '<p class="text-sm text-[var(--color-text-secondary)]">Ingen ledige tider. Prøv en anden medarbejder.</p>'; return; }
+        container.innerHTML = data.slots.map((slot: { datetime: string; label: string }) =>
+          `<label class="flex items-center gap-3 p-3 rounded border border-[var(--color-border)] cursor-pointer hover:border-[var(--color-primary)] transition-colors">
+            <input type="radio" name="bw_slot" value="${slot.datetime}" class="accent-[var(--color-primary)]" />
+            <span class="text-sm text-[var(--color-text-primary)]">${slot.label}</span>
+          </label>`
+        ).join('');
+      });
+  });
+
+  document.getElementById('bw-confirm')?.addEventListener('click', async () => {
+    const name = (document.getElementById('bw-name') as HTMLInputElement)?.value;
+    const email = (document.getElementById('bw-email') as HTMLInputElement)?.value;
+    const phone = (document.getElementById('bw-phone') as HTMLInputElement)?.value;
+    const slot = (document.querySelector('input[name="bw_slot"]:checked') as HTMLInputElement)?.value;
+    const errEl = document.getElementById('bw-error');
+    if (!name || !email || !slot) {
+      if (errEl) { errEl.textContent = 'Udfyld venligst alle felter og vælg et tidspunkt.'; errEl.classList.remove('hidden'); }
+      return;
+    }
+    try {
+      const res = await fetch('/api/booking/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...state, slot, name, email, phone }),
+      });
+      const data = await res.json();
+      if (data.success) { showPanel('success'); }
+      else { throw new Error(data.message || 'Fejl'); }
+    } catch (err) {
+      if (errEl) { errEl.textContent = err instanceof Error ? err.message : 'Noget gik galt.'; errEl.classList.remove('hidden'); }
+    }
+  });
+
+  showPanel(1);
+</script>

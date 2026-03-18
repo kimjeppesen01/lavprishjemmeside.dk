@@ -1,0 +1,22 @@
+---
+// src/themes/service/layout/Nav.astro
+import headerFooter from '../../../data/header-footer.json';
+
+const logoUrl = headerFooter.header_logo_url || '/favicon.svg';
+const logoText = headerFooter.header_logo_text || 'Service';
+const navLinks = Array.isArray(headerFooter.header_menu_1) ? headerFooter.header_menu_1 : [];
+---
+<header id="main-header" class="bg-white border-b border-[var(--color-border)]">
+  <div class="mx-auto flex items-center justify-between h-16 px-6" style="max-width: var(--container-max-width)">
+    <a href="/" class="flex items-center gap-2">
+      <img src={logoUrl} alt={logoText} class="h-9 w-9 object-contain" width="36" height="36" />
+      <span class="font-semibold text-lg text-[var(--color-text-primary)]" style="font-family: var(--font-heading)">{logoText}</span>
+    </a>
+    <nav class="hidden md:flex items-center gap-7">
+      {navLinks.map((link: { href: string; label: string }) => (
+        <a href={link.href} class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors">{link.label}</a>
+      ))}
+    </nav>
+    <a href="/book" class="text-sm font-semibold px-5 py-2 rounded-[var(--radius-full)] bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors">Book tid</a>
+  </div>
+</header>
