@@ -1,0 +1,41 @@
+---
+// src/themes/ecommerce/features/shop/ProductCard.astro
+interface Props {
+  id: string | number;
+  name: string;
+  price: number;
+  compare_price?: number;
+  image_url?: string;
+  description?: string;
+  slug?: string;
+  currency?: string;
+  badge?: string;
+}
+const { id, name, price, compare_price, image_url, description, slug, currency = 'DKK', badge } = Astro.props;
+---
+<div class="bg-white rounded-[var(--radius-card)] border border-[var(--color-border)] overflow-hidden shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] transition-shadow">
+  <a href={`/shop/${slug || id}`} class="block relative">
+    {badge && <span class="absolute top-2 left-2 text-xs font-bold px-2 py-0.5 bg-[var(--color-accent)] text-[var(--color-neutral-900)] rounded-full">{badge}</span>}
+    {image_url
+      ? <img src={image_url} alt={name} class="w-full h-56 object-cover" width="400" height="224" />
+      : <div class="w-full h-56 bg-[var(--color-bg-section-alt)]"></div>
+    }
+  </a>
+  <div class="p-5">
+    <a href={`/shop/${slug || id}`}>
+      <h3 class="font-semibold text-[var(--color-text-primary)] mb-1 hover:text-[var(--color-primary)] transition-colors">{name}</h3>
+    </a>
+    {description && <p class="text-sm text-[var(--color-text-secondary)] mb-3 line-clamp-2">{description}</p>}
+    <div class="flex items-center justify-between gap-2">
+      <div>
+        <span class="font-bold text-[var(--color-primary)]">{price.toLocaleString('da-DK')} {currency}</span>
+        {compare_price && compare_price > price && (
+          <span class="ml-2 text-xs text-[var(--color-neutral-600)] line-through">{compare_price.toLocaleString('da-DK')}</span>
+        )}
+      </div>
+      <button type="button" class="add-to-cart text-sm font-semibold px-4 py-2 rounded-[var(--radius-card)] bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors" data-product-id={id}>
+        Tilføj
+      </button>
+    </div>
+  </div>
+</div>

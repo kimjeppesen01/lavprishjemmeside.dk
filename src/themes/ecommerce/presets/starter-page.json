@@ -1,0 +1,14 @@
+{
+  "theme_key": "ecommerce",
+  "pages": [
+    {
+      "slug": "/",
+      "title": "Forside",
+      "sections": [
+        { "type": "hero-section", "title": "Velkommen til vores butik", "cta_label": "Se alle produkter", "cta_href": "/shop" },
+        { "type": "features-section", "title": "Hvorfor handle hos os", "items": [] },
+        { "type": "cta-section", "title": "Udforsk vores sortiment", "cta_label": "Gå til butikken", "cta_href": "/shop" }
+      ]
+    }
+  ]
+}

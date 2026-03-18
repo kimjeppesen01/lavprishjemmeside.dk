@@ -1,0 +1,102 @@
+---
+// src/themes/ecommerce/features/shop/CartDrawer.astro
+// Slide-in cart drawer — wired to the existing cart API.
+---
+<div id="ec-cart-overlay" class="fixed inset-0 bg-black/40 z-50 hidden" aria-hidden="true"></div>
+
+<aside id="ec-cart-drawer" class="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-[var(--shadow-lg)] z-50 flex flex-col translate-x-full transition-transform duration-300 ease-in-out" aria-label="Indkøbskurv">
+  <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+    <h2 class="font-semibold text-[var(--color-text-primary)]">Din kurv</h2>
+    <button id="ec-cart-close" type="button" class="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors" aria-label="Luk kurv">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+      </svg>
+    </button>
+  </div>
+  <div id="ec-cart-items" class="flex-1 overflow-y-auto p-5">
+    <p class="text-sm text-[var(--color-text-secondary)] text-center py-12">Din kurv er tom</p>
+  </div>
+  <div class="p-5 border-t border-[var(--color-border)]">
+    <div class="flex justify-between mb-4 font-semibold text-[var(--color-text-primary)]">
+      <span>Total</span>
+      <span id="ec-cart-total">0 DKK</span>
+    </div>
+    <a href="/checkout" class="block w-full text-center py-3 bg-[var(--color-primary)] text-white font-semibold rounded-[var(--radius-card)] hover:bg-[var(--color-primary-hover)] transition-colors">
+      Gå til kassen
+    </a>
+  </div>
+</aside>
+
+<script>
+  const overlay = document.getElementById('ec-cart-overlay');
+  const drawer = document.getElementById('ec-cart-drawer');
+  const closeBtn = document.getElementById('ec-cart-close');
+  const toggle = document.getElementById('cart-toggle');
+
+  function openCart() {
+    overlay?.classList.remove('hidden');
+    drawer?.classList.remove('translate-x-full');
+  }
+
+  function closeCart() {
+    overlay?.classList.add('hidden');
+    drawer?.classList.add('translate-x-full');
+  }
+
+  toggle?.addEventListener('click', openCart);
+  closeBtn?.addEventListener('click', closeCart);
+  overlay?.addEventListener('click', closeCart);
+
+  // Wire up add-to-cart buttons
+  document.addEventListener('click', async (e) => {
+    const btn = (e.target as Element)?.closest('.add-to-cart') as HTMLButtonElement | null;
+    if (!btn) return;
+    const productId = btn.dataset.productId;
+    if (!productId) return;
+    try {
+      const res = await fetch('/api/cart/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: productId, quantity: 1 }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        refreshCart();
+        openCart();
+      }
+    } catch {}
+  });
+
+  async function refreshCart() {
+    try {
+      const res = await fetch('/api/cart');
+      const data = await res.json();
+      const items: Array<{ name: string; quantity: number; price: number; currency?: string }> = data.items || [];
+      const itemsEl = document.getElementById('ec-cart-items');
+      const totalEl = document.getElementById('ec-cart-total');
+      const countEl = document.getElementById('cart-count');
+      if (itemsEl) {
+        itemsEl.innerHTML = items.length === 0
+          ? '<p class="text-sm text-[var(--color-text-secondary)] text-center py-12">Din kurv er tom</p>'
+          : items.map(item => `
+            <div class="flex items-center gap-3 py-3 border-b border-[var(--color-border)] last:border-0">
+              <div class="flex-1">
+                <p class="text-sm font-medium text-[var(--color-text-primary)]">${item.name}</p>
+                <p class="text-xs text-[var(--color-text-secondary)]">Antal: ${item.quantity}</p>
+              </div>
+              <span class="text-sm font-semibold text-[var(--color-primary)]">${(item.price * item.quantity).toLocaleString('da-DK')} ${item.currency || 'DKK'}</span>
+            </div>
+          `).join('');
+      }
+      const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+      if (totalEl) totalEl.textContent = `${total.toLocaleString('da-DK')} DKK`;
+      const count = items.reduce((sum, i) => sum + i.quantity, 0);
+      if (countEl) {
+        countEl.textContent = String(count);
+        countEl.classList.toggle('hidden', count === 0);
+      }
+    } catch {}
+  }
+
+  refreshCart();
+</script>

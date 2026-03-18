@@ -1,0 +1,30 @@
+---
+// src/themes/ecommerce/layout/Nav.astro
+import headerFooter from '../../../data/header-footer.json';
+
+const logoUrl = headerFooter.header_logo_url || '/favicon.svg';
+const logoText = headerFooter.header_logo_text || 'Shop';
+const navLinks = Array.isArray(headerFooter.header_menu_1) ? headerFooter.header_menu_1 : [];
+---
+<header id="main-header" class="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-[var(--color-border)]">
+  <div class="mx-auto flex items-center justify-between h-16 px-[var(--container-padding-x)]" style="max-width: var(--container-max-width)">
+    <a href="/" class="flex items-center gap-2">
+      <img src={logoUrl} alt={logoText} class="h-8 w-8 object-contain" width="32" height="32" />
+      <span class="font-semibold text-base text-[var(--color-text-primary)]">{logoText}</span>
+    </a>
+    <nav class="hidden md:flex items-center gap-6">
+      {navLinks.map((link: { href: string; label: string }) => (
+        <a href={link.href} class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors">{link.label}</a>
+      ))}
+    </nav>
+    <div class="flex items-center gap-3">
+      <a href="/shop" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors">Butik</a>
+      <button type="button" id="cart-toggle" class="relative p-2 text-[var(--color-text-primary)] hover:text-[var(--color-primary)] transition-colors" aria-label="Åbn kurv">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+        <span id="cart-count" class="absolute -top-1 -right-1 text-xs bg-[var(--color-primary)] text-white rounded-full w-4 h-4 flex items-center justify-center hidden">0</span>
+      </button>
+    </div>
+  </div>
+</header>

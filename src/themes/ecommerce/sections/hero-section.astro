@@ -1,0 +1,39 @@
+---
+// src/themes/ecommerce/sections/hero-section.astro
+interface Props {
+  title?: string;
+  subtitle?: string;
+  body?: string;
+  cta_label?: string;
+  cta_href?: string;
+  cta2_label?: string;
+  cta2_href?: string;
+  image_url?: string;
+  image_alt?: string;
+}
+const { title, subtitle, body, cta_label = 'Se produkter', cta_href = '/shop', cta2_label, cta2_href, image_url, image_alt = '' } = Astro.props;
+---
+<section class="relative overflow-hidden bg-[var(--color-primary)] py-20 md:py-32">
+  <div class="mx-auto px-[var(--container-padding-x)] flex flex-col md:flex-row items-center gap-12 relative z-10" style="max-width: var(--container-max-width)">
+    <div class="flex-1 text-white">
+      {subtitle && <p class="text-sm font-semibold uppercase tracking-widest text-[var(--color-accent)] mb-4">{subtitle}</p>}
+      {title && <h1 class="text-4xl md:text-5xl xl:text-6xl font-bold leading-tight mb-5">{title}</h1>}
+      {body && <p class="text-lg text-white/80 mb-8 max-w-lg">{body}</p>}
+      <div class="flex flex-wrap gap-3">
+        <a href={cta_href} class="inline-flex px-8 py-3 bg-white text-[var(--color-primary)] font-semibold rounded-[var(--radius-card)] hover:bg-[var(--color-primary-light)] transition-colors">
+          {cta_label}
+        </a>
+        {cta2_label && cta2_href && (
+          <a href={cta2_href} class="inline-flex px-8 py-3 bg-transparent text-white font-semibold rounded-[var(--radius-card)] border border-white/30 hover:border-white/60 transition-colors">
+            {cta2_label}
+          </a>
+        )}
+      </div>
+    </div>
+    {image_url && (
+      <div class="flex-1 flex justify-center">
+        <img src={image_url} alt={image_alt} class="rounded-[var(--radius-2xl)] shadow-[var(--shadow-lg)] max-w-sm md:max-w-md w-full object-cover" width="480" height="520" />
+      </div>
+    )}
+  </div>
+</section>

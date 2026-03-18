@@ -1,0 +1,28 @@
+---
+// src/themes/ecommerce/layout/Footer.astro
+import headerFooter from '../../../data/header-footer.json';
+
+const siteName = headerFooter.footer_site_name || 'Shop';
+const navLinks = Array.isArray(headerFooter.footer_menu_1) ? headerFooter.footer_menu_1 : [];
+const email = headerFooter.footer_email || '';
+const phone = headerFooter.footer_phone || '';
+---
+<footer class="bg-[var(--color-neutral-900)] text-white py-14">
+  <div class="mx-auto px-[var(--container-padding-x)]" style="max-width: var(--container-max-width)">
+    <div class="flex flex-col md:flex-row justify-between gap-10 mb-10">
+      <div>
+        <p class="font-semibold text-lg mb-3">{siteName}</p>
+        {phone && <p class="text-sm text-white/60 mb-1"><a href={`tel:${phone}`} class="hover:text-white transition-colors">{phone}</a></p>}
+        {email && <p class="text-sm text-white/60"><a href={`mailto:${email}`} class="hover:text-white transition-colors">{email}</a></p>}
+      </div>
+      {navLinks.length > 0 && (
+        <nav class="flex flex-wrap gap-6 items-start">
+          {navLinks.map((link: { href: string; label: string }) => (
+            <a href={link.href} class="text-sm text-white/60 hover:text-white transition-colors">{link.label}</a>
+          ))}
+        </nav>
+      )}
+    </div>
+    <p class="text-xs text-white/40">&copy; {new Date().getFullYear()} {siteName}. Alle rettigheder forbeholdes.</p>
+  </div>
+</footer>
