@@ -1,0 +1,15 @@
+{
+  "theme_key": "portfolio",
+  "pages": [
+    {
+      "slug": "/",
+      "title": "Forside",
+      "sections": [
+        { "type": "hero-section", "title": "Vi skaber digitale oplevelser", "cta_label": "Se vores cases", "cta_href": "/cases" },
+        { "type": "features-section", "title": "Hvad vi laver", "items": [] },
+        { "type": "testimonials-section", "title": "Hvad kunderne siger", "items": [] },
+        { "type": "cta-section", "title": "Klar til at starte?", "cta_label": "Kontakt os", "cta_href": "/kontakt" }
+      ]
+    }
+  ]
+}

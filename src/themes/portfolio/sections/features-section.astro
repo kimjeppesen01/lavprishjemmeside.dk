@@ -1,0 +1,27 @@
+---
+// src/themes/portfolio/sections/features-section.astro
+interface FeatureItem { icon?: string; title?: string; body?: string; }
+interface Props { title?: string; subtitle?: string; items?: FeatureItem[]; }
+const { title, subtitle, items = [] } = Astro.props;
+---
+<section class="py-[var(--section-padding-y)]">
+  <div class="mx-auto px-[var(--container-padding-x)]" style="max-width: var(--container-max-width)">
+    {(title || subtitle) && (
+      <div class="mb-16">
+        {subtitle && <p class="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-accent)] mb-4">{subtitle}</p>}
+        {title && <h2 class="text-4xl md:text-5xl font-bold text-[var(--color-text-primary)] max-w-2xl" style="font-family: var(--font-heading)">{title}</h2>}
+      </div>
+    )}
+    {items.length > 0 && (
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-px bg-[var(--color-border)]">
+        {items.map((item, i) => (
+          <div class="bg-[var(--color-bg-page)] p-8">
+            <span class="text-xs text-[var(--color-neutral-600)] font-mono mb-4 block">0{i + 1}</span>
+            {item.title && <h3 class="text-lg font-bold text-[var(--color-text-primary)] mb-3" style="font-family: var(--font-heading)">{item.title}</h3>}
+            {item.body && <p class="text-sm text-[var(--color-text-secondary)] leading-relaxed">{item.body}</p>}
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</section>

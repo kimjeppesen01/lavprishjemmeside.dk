@@ -1,0 +1,38 @@
+---
+// src/themes/portfolio/features/portfolio/PortfolioGrid.astro
+interface CaseStudy {
+  id: string | number;
+  title: string;
+  category?: string;
+  thumbnail_url?: string;
+  slug?: string;
+  year?: string | number;
+}
+interface Props {
+  cases?: CaseStudy[];
+  title?: string;
+}
+const { cases = [], title } = Astro.props;
+---
+<section class="py-[var(--section-padding-y)]">
+  <div class="mx-auto px-[var(--container-padding-x)]" style="max-width: var(--container-max-width)">
+    {title && <h2 class="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mb-12" style="font-family: var(--font-heading)">{title}</h2>}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {cases.map((c, i) => (
+        <a href={`/cases/${c.slug || c.id}`} class="group block overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-bg-section-alt)]">
+          {c.thumbnail_url
+            ? <img src={c.thumbnail_url} alt={c.title} class={`w-full object-cover group-hover:scale-105 transition-transform duration-500 ${i === 0 ? 'h-80' : 'h-56'}`} width="800" height={i === 0 ? 320 : 224} />
+            : <div class={`w-full bg-[var(--color-neutral-200)] ${i === 0 ? 'h-80' : 'h-56'}`}></div>
+          }
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-2">
+              {c.category && <span class="text-xs font-bold uppercase tracking-widest text-[var(--color-accent)]">{c.category}</span>}
+              {c.year && <span class="text-xs text-[var(--color-neutral-600)]">{c.year}</span>}
+            </div>
+            <h3 class="text-xl font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-primary)] transition-colors" style="font-family: var(--font-heading)">{c.title}</h3>
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,14 @@
+---
+// src/themes/portfolio/sections/cta-section.astro
+interface Props { title?: string; body?: string; cta_label?: string; cta_href?: string; }
+const { title, body, cta_label = 'Start et projekt', cta_href = '/kontakt' } = Astro.props;
+---
+<section class="py-[var(--section-padding-y)] bg-[var(--color-bg-dark)]">
+  <div class="mx-auto px-[var(--container-padding-x)] max-w-3xl text-center" style="max-width: var(--container-max-width)">
+    {title && <h2 class="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight" style="font-family: var(--font-heading)">{title}</h2>}
+    {body && <p class="text-lg text-white/60 mb-10 max-w-xl mx-auto">{body}</p>}
+    <a href={cta_href} class="inline-flex px-10 py-4 bg-[var(--color-accent)] text-white font-bold rounded-[var(--radius-card)] hover:bg-[var(--color-accent-hover)] transition-colors">
+      {cta_label}
+    </a>
+  </div>
+</section>

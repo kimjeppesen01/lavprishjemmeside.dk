@@ -1,0 +1,35 @@
+---
+// src/themes/portfolio/sections/hero-section.astro
+interface Props {
+  title?: string;
+  subtitle?: string;
+  body?: string;
+  cta_label?: string;
+  cta_href?: string;
+  image_url?: string;
+  image_alt?: string;
+}
+const { title, subtitle, body, cta_label = 'Se vores arbejde', cta_href = '/cases', image_url, image_alt = '' } = Astro.props;
+---
+<section class="relative min-h-[80vh] flex items-center overflow-hidden bg-[var(--color-bg-dark)]">
+  {image_url && (
+    <div class="absolute inset-0">
+      <img src={image_url} alt={image_alt} class="w-full h-full object-cover opacity-30" width="1440" height="900" />
+    </div>
+  )}
+  <div class="relative z-10 mx-auto px-[var(--container-padding-x)] py-20" style="max-width: var(--container-max-width)">
+    {subtitle && <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)] mb-6">{subtitle}</p>}
+    {title && (
+      <h1 class="text-5xl md:text-7xl xl:text-8xl font-bold text-white leading-none mb-6 max-w-4xl" style="font-family: var(--font-heading)">
+        {title}
+      </h1>
+    )}
+    {body && <p class="text-lg text-white/70 mb-10 max-w-xl">{body}</p>}
+    <a href={cta_href} class="inline-flex items-center gap-2 text-sm font-semibold text-white border-b-2 border-[var(--color-accent)] pb-1 hover:text-[var(--color-accent)] transition-colors">
+      {cta_label}
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+      </svg>
+    </a>
+  </div>
+</section>

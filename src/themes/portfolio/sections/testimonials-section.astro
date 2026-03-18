@@ -1,0 +1,28 @@
+---
+// src/themes/portfolio/sections/testimonials-section.astro
+interface Testimonial { quote?: string; author?: string; role?: string; company?: string; }
+interface Props { title?: string; items?: Testimonial[]; }
+const { title, items = [] } = Astro.props;
+---
+<section class="py-[var(--section-padding-y)] bg-[var(--color-bg-section-alt)]">
+  <div class="mx-auto px-[var(--container-padding-x)]" style="max-width: var(--container-max-width)">
+    {title && <h2 class="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mb-14" style="font-family: var(--font-heading)">{title}</h2>}
+    {items.length > 0 && (
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {items.map(t => (
+          <blockquote class="border-l-4 border-[var(--color-accent)] pl-8 py-4">
+            {t.quote && <p class="text-xl text-[var(--color-text-primary)] mb-6 leading-relaxed" style="font-family: var(--font-heading)">"{t.quote}"</p>}
+            <footer>
+              {t.author && <p class="font-semibold text-sm text-[var(--color-text-primary)]">{t.author}</p>}
+              {(t.role || t.company) && (
+                <p class="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                  {[t.role, t.company].filter(Boolean).join(' — ')}
+                </p>
+              )}
+            </footer>
+          </blockquote>
+        ))}
+      </div>
+    )}
+  </div>
+</section>

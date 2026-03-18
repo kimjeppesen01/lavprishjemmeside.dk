@@ -1,0 +1,50 @@
+---
+// src/themes/portfolio/features/portfolio/CaseStudyLayout.astro
+interface Props {
+  title: string;
+  category?: string;
+  year?: string | number;
+  client?: string;
+  cover_url?: string;
+  cover_alt?: string;
+  tags?: string[];
+  body_html?: string;
+}
+const { title, category, year, client, cover_url, cover_alt = '', tags = [], body_html } = Astro.props;
+---
+<article>
+  <!-- Hero -->
+  <div class="bg-[var(--color-bg-dark)] py-20 px-[var(--container-padding-x)]">
+    <div class="mx-auto max-w-4xl" style="max-width: var(--container-max-width)">
+      {category && <p class="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-accent)] mb-4">{category}</p>}
+      <h1 class="text-4xl md:text-6xl font-bold text-white leading-tight mb-8" style="font-family: var(--font-heading)">{title}</h1>
+      <div class="flex flex-wrap gap-8 text-sm text-white/50">
+        {client && <div><span class="block text-xs uppercase tracking-wider mb-1">Kunde</span><span class="text-white/80">{client}</span></div>}
+        {year && <div><span class="block text-xs uppercase tracking-wider mb-1">År</span><span class="text-white/80">{year}</span></div>}
+        {tags.length > 0 && (
+          <div>
+            <span class="block text-xs uppercase tracking-wider mb-1">Tags</span>
+            <div class="flex flex-wrap gap-2">
+              {tags.map(tag => <span class="text-white/80">{tag}</span>)}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+
+  <!-- Cover image -->
+  {cover_url && (
+    <div class="w-full max-h-[70vh] overflow-hidden">
+      <img src={cover_url} alt={cover_alt} class="w-full h-full object-cover" width="1440" height="810" />
+    </div>
+  )}
+
+  <!-- Body content -->
+  <div class="mx-auto px-[var(--container-padding-x)] py-16" style="max-width: 48rem">
+    {body_html
+      ? <div class="prose prose-lg max-w-none" set:html={body_html} />
+      : <slot />
+    }
+  </div>
+</article>
