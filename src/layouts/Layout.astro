@@ -1,9 +1,12 @@
 ---
 import '../styles/global.css';
 import Tracker from '../components/Tracker.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
 import CartDrawer from '../components/CartDrawer.astro';
+import SimpleLayout from '../themes/simple/layout/ThemeLayout.astro';
+import EcommerceLayout from '../themes/ecommerce/layout/ThemeLayout.astro';
+import PortfolioLayout from '../themes/portfolio/layout/ThemeLayout.astro';
+import RestaurantLayout from '../themes/restaurant/layout/ThemeLayout.astro';
+import ServiceLayout from '../themes/service/layout/ThemeLayout.astro';
 import designFeatures from '../data/design-features.json';
 
 interface Props {
@@ -13,12 +16,14 @@ interface Props {
   ogImage?: string;
 }
 
-const { title, description = "Få en professionel hjemmeside til lav pris. Vi bygger moderne, hurtige og SEO-optimerede hjemmesider for danske virksomheder.", schemaMarkup = [], ogImage } = Astro.props;
+const { title, description = "Professionelt digitalt site med moderne design, høj hastighed og stærk synlighed.", schemaMarkup = [], ogImage } = Astro.props;
 
-const site = typeof Astro.site === 'string' ? Astro.site : (import.meta.env.PUBLIC_SITE_URL || 'https://lavprishjemmeside.dk');
+const site = typeof Astro.site === 'string'
+  ? Astro.site
+  : (import.meta.env.PUBLIC_SITE_URL || Astro.url.origin || 'https://example.invalid');
 const canonicalUrl = new URL(Astro.url.pathname, site).href;
 const resolvedOgImage = ogImage || new URL('/favicon.svg', site).href;
-const siteName = new URL(site).hostname || 'lavprishjemmeside.dk';
+const siteName = new URL(site).hostname || 'site.local';
 
 const baseSchemas = [
   {
@@ -36,7 +41,7 @@ const baseSchemas = [
     '@id': site + '/#organization',
     name: siteName,
     url: site,
-    description: siteName + ' er et dansk webbureau beliggende i Fredericia. Vi specialiserer os i at levere professionelle, responsive og konverteringsoptimerede hjemmesider til overkommelige priser.',
+    description: siteName + ' driver en moderne digital platform med hjemmeside, indhold, handel og kundekontakt.',
     foundingDate: '2026',
     areaServed: { '@type': 'Country', name: 'Denmark' },
     contactPoint: {
@@ -47,16 +52,25 @@ const baseSchemas = [
     },
     address: {
       '@type': 'PostalAddress',
-      streetAddress: 'Høgevej 4',
-      addressLocality: 'Fredericia',
-      postalCode: '7000',
       addressCountry: 'DK'
     }
   }
 ];
 
 const allSchemas = [...baseSchemas, ...schemaMarkup];
-const themeMode = designFeatures.themeMode === 'modern' ? 'modern' : 'simple';
+const VALID_THEME_KEYS = ['simple', 'modern', 'kreativ', 'ecommerce', 'portfolio', 'restaurant', 'service'] as const;
+const rawThemeMode = (designFeatures.themeMode as string) || 'simple';
+const themeMode = (VALID_THEME_KEYS as readonly string[]).includes(rawThemeMode) ? rawThemeMode : 'simple';
+const THEME_LAYOUTS = {
+  simple: SimpleLayout,
+  modern: SimpleLayout,
+  kreativ: SimpleLayout,
+  ecommerce: EcommerceLayout,
+  portfolio: PortfolioLayout,
+  restaurant: RestaurantLayout,
+  service: ServiceLayout,
+} as const;
+const ThemeLayout = THEME_LAYOUTS[themeMode as keyof typeof THEME_LAYOUTS] ?? SimpleLayout;
 const motionProfile = ['standard', 'reduced', 'expressive'].includes(designFeatures.motionProfile) ? designFeatures.motionProfile : 'standard';
 ---
 
@@ -113,9 +127,7 @@ const motionProfile = ['standard', 'reduced', 'expressive'].includes(designFeatu
     )}
     {designFeatures.grainOverlay && <div class="grain-overlay" aria-hidden="true"></div>}
 
-    <Header />
-    <slot />
-    <Footer />
+    <ThemeLayout><slot /></ThemeLayout>
     <CartDrawer />
     <Tracker />
 
