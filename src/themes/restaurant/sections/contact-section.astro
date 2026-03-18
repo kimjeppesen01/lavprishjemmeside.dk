@@ -1,0 +1,39 @@
+---
+// src/themes/restaurant/sections/contact-section.astro
+import headerFooter from '../../../data/header-footer.json';
+
+interface Props {
+  title?: string;
+  hours?: Array<{ day: string; time: string }>;
+}
+const { title = 'Find os', hours = [] } = Astro.props;
+const phone = headerFooter.footer_phone || '';
+const email = headerFooter.footer_email || '';
+const address = headerFooter.footer_address || '';
+---
+<section class="py-[var(--section-padding-y)] bg-[var(--color-bg-warm)]">
+  <div class="mx-auto px-[var(--container-padding-x)]" style="max-width: var(--container-max-width)">
+    <h2 class="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mb-12" style="font-family: var(--font-heading)">{title}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-widest text-[var(--color-accent)] mb-5">Kontakt</p>
+        {address && <p class="text-[var(--color-text-secondary)] mb-3">{address}</p>}
+        {phone && <p class="mb-2"><a href={`tel:${phone}`} class="text-[var(--color-text-primary)] font-medium hover:text-[var(--color-accent)] transition-colors">{phone}</a></p>}
+        {email && <p><a href={`mailto:${email}`} class="text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors">{email}</a></p>}
+      </div>
+      {hours.length > 0 && (
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest text-[var(--color-accent)] mb-5">Åbningstider</p>
+          <dl class="space-y-3">
+            {hours.map(h => (
+              <div class="flex justify-between border-b border-[var(--color-border)] pb-3 last:border-0">
+                <dt class="font-medium text-[var(--color-text-primary)]">{h.day}</dt>
+                <dd class="text-[var(--color-text-secondary)]">{h.time}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+    </div>
+  </div>
+</section>

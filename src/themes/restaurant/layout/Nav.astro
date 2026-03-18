@@ -1,0 +1,24 @@
+---
+// src/themes/restaurant/layout/Nav.astro
+import headerFooter from '../../../data/header-footer.json';
+
+const logoUrl = headerFooter.header_logo_url || '/favicon.svg';
+const logoText = headerFooter.header_logo_text || 'Restaurant';
+const navLinks = Array.isArray(headerFooter.header_menu_1) ? headerFooter.header_menu_1 : [];
+---
+<header id="main-header" class="bg-[var(--color-bg-dark)] text-[var(--color-text-on-dark)]">
+  <div class="mx-auto flex items-center justify-between h-16 px-[var(--container-padding-x)]" style="max-width: var(--container-max-width)">
+    <a href="/" class="flex items-center gap-2">
+      <img src={logoUrl} alt={logoText} class="h-9 w-9 object-contain" width="36" height="36" />
+      <span class="font-semibold text-lg text-white" style="font-family: var(--font-heading)">{logoText}</span>
+    </a>
+    <nav class="hidden md:flex items-center gap-8">
+      {navLinks.map((link: { href: string; label: string }) => (
+        <a href={link.href} class="text-sm text-white/70 hover:text-white transition-colors">{link.label}</a>
+      ))}
+    </nav>
+    <a href="/bestil" class="text-sm font-semibold px-5 py-2 bg-[var(--color-accent)] text-[var(--color-primary)] rounded-[var(--radius-card)] hover:bg-[var(--color-accent-hover)] transition-colors">
+      Bestil nu
+    </a>
+  </div>
+</header>

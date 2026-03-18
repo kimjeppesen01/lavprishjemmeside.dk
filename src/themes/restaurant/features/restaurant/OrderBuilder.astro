@@ -1,0 +1,162 @@
+---
+// src/themes/restaurant/features/restaurant/OrderBuilder.astro
+// Takeaway order builder wired to CMS restaurant API routes.
+interface MenuItem {
+  id: string | number;
+  name: string;
+  price: number;
+  description?: string;
+  image_url?: string;
+  category?: string;
+  currency?: string;
+}
+interface Props {
+  items?: MenuItem[];
+  currency?: string;
+}
+const { items = [], currency = 'DKK' } = Astro.props;
+
+const categories = [...new Set(items.map(i => i.category).filter(Boolean))];
+---
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <!-- Menu items -->
+  <div class="lg:col-span-2">
+    {categories.length > 0 ? categories.map(cat => (
+      <div class="mb-8">
+        <h3 class="font-bold text-[var(--color-accent)] uppercase tracking-widest text-sm mb-4 pb-2 border-b border-[var(--color-border)]">{cat}</h3>
+        <div class="space-y-3">
+          {items.filter(i => i.category === cat).map(item => (
+            <div class="flex items-center justify-between gap-4 p-4 bg-white rounded-[var(--radius-card)] shadow-[var(--shadow-sm)] border border-[var(--color-border)]">
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                {item.image_url && <img src={item.image_url} alt={item.name} class="w-14 h-14 rounded-[var(--radius-md)] object-cover flex-shrink-0" width="56" height="56" />}
+                <div>
+                  <p class="font-semibold text-sm text-[var(--color-text-primary)]">{item.name}</p>
+                  {item.description && <p class="text-xs text-[var(--color-text-secondary)] truncate max-w-xs">{item.description}</p>}
+                  <p class="text-sm font-bold text-[var(--color-accent)] mt-0.5">{item.price.toLocaleString('da-DK')} {item.currency || currency}</p>
+                </div>
+              </div>
+              <button type="button" class="ob-add flex-shrink-0 p-2 rounded-full bg-[var(--color-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-primary-hover)] transition-colors" data-item-id={item.id} data-item-name={item.name} data-item-price={item.price} data-item-currency={item.currency || currency} aria-label={`Tilføj ${item.name}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    )) : items.map(item => (
+      <div class="flex items-center justify-between gap-4 p-4 bg-white rounded-[var(--radius-card)] shadow-[var(--shadow-sm)] border border-[var(--color-border)] mb-3">
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold text-sm text-[var(--color-text-primary)]">{item.name}</p>
+          <p class="text-sm font-bold text-[var(--color-accent)] mt-0.5">{item.price.toLocaleString('da-DK')} {item.currency || currency}</p>
+        </div>
+        <button type="button" class="ob-add flex-shrink-0 p-2 rounded-full bg-[var(--color-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-primary-hover)] transition-colors" data-item-id={item.id} data-item-name={item.name} data-item-price={item.price} data-item-currency={item.currency || currency}>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
+    ))}
+  </div>
+
+  <!-- Order summary -->
+  <div class="lg:col-span-1">
+    <div class="sticky top-24 bg-[var(--color-bg-warm)] rounded-[var(--radius-card)] p-6 shadow-[var(--shadow-sm)] border border-[var(--color-border)]">
+      <h3 class="font-bold text-[var(--color-text-primary)] mb-4" style="font-family: var(--font-heading)">Din ordre</h3>
+      <div id="ob-order-items" class="space-y-2 mb-4 min-h-[60px]">
+        <p class="text-sm text-[var(--color-text-secondary)]">Din ordre er tom</p>
+      </div>
+      <div class="border-t border-[var(--color-border)] pt-4 mb-4">
+        <div class="flex justify-between font-bold text-[var(--color-text-primary)]">
+          <span>Total</span>
+          <span id="ob-total">0 {currency}</span>
+        </div>
+      </div>
+      <div class="space-y-3">
+        <input type="text" id="ob-name" placeholder="Dit navn" class="w-full border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]" />
+        <input type="tel" id="ob-phone" placeholder="Telefon" class="w-full border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]" />
+      </div>
+      <div id="ob-error" class="hidden text-sm text-red-600 mt-3"></div>
+      <button id="ob-submit" type="button" class="mt-4 w-full py-3 bg-[var(--color-accent)] text-[var(--color-primary)] font-bold rounded-[var(--radius-card)] hover:bg-[var(--color-accent-hover)] transition-colors">
+        Send bestilling
+      </button>
+      <div id="ob-success" class="hidden mt-3 text-sm text-center text-green-700 font-medium">Bestilling modtaget!</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  interface OrderItem { id: string; name: string; price: number; currency: string; quantity: number; }
+  const order: OrderItem[] = [];
+
+  function renderOrder() {
+    const el = document.getElementById('ob-order-items');
+    const totalEl = document.getElementById('ob-total');
+    if (!el) return;
+    if (order.length === 0) {
+      el.innerHTML = '<p class="text-sm text-[var(--color-text-secondary)]">Din ordre er tom</p>';
+      if (totalEl) totalEl.textContent = '0 DKK';
+      return;
+    }
+    el.innerHTML = order.map(item => `
+      <div class="flex items-center justify-between gap-2 text-sm">
+        <span class="text-[var(--color-text-primary)] truncate">${item.name} <span class="text-[var(--color-neutral-600)]">×${item.quantity}</span></span>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <span class="font-semibold text-[var(--color-accent)]">${(item.price * item.quantity).toLocaleString('da-DK')} ${item.currency}</span>
+          <button type="button" class="ob-remove text-[var(--color-neutral-600)] hover:text-red-500 transition-colors text-xs" data-remove-id="${item.id}">✕</button>
+        </div>
+      </div>
+    `).join('');
+    const total = order.reduce((s, i) => s + i.price * i.quantity, 0);
+    if (totalEl) totalEl.textContent = `${total.toLocaleString('da-DK')} ${order[0]?.currency || 'DKK'}`;
+  }
+
+  document.querySelectorAll('.ob-add').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const b = btn as HTMLButtonElement;
+      const id = b.dataset.itemId || '';
+      const existing = order.find(i => i.id === id);
+      if (existing) { existing.quantity++; }
+      else {
+        order.push({ id, name: b.dataset.itemName || '', price: parseFloat(b.dataset.itemPrice || '0'), currency: b.dataset.itemCurrency || 'DKK', quantity: 1 });
+      }
+      renderOrder();
+    });
+  });
+
+  document.getElementById('ob-order-items')?.addEventListener('click', (e) => {
+    const btn = (e.target as Element).closest('.ob-remove') as HTMLButtonElement | null;
+    if (!btn) return;
+    const id = btn.dataset.removeId;
+    const idx = order.findIndex(i => i.id === id);
+    if (idx >= 0) { if (order[idx].quantity > 1) { order[idx].quantity--; } else { order.splice(idx, 1); } }
+    renderOrder();
+  });
+
+  document.getElementById('ob-submit')?.addEventListener('click', async () => {
+    const name = (document.getElementById('ob-name') as HTMLInputElement)?.value;
+    const phone = (document.getElementById('ob-phone') as HTMLInputElement)?.value;
+    const errEl = document.getElementById('ob-error');
+    const successEl = document.getElementById('ob-success');
+    if (!name || order.length === 0) {
+      if (errEl) { errEl.textContent = 'Udfyld dit navn og tilføj mindst én vare.'; errEl.classList.remove('hidden'); }
+      return;
+    }
+    try {
+      const res = await fetch('/api/restaurant/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone, items: order }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        order.length = 0;
+        renderOrder();
+        if (successEl) successEl.classList.remove('hidden');
+        if (errEl) errEl.classList.add('hidden');
+      } else { throw new Error(data.message || 'Fejl'); }
+    } catch (err) {
+      if (errEl) { errEl.textContent = err instanceof Error ? err.message : 'Noget gik galt.'; errEl.classList.remove('hidden'); }
+    }
+  });
+</script>

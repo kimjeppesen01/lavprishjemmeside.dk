@@ -1,0 +1,15 @@
+{
+  "theme_key": "restaurant",
+  "pages": [
+    {
+      "slug": "/",
+      "title": "Forside",
+      "sections": [
+        { "type": "hero-section", "title": "Smag forskellen", "cta_label": "Se menuen", "cta_href": "/menu", "cta2_label": "Bestil takeaway", "cta2_href": "/bestil" },
+        { "type": "features-section", "title": "Frisk og lokal mad", "items": [] },
+        { "type": "contact-section", "title": "Find os", "hours": [] },
+        { "type": "cta-section", "title": "Klar til at bestille?", "cta_label": "Bestil online", "cta_href": "/bestil" }
+      ]
+    }
+  ]
+}

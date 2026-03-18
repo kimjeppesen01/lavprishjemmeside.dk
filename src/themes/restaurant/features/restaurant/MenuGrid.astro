@@ -1,0 +1,75 @@
+---
+// src/themes/restaurant/features/restaurant/MenuGrid.astro
+interface MenuItem {
+  id: string | number;
+  name: string;
+  description?: string;
+  price?: number;
+  image_url?: string;
+  category?: string;
+  currency?: string;
+  allergens?: string[];
+}
+interface Props {
+  items?: MenuItem[];
+  currency?: string;
+  title?: string;
+  show_categories?: boolean;
+}
+const { items = [], currency = 'DKK', title, show_categories = true } = Astro.props;
+
+const categories = show_categories
+  ? [...new Set(items.map(i => i.category).filter(Boolean))]
+  : [];
+---
+<section class="py-[var(--section-padding-y)]">
+  <div class="mx-auto px-[var(--container-padding-x)]" style="max-width: var(--container-max-width)">
+    {title && <h2 class="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mb-10" style="font-family: var(--font-heading)">{title}</h2>}
+
+    {categories.length > 0 ? categories.map(cat => (
+      <div class="mb-12">
+        <h3 class="text-lg font-bold text-[var(--color-accent)] uppercase tracking-widest mb-6 pb-2 border-b border-[var(--color-border)]">{cat}</h3>
+        <div class="divide-y divide-[var(--color-border)]">
+          {items.filter(i => i.category === cat).map(item => (
+            <div class="flex items-start gap-4 py-5">
+              {item.image_url && (
+                <img src={item.image_url} alt={item.name} class="w-20 h-20 rounded-[var(--radius-md)] object-cover flex-shrink-0" width="80" height="80" />
+              )}
+              <div class="flex-1 min-w-0">
+                <div class="flex items-baseline justify-between gap-2">
+                  <p class="font-semibold text-[var(--color-text-primary)]" style="font-family: var(--font-heading)">{item.name}</p>
+                  {item.price !== undefined && (
+                    <span class="font-bold text-[var(--color-text-primary)] flex-shrink-0">{item.price.toLocaleString('da-DK')} {item.currency || currency}</span>
+                  )}
+                </div>
+                {item.description && <p class="text-sm text-[var(--color-text-secondary)] mt-1">{item.description}</p>}
+                {item.allergens && item.allergens.length > 0 && (
+                  <p class="text-xs text-[var(--color-neutral-600)] mt-2">Allergener: {item.allergens.join(', ')}</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )) : (
+      <div class="divide-y divide-[var(--color-border)]">
+        {items.map(item => (
+          <div class="flex items-start gap-4 py-5">
+            {item.image_url && (
+              <img src={item.image_url} alt={item.name} class="w-20 h-20 rounded-[var(--radius-md)] object-cover flex-shrink-0" width="80" height="80" />
+            )}
+            <div class="flex-1 min-w-0">
+              <div class="flex items-baseline justify-between gap-2">
+                <p class="font-semibold text-[var(--color-text-primary)]" style="font-family: var(--font-heading)">{item.name}</p>
+                {item.price !== undefined && (
+                  <span class="font-bold text-[var(--color-text-primary)] flex-shrink-0">{item.price.toLocaleString('da-DK')} {item.currency || currency}</span>
+                )}
+              </div>
+              {item.description && <p class="text-sm text-[var(--color-text-secondary)] mt-1">{item.description}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</section>

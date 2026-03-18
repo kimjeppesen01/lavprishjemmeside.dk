@@ -1,0 +1,30 @@
+---
+// src/themes/restaurant/layout/Footer.astro
+import headerFooter from '../../../data/header-footer.json';
+
+const siteName = headerFooter.footer_site_name || 'Restaurant';
+const navLinks = Array.isArray(headerFooter.footer_menu_1) ? headerFooter.footer_menu_1 : [];
+const email = headerFooter.footer_email || '';
+const phone = headerFooter.footer_phone || '';
+const address = headerFooter.footer_address || '';
+---
+<footer class="bg-[var(--color-bg-dark)] text-[var(--color-text-on-dark)] py-14 border-t border-white/10">
+  <div class="mx-auto px-[var(--container-padding-x)]" style="max-width: var(--container-max-width)">
+    <div class="flex flex-col md:flex-row justify-between gap-10 mb-10">
+      <div class="max-w-xs">
+        <p class="font-semibold text-xl mb-3 text-white" style="font-family: var(--font-heading)">{siteName}</p>
+        {address && <p class="text-sm text-white/50 mb-3">{address}</p>}
+        {phone && <p class="text-sm mb-1"><a href={`tel:${phone}`} class="text-white/60 hover:text-white transition-colors">{phone}</a></p>}
+        {email && <p class="text-sm"><a href={`mailto:${email}`} class="text-white/60 hover:text-white transition-colors">{email}</a></p>}
+      </div>
+      {navLinks.length > 0 && (
+        <nav class="flex flex-wrap gap-6 items-start">
+          {navLinks.map((link: { href: string; label: string }) => (
+            <a href={link.href} class="text-sm text-white/50 hover:text-white transition-colors">{link.label}</a>
+          ))}
+        </nav>
+      )}
+    </div>
+    <p class="text-xs text-white/30">&copy; {new Date().getFullYear()} {siteName}</p>
+  </div>
+</footer>

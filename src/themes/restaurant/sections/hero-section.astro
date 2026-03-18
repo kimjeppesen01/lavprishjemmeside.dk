@@ -1,0 +1,37 @@
+---
+// src/themes/restaurant/sections/hero-section.astro
+interface Props {
+  title?: string;
+  subtitle?: string;
+  body?: string;
+  cta_label?: string;
+  cta_href?: string;
+  cta2_label?: string;
+  cta2_href?: string;
+  image_url?: string;
+  image_alt?: string;
+}
+const { title, subtitle, body, cta_label = 'Se menuen', cta_href = '/menu', cta2_label, cta2_href, image_url, image_alt = '' } = Astro.props;
+---
+<section class="relative min-h-[70vh] flex items-end bg-[var(--color-bg-dark)] overflow-hidden">
+  {image_url && (
+    <div class="absolute inset-0">
+      <img src={image_url} alt={image_alt} class="w-full h-full object-cover opacity-50" width="1440" height="900" />
+    </div>
+  )}
+  <div class="relative z-10 w-full mx-auto px-[var(--container-padding-x)] py-16 pb-20" style="max-width: var(--container-max-width)">
+    {subtitle && <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)] mb-4">{subtitle}</p>}
+    {title && <h1 class="text-5xl md:text-7xl font-bold text-white leading-tight mb-5 max-w-3xl" style="font-family: var(--font-heading)">{title}</h1>}
+    {body && <p class="text-lg text-white/70 mb-8 max-w-lg">{body}</p>}
+    <div class="flex flex-wrap gap-3">
+      <a href={cta_href} class="inline-flex px-8 py-3 bg-[var(--color-accent)] text-[var(--color-primary)] font-bold rounded-[var(--radius-card)] hover:bg-[var(--color-accent-hover)] transition-colors">
+        {cta_label}
+      </a>
+      {cta2_label && cta2_href && (
+        <a href={cta2_href} class="inline-flex px-8 py-3 bg-transparent text-white font-semibold rounded-[var(--radius-card)] border border-white/30 hover:border-white/60 transition-colors">
+          {cta2_label}
+        </a>
+      )}
+    </div>
+  </div>
+</section>
