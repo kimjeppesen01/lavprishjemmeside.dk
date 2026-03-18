@@ -405,7 +405,7 @@ Each theme: write → `npx astro check` passes → commit.
 8. `src/layouts/Layout.astro` theme router
 9. Page renderer calls `resolveSection()`
 10. Feature pages call `resolveFeature()`
-11. `generate-theme.mjs` writes `PUBLIC_ACTIVE_THEME`
+11. `generate-theme.mjs` — add theme-overrides.css token layering (theme base + buildCSS output); `themeMode` is already written to `design-features.json`, no routing change needed
 12. `api/src/lib/theme-catalog.js` — add 4 new entries
 
 ### Phase 3: Admin UI
