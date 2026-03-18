@@ -82,10 +82,6 @@ async function generateTheme() {
     // Merge API data with defaults (API may omit some fields)
     const tokens = { ...DEFAULT_TOKENS, ...apiData };
 
-    const css = buildCSS(tokens);
-    fs.writeFileSync(THEME_FILE, css, 'utf-8');
-    console.log(`✓ Generated ${THEME_FILE}`);
-
     // Fetch decoupled theme settings (separate from styling tokens)
     let themeSettings = { ...DEFAULT_THEME_SETTINGS };
     try {
@@ -114,6 +110,16 @@ async function generateTheme() {
       // Other fetch errors (network, old install): fall back silently.
       console.warn('⚠ Could not fetch theme settings, using defaults:', err.message);
     }
+
+    // Prepend theme-overrides.css (visual identity base) before user API tokens
+    const themeOverridesPath = path.join(__dirname, `../src/themes/${themeSettings.active_theme_key}/tokens/theme-overrides.css`);
+    const themeOverridesPrefix = fs.existsSync(themeOverridesPath)
+      ? fs.readFileSync(themeOverridesPath, 'utf-8') + '\n'
+      : '';
+
+    const css = themeOverridesPrefix + buildCSS(tokens);
+    fs.writeFileSync(THEME_FILE, css, 'utf-8');
+    console.log(`✓ Generated ${THEME_FILE}`);
 
     // Write feature flags and page loader config for Layout/Header
     const features = {
