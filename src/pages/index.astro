@@ -17,7 +17,10 @@ import NewsletterSignup from '../components/NewsletterSignup.astro';
 import Timeline from '../components/Timeline.astro';
 import LogoCloud from '../components/LogoCloud.astro';
 import GalleryGrid from '../components/GalleryGrid.astro';
+import ProductGrid from '../components/ProductGrid.astro';
 import ProductCarousel from '../components/ProductCarousel.astro';
+import FeaturedProductSpotlight from '../components/FeaturedProductSpotlight.astro';
+import CategoryShowcase from '../components/CategoryShowcase.astro';
 import StickyColumnSection from '../components/StickyColumnSection.astro';
 import ProblemSection from '../components/ProblemSection.astro';
 import HowItWorksSection from '../components/HowItWorksSection.astro';
@@ -31,6 +34,8 @@ import BentoGridSection from '../components/BentoGridSection.astro';
 import OverlapCardsSection from '../components/OverlapCardsSection.astro';
 import AlternatingFeatureList from '../components/AlternatingFeatureList.astro';
 import ImmersiveContentVisual from '../components/ImmersiveContentVisual.astro';
+import { resolveSection } from '../lib/resolveSection';
+import designFeatures from '../data/design-features.json';
 
 // User-generated components (src/components/custom/) — not overwritten by CMS/seed
 const customGlob = import.meta.glob('../components/custom/*.astro', { eager: true });
@@ -74,7 +79,10 @@ const componentMap: Record<string, any> = {
   'timeline': Timeline,
   'logo-cloud': LogoCloud,
   'gallery-grid': GalleryGrid,
+  'product-grid': ProductGrid,
   'product-carousel': ProductCarousel,
+  'featured-product-spotlight': FeaturedProductSpotlight,
+  'category-showcase': CategoryShowcase,
   'sticky-column-section': StickyColumnSection,
   ...customMap,
 };
@@ -133,17 +141,47 @@ function normalizeProps(slug: string, rawProps: any): any {
       break;
     case 'features-grid': if (!Array.isArray(props.features)) props.features = []; break;
     case 'icon-cards': if (!Array.isArray(props.cards)) props.cards = []; break;
+    case 'product-carousel':
+      if (!props.sourceMode && !props.collectionSlug && !props.productIds && !Array.isArray(props.products)) {
+        props.sourceMode = 'collection';
+        props.collectionSlug = 'default-storefront';
+      }
+      if (props.limit == null) props.limit = 8;
+      if (!props.heading) props.heading = 'Udvalgte produkter';
+      break;
+    case 'product-grid':
+      if (!props.sourceMode && !props.collectionSlug && !props.productIds && !Array.isArray(props.products)) {
+        props.sourceMode = 'collection';
+        props.collectionSlug = 'default-storefront';
+      }
+      if (props.limit == null) props.limit = 8;
+      if (!props.title) props.title = 'Udvalgte produkter';
+      break;
+    case 'featured-product-spotlight':
+      if (!props.sourceMode && !props.collectionSlug && !props.productIds && !Array.isArray(props.products)) {
+        props.sourceMode = 'collection';
+        props.collectionSlug = 'default-storefront';
+      }
+      if (props.limit == null) props.limit = 1;
+      if (!props.heading) props.heading = 'Fremhævet produkt';
+      break;
+    case 'category-showcase':
+      if (props.limit == null) props.limit = 6;
+      if (!props.heading) props.heading = 'Shop efter kategori';
+      break;
     default: break;
   }
   return props;
 }
+
+const themeMode = (designFeatures as any).themeMode || 'simple';
 
 let pageComponents: any[] = [];
 let pageMeta: { meta_title?: string; meta_description?: string; schema_markup?: any } | null = null;
 const strictContentFetch = process.env.STRICT_CONTENT_FETCH === '1';
 
 try {
-  const API_URL = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+  const API_URL = import.meta.env.PUBLIC_API_URL || '';
   const [componentsRes, metaRes] = await Promise.all([
     fetch(`${API_URL}/page-components/public?page=/`),
     fetch(`${API_URL}/page-components/public-meta?page=/`),
@@ -167,7 +205,7 @@ try {
 }
 
 const useDbContent = pageComponents.length > 0;
-const pageTitle = pageMeta?.meta_title || (pageComponents[0]?.content?.headline as string) || 'Lavpris Hjemmeside | Professionelle hjemmesider til lav pris';
+const pageTitle = pageMeta?.meta_title || (pageComponents[0]?.content?.headline as string) || 'Professionelt digitalt site';
 const pageDescription = pageMeta?.meta_description;
 ---
 
@@ -177,7 +215,7 @@ const pageDescription = pageMeta?.meta_description;
       <>
         <Breadcrumbs items={[{ label: 'Hjem', href: '/' }]} />
         {pageComponents.map((pc: any, index: number) => {
-          const Component = componentMap[pc.slug];
+          const Component = resolveSection(pc.slug, themeMode) ?? componentMap[pc.slug];
           if (!Component) return null;
           const normalizedProps = normalizeProps(pc.slug, pc.content || {});
           normalizedProps.instanceId = pc.id;
