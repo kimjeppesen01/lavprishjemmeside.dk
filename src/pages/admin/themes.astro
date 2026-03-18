@@ -1,6 +1,6 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
-const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.dk';
+const apiUrl = import.meta.env.PUBLIC_API_URL || '';
 ---
 
 <AdminLayout title="Temaer">
@@ -25,7 +25,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Design-type</h2>
         <p class="text-sm text-gray-600 mb-6">Dette ændrer komponentstruktur, layout-rytme og animationer. Styling (farver, fonts) styres fortsat under “Design & styling”.</p>
 
-        <div id="theme-cards" class="grid gap-4 md:grid-cols-3"></div>
+        <div id="theme-cards" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));"></div>
 
         <div class="mt-8">
           <label class="block text-sm font-medium text-gray-700 mb-2">Bevægelsesprofil</label>
@@ -46,7 +46,10 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
         <h3 class="font-semibold text-gray-900 mb-3">Aktiv konfiguration</h3>
         <p class="text-sm text-gray-600">Tema: <span id="active-theme-label" class="font-medium text-gray-900">-</span></p>
         <p class="text-sm text-gray-600 mt-1">Motion: <span id="active-motion-label" class="font-medium text-gray-900">-</span></p>
-        <div id="success" class="hidden mt-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded p-3">Gemte temaindstillinger.</div>
+        <div id="success" class="hidden mt-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded p-3">
+          <span id="success-text">Gemte temaindstillinger.</span>
+          <button id="success-publish-btn" class="hidden ml-2 underline font-medium text-green-800 hover:text-green-900">Udgiv</button>
+        </div>
       </aside>
     </div>
   </div>
@@ -60,14 +63,36 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
         return;
       }
 
-      const THEMES = [
-        { key: 'simple', label: 'Simple', description: 'Nuværende professionelle layout.' },
-        { key: 'modern', label: 'Modern', description: 'Markant moderne UX med ny rytme og motion.' },
-        { key: 'kreativ', label: 'Kreativ', description: 'Kreativ variant (næste fase).' },
+      const FALLBACK_THEMES = [
+        { theme_key: 'simple', label: 'Simple', description: 'Nuværende professionelle layout.', supports_commerce: false, supports_booking: false, supports_restaurant: false },
+        { theme_key: 'modern', label: 'Modern', description: 'Markant moderne UX med ny rytme og motion.', supports_commerce: false, supports_booking: false, supports_restaurant: false },
+        { theme_key: 'kreativ', label: 'Kreativ', description: 'Kreativ variant (næste fase).', supports_commerce: false, supports_booking: false, supports_restaurant: false },
       ];
 
+      let THEMES = FALLBACK_THEMES.slice();
       let current = { active_theme_key: 'simple', motion_profile: 'standard' };
       let legacyThemeApi = false;
+
+      async function loadCatalog() {
+        try {
+          const res = await fetch(API + '/theme-catalog', {
+            headers: { Authorization: 'Bearer ' + token }
+          });
+          if (!res.ok) {
+            // Non-fatal: fall back to hardcoded list, show a subtle warning
+            setWarning('Tema-kataloget kunne ikke hentes — viser standardliste.');
+            return;
+          }
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            THEMES = data;
+          } else {
+            setWarning('Tema-kataloget er tomt — viser standardliste.');
+          }
+        } catch (_) {
+          setWarning('Tema-kataloget kunne ikke hentes — viser standardliste.');
+        }
+      }
 
       function setError(msg) {
         const error = document.getElementById('error');
@@ -83,15 +108,74 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
         if (warning) warning.classList.remove('hidden');
       }
 
+      const THEME_PREVIEWS = {
+        simple: `<div style="background:#fff;border-radius:0.5rem;overflow:hidden;height:5.5rem;font-family:sans-serif;">
+          <div style="background:#1e293b;height:1.5rem;display:flex;align-items:center;padding:0 0.5rem;gap:0.3rem;">
+            <div style="width:2rem;height:0.55rem;background:#3b82f6;border-radius:2px;"></div>
+            <div style="flex:1;"></div>
+            <div style="width:1.5rem;height:0.45rem;background:rgba(255,255,255,0.3);border-radius:2px;"></div>
+            <div style="width:1.5rem;height:0.45rem;background:rgba(255,255,255,0.3);border-radius:2px;"></div>
+          </div>
+          <div style="padding:0.5rem;">
+            <div style="height:0.625rem;background:#111827;border-radius:2px;width:55%;margin-bottom:0.3rem;"></div>
+            <div style="height:0.45rem;background:#e5e7eb;border-radius:2px;width:80%;margin-bottom:0.2rem;"></div>
+            <div style="height:0.45rem;background:#e5e7eb;border-radius:2px;width:65%;margin-bottom:0.4rem;"></div>
+            <div style="height:1.1rem;background:#3b82f6;border-radius:3px;width:3rem;display:inline-flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:0.35rem;font-weight:700;">Handling</span></div>
+          </div>
+        </div>`,
+        modern: `<div style="background:#0f172a;border-radius:0.5rem;overflow:hidden;height:5.5rem;font-family:sans-serif;">
+          <div style="background:linear-gradient(135deg,#6366f1,#3b82f6);height:1.75rem;display:flex;align-items:center;padding:0 0.5rem;gap:0.3rem;">
+            <div style="width:2rem;height:0.55rem;background:rgba(255,255,255,0.9);border-radius:2px;"></div>
+            <div style="flex:1;"></div>
+            <div style="width:1.25rem;height:0.45rem;background:rgba(255,255,255,0.5);border-radius:2px;"></div>
+          </div>
+          <div style="padding:0.5rem;">
+            <div style="height:0.625rem;background:#f1f5f9;border-radius:2px;width:55%;margin-bottom:0.3rem;"></div>
+            <div style="height:0.45rem;background:#334155;border-radius:2px;width:75%;margin-bottom:0.2rem;"></div>
+            <div style="display:flex;gap:0.3rem;margin-top:0.4rem;">
+              <div style="height:1.1rem;background:#6366f1;border-radius:100px;width:2.5rem;display:inline-flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:0.35rem;font-weight:700;">Start</span></div>
+              <div style="height:1.1rem;background:transparent;border:1px solid #475569;border-radius:100px;width:2.5rem;display:inline-flex;align-items:center;justify-content:center;"><span style="color:#94a3b8;font-size:0.35rem;">Mere</span></div>
+            </div>
+          </div>
+        </div>`,
+        kreativ: `<div style="background:#fafaf9;border-radius:0.5rem;overflow:hidden;height:5.5rem;font-family:sans-serif;border:2px solid #f59e0b;">
+          <div style="background:#fef3c7;height:1.5rem;display:flex;align-items:center;padding:0 0.5rem;gap:0.3rem;">
+            <div style="width:0.6rem;height:0.6rem;background:#f59e0b;border-radius:50%;"></div>
+            <div style="width:2rem;height:0.5rem;background:#92400e;border-radius:2px;opacity:0.6;"></div>
+            <div style="flex:1;"></div>
+          </div>
+          <div style="padding:0.5rem;">
+            <div style="height:0.7rem;background:#1c1917;border-radius:2px;width:65%;margin-bottom:0.3rem;transform:rotate(-0.5deg);"></div>
+            <div style="height:0.4rem;background:#a8a29e;border-radius:2px;width:80%;margin-bottom:0.4rem;"></div>
+            <div style="height:1.1rem;background:#f59e0b;border-radius:100px;width:3.5rem;display:inline-flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:0.35rem;font-weight:700;">Oplev mere</span></div>
+          </div>
+        </div>`
+      };
+
+      function buildBadges(t) {
+        const badges = [];
+        if (t.supports_commerce) badges.push('<span title="Webshop/e-handel" style="display:inline-flex;align-items:center;gap:0.2rem;font-size:0.6rem;background:#dbeafe;color:#1d4ed8;border-radius:3px;padding:0.1rem 0.3rem;font-weight:600;">🛒 Handel</span>');
+        if (t.supports_booking) badges.push('<span title="Booking/reservation" style="display:inline-flex;align-items:center;gap:0.2rem;font-size:0.6rem;background:#d1fae5;color:#065f46;border-radius:3px;padding:0.1rem 0.3rem;font-weight:600;">📅 Booking</span>');
+        if (t.supports_restaurant) badges.push('<span title="Restaurant/menu" style="display:inline-flex;align-items:center;gap:0.2rem;font-size:0.6rem;background:#fef3c7;color:#92400e;border-radius:3px;padding:0.1rem 0.3rem;font-weight:600;">🍽 Restaurant</span>');
+        return badges.length > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.35rem;">${badges.join('')}</div>` : '';
+      }
+
       function renderCards() {
         const holder = document.getElementById('theme-cards');
         if (!holder) return;
-        holder.innerHTML = THEMES.map((t) => `
-          <button type="button" data-theme-key="${t.key}" class="theme-card text-left border rounded-lg p-4 transition ${current.active_theme_key === t.key ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}">
-            <div class="font-semibold text-gray-900">${t.label}</div>
-            <p class="text-sm text-gray-600 mt-1">${t.description}</p>
-          </button>
-        `).join('');
+        holder.innerHTML = THEMES.map((t) => {
+          const key = t.theme_key || t.key;
+          const isActive = current.active_theme_key === key;
+          return `<button type="button" data-theme-key="${key}" class="theme-card text-left rounded-xl transition-all" style="border:2px solid ${isActive ? '#3b82f6' : '#e5e7eb'};background:${isActive ? '#f0f9ff' : '#fff'};padding:0;overflow:hidden;position:relative;">
+            ${isActive ? '<div style="position:absolute;top:0.5rem;right:0.5rem;background:#3b82f6;border-radius:50%;width:1.25rem;height:1.25rem;display:flex;align-items:center;justify-content:center;z-index:1;"><svg width="10" height="10" viewBox="0 0 20 20" fill="none" stroke="#fff" stroke-width="3"><polyline points="4 10 8 14 16 6"/></svg></div>' : ''}
+            <div style="padding:0.5rem;">${THEME_PREVIEWS[key] || ''}</div>
+            <div style="padding:0.625rem 0.75rem;border-top:1px solid ${isActive ? '#bfdbfe' : '#f3f4f6'};">
+              <div style="font-weight:600;font-size:0.8125rem;color:${isActive ? '#1d4ed8' : '#111827'};">${t.label}</div>
+              <p style="font-size:0.6875rem;color:#6b7280;margin-top:0.125rem;line-height:1.4;">${t.description || ''}</p>
+              ${buildBadges(t)}
+            </div>
+          </button>`;
+        }).join('');
         holder.querySelectorAll('[data-theme-key]').forEach((el) => {
           el.addEventListener('click', () => {
             current.active_theme_key = el.getAttribute('data-theme-key');
@@ -102,7 +186,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
       }
 
       function renderActive() {
-        const theme = THEMES.find((t) => t.key === current.active_theme_key);
+        const theme = THEMES.find((t) => (t.theme_key || t.key) === current.active_theme_key);
         const t = document.getElementById('active-theme-label');
         const m = document.getElementById('active-motion-label');
         if (t) t.textContent = theme ? theme.label : current.active_theme_key;
@@ -223,12 +307,22 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
           current.motion_profile = data.motion_profile || current.motion_profile;
           renderCards();
           renderActive();
+          if (window.toast) toast('Temaindstillinger gemt', 'success');
           const success = document.getElementById('success');
+          const successText = document.getElementById('success-text');
+          const successPublishBtn = document.getElementById('success-publish-btn');
           if (success) {
+            if (successText) successText.textContent = 'Tema gemt \u2014 tryk Udgiv for at anvende p\u00e5 live site';
+            if (successPublishBtn) successPublishBtn.classList.remove('hidden');
             success.classList.remove('hidden');
-            setTimeout(() => success.classList.add('hidden'), 3000);
+            setTimeout(() => {
+              success.classList.add('hidden');
+              if (successPublishBtn) successPublishBtn.classList.add('hidden');
+              if (successText) successText.textContent = 'Gemte temaindstillinger.';
+            }, 8000);
           }
         } catch (err) {
+          if (window.toast) toast(err.message || 'Gemning fejlede', 'error');
           setError(err.message || 'Gemning fejlede');
         }
       });
@@ -284,7 +378,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
         }
       }
 
-      document.getElementById('publish-btn')?.addEventListener('click', async () => {
+      async function doPublish() {
         try {
           const res = await fetch(API + '/publish', {
             method: 'POST',
@@ -292,20 +386,31 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'https://api.lavprishjemmeside.
           });
           if (!res.ok) throw new Error('Publicering fejlede');
           const success = document.getElementById('success');
+          const successText = document.getElementById('success-text');
+          const successPublishBtn = document.getElementById('success-publish-btn');
           if (success) {
-            success.textContent = 'Tema publiceret. Vent ca. 90 sekunder.';
+            if (successPublishBtn) successPublishBtn.classList.add('hidden');
+            if (successText) successText.textContent = 'Tema publiceret. Vent ca. 90 sekunder.';
             success.classList.remove('hidden');
             setTimeout(() => {
               success.classList.add('hidden');
-              success.textContent = 'Gemte temaindstillinger.';
-            }, 4000);
+              if (successText) successText.textContent = 'Gemte temaindstillinger.';
+            }, 5000);
           }
         } catch (err) {
           setError(err.message || 'Publicering fejlede');
         }
-      });
+      }
 
-      loadThemeSettings();
+      document.getElementById('publish-btn')?.addEventListener('click', doPublish);
+      document.getElementById('success-publish-btn')?.addEventListener('click', doPublish);
+
+      async function init() {
+        await loadCatalog();
+        await loadThemeSettings();
+      }
+
+      init();
     })();
   </script>
 </AdminLayout>
